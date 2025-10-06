@@ -1,4 +1,4 @@
-#Equilibrio - Personal Finance Tracker (Frontend)
+# Equilibrio - Personal Finance Tracker (Frontend)
 
 ## 📋 Project Overview
 Equilibrio is a modern, responsive personal finance tracker web application built with React and Tailwind CSS. This frontend provides beautiful authentication pages for users to log in and create accounts.
