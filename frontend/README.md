@@ -1,21 +1,11 @@
 # Equilibrio - Personal Finance Tracker (Frontend)
 
-## 📋 Project Overview
-Equilibrio is a modern, responsive personal finance tracker web application built with React and Tailwind CSS. This frontend provides beautiful authentication pages for users to log in and create accounts.
-
 ## 🚀 Features Implemented
 ### ✅ Authentication Pages
 - Login Page - Secure user authentication
 - Sign Up Page - User registration with password confirmation
 - Form Validation - Real-time validation for all form fields
 - Password Confirmation - Ensures password matching during registration
-
-### 🎨 Design & UI
-- Modern Design - Clean, professional financial app interface
-- Responsive Layout - Works perfectly on desktop and mobile devices
-- Custom Color Scheme - Tailored color palette for financial applications
-- Noto Sans Typography - Clean, readable fonts from Google Fonts
-- Visual Feedback - Error states, loading states, and user interactions
 
 ### 🛠 Technology Stack
 - Frontend Framework: React 18
@@ -27,6 +17,7 @@ Equilibrio is a modern, responsive personal finance tracker web application buil
 
 ## 📁 Project Structure
 
+```
 frontend/
 ├── public/
 │   ├── index.html
@@ -51,6 +42,7 @@ frontend/
 ├── tailwind.config.js
 ├── package.json
 └── README.md
+```
 
 ## 🚀 Getting Started
 ### Prerequisites
@@ -59,14 +51,22 @@ frontend/
 
 ### Installation & Setup
 1. Clone the repository
+   ```bash
    git clone https://github.com/Yerson-Borda/Equilibrio.git
    cd frontend
+   ```
 2. Install dependencies
+   ```bash
    npm install
+   ```
 3. Start the development server
+   ```bash
    npm start
+   ```
 4. Open your browser
+   ```bash
    Navigate to http://localhost:3000
+   ```
 
 ### Available Scripts
 - npm start - Runs the app in development mode
