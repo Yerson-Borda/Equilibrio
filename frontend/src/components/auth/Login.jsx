@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Button from '../ui/Button';
 import logo from '../../assets/images/logo.png';
 import clockimage from '../../assets/images/clock-image.png';
+import { apiService } from '../../services/api';
 
 const Login = () => {
     const [formData, setFormData] = useState({
@@ -10,6 +11,8 @@ const Login = () => {
         rememberMe: false
     });
     const [showPassword, setShowPassword] = useState(false);
+    const [errors, setErrors] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleChange = (e) => {
         const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -17,11 +20,50 @@ const Login = () => {
             ...formData,
             [e.target.name]: value
         });
+        // Clear errors when user starts typing
+        if (errors[e.target.name]) {
+            setErrors({
+                ...errors,
+                [e.target.name]: ''
+            });
+        }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Login data:', formData);
+        setIsLoading(true);
+        setErrors({});
+
+        try {
+            const data = await apiService.login(formData.email, formData.password);
+            console.log('Login successful:', data);
+
+            // Redirect or handle successful login
+            // You can use React Router here: navigate('/dashboard');
+
+        } catch (error) {
+            console.error('Login error:', error);
+
+            if (error.status === 401) {
+                setErrors({ general: 'The account credentials are incorrect or it doesn\'t exist.' });
+            } else if (error.status === 422) {
+                // Handle validation errors from backend
+                const validationErrors = {};
+                if (Array.isArray(error.errors)) {
+                    error.errors.forEach(err => {
+                        if (err.loc && err.msg) {
+                            const field = err.loc[err.loc.length - 1];
+                            validationErrors[field] = err.msg;
+                        }
+                    });
+                }
+                setErrors(validationErrors);
+            } else {
+                setErrors({ general: error.message || 'An error occurred during login' });
+            }
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const togglePasswordVisibility = () => {
@@ -52,6 +94,13 @@ const Login = () => {
                             Please enter your details to log in
                         </p>
 
+                        {/* General error message */}
+                        {errors.general && (
+                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                <p className="text-red-600 text-sm">{errors.general}</p>
+                            </div>
+                        )}
+
                         <form onSubmit={handleSubmit}>
                             {/* Email */}
                             <div className="mb-6">
@@ -64,9 +113,16 @@ const Login = () => {
                                     value={formData.email}
                                     onChange={handleChange}
                                     placeholder="Enter your email"
-                                    className="w-full p-4 border border-strokes rounded-lg bg-white placeholder-placeholder focus:outline-none focus:ring-2 focus:ring-blue focus:border-transparent"
+                                    className={`w-full p-4 border rounded-lg bg-white placeholder-placeholder focus:outline-none focus:ring-2 focus:ring-blue focus:border-transparent ${
+                                        errors.email || errors.username ? 'border-red-500' : 'border-strokes'
+                                    }`}
                                     required
                                 />
+                                {(errors.email || errors.username) && (
+                                    <p className="text-red-500 text-sm mt-1 text-left">
+                                        {errors.email || errors.username}
+                                    </p>
+                                )}
                             </div>
 
                             {/* Password */}
@@ -81,7 +137,9 @@ const Login = () => {
                                         value={formData.password}
                                         onChange={handleChange}
                                         placeholder="*********"
-                                        className="w-full p-4 pr-12 border border-strokes rounded-lg bg-white placeholder-placeholder focus:outline-none focus:ring-2 focus:ring-blue focus:border-transparent"
+                                        className={`w-full p-4 pr-12 border rounded-lg bg-white placeholder-placeholder focus:outline-none focus:ring-2 focus:ring-blue focus:border-transparent ${
+                                            errors.password ? 'border-red-500' : 'border-strokes'
+                                        }`}
                                         required
                                     />
                                     <button
@@ -101,6 +159,9 @@ const Login = () => {
                                         )}
                                     </button>
                                 </div>
+                                {errors.password && (
+                                    <p className="text-red-500 text-sm mt-1 text-left">{errors.password}</p>
+                                )}
                             </div>
 
                             {/* Remember Me & Forgot Password */}
@@ -121,8 +182,13 @@ const Login = () => {
                             </div>
 
                             {/* Submit Button */}
-                            <Button type="submit" variant="primary">
-                                Sign in
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                disabled={isLoading}
+                                className="w-full"
+                            >
+                                {isLoading ? 'Signing in...' : 'Sign in'}
                             </Button>
                         </form>
 
