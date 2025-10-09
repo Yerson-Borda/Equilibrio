@@ -68,6 +68,7 @@ frontend/
    Navigate to http://localhost:3000
    ```
 
+
 ### Available Scripts
 - npm start - Runs the app in development mode
 - npm build - Builds the app for production
