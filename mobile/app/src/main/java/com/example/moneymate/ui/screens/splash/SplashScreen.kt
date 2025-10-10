@@ -16,10 +16,10 @@ import com.example.moneymate.R
 import kotlinx.coroutines.delay
 
 @Composable
-fun SplashScreen(onTimeout: () -> Unit) {
+fun SplashScreen(onStart: () -> Unit) {
     LaunchedEffect(Unit) {
         delay(2000)
-        onTimeout()
+        onStart()
     }
 
     Box(

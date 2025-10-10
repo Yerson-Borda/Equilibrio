@@ -1,4 +1,5 @@
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,8 +26,8 @@ import com.example.moneymate.R
 
 @Composable
 fun StartScreen(
-    onGetStartedClicked: () -> Unit = {},
-    onLoginClicked: () -> Unit = {}
+    onSignUpClick: () -> Unit,
+    onLoginClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -99,12 +100,12 @@ fun StartScreen(
 
             // Get Started button
             Button(
-                onClick = onGetStartedClicked,
+                onClick = onSignUpClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4CAF50)
+                    containerColor = Color(0xFF4361EE)
                 )
             ) {
                 Text(
@@ -116,13 +117,17 @@ fun StartScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Login text
+            // Login text - now clickable
             Text(
                 text = "Already Have Account Log In",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color.Gray,
-                modifier = Modifier.padding(vertical = 8.dp)
+                modifier = Modifier
+                    .padding(vertical = 8.dp)
+                    .clickable(
+                        onClick = onLoginClick
+                    )
             )
         }
     }
@@ -131,5 +136,8 @@ fun StartScreen(
 @Preview(showBackground = true)
 @Composable
 fun StartScreenPreview() {
-    StartScreen()
+    StartScreen(
+        onSignUpClick = {},
+        onLoginClick = {}
+    )
 }
