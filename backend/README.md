@@ -31,8 +31,11 @@ How to run:
 6- make a .env file in /backend and paste this information there:
     ```
     DATABASE_URL=sqlite:///./finance_tracker.db
+
     SECRET_KEY=your-secret-key-here
+
     ALGORITHM=HS256
+    
     ACCESS_TOKEN_EXPIRE_MINUTES=30
     ```
 
