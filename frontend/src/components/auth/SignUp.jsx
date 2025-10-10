@@ -13,19 +13,79 @@ const SignUp = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
+    const [touched, setTouched] = useState({
+        fullName: false,
+        email: false,
+        password: false
+    });
+
+    const validateEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email) return 'Email is required';
+        if (!emailRegex.test(email)) return 'Please enter a valid email address';
+        return '';
+    };
+
+    const validatePassword = (password) => {
+        if (!password) return 'Password is required';
+        if (password.length < 8) return 'Password must be at least 8 characters';
+        if (!/[A-Z]/.test(password)) return 'Password must contain at least one capital letter';
+        if (!/[#$%@]/.test(password)) return 'Use at least one special character #$%@';
+        return '';
+    };
+
+    const validateFullName = (fullName) => {
+        if (!fullName.trim()) return 'Full name is required';
+        return '';
+    };
 
     const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-        // Clear errors when user starts typing
-        if (errors[e.target.name]) {
-            setErrors({
-                ...errors,
-                [e.target.name]: ''
-            });
+        const { name, value } = e.target;
+
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+
+        // Real-time validation for touched fields
+        if (touched[name]) {
+            let error = '';
+            if (name === 'email') {
+                error = validateEmail(value);
+            } else if (name === 'password') {
+                error = validatePassword(value);
+            } else if (name === 'fullName') {
+                error = validateFullName(value);
+            }
+
+            setErrors(prev => ({
+                ...prev,
+                [name]: error
+            }));
         }
+    };
+
+    const handleBlur = (e) => {
+        const { name, value } = e.target;
+        setTouched(prev => ({
+            ...prev,
+            [name]: true
+        }));
+
+        // Validate on blur
+        let error = '';
+        if (name === 'email') {
+            error = validateEmail(value);
+        } else if (name === 'password') {
+            error = validatePassword(value);
+        } else if (name === 'fullName') {
+            error = validateFullName(value);
+        }
+
+        setErrors(prev => ({
+            ...prev,
+            [name]: error
+        }));
     };
 
     const handleSubmit = async (e) => {
@@ -33,25 +93,44 @@ const SignUp = () => {
         setIsLoading(true);
         setErrors({});
 
+        // Mark all fields as touched
+        setTouched({
+            fullName: true,
+            email: true,
+            password: true
+        });
+
+        // Validate all fields
+        const fullNameError = validateFullName(formData.fullName);
+        const emailError = validateEmail(formData.email);
+        const passwordError = validatePassword(formData.password);
+
+        if (fullNameError || emailError || passwordError) {
+            setErrors({
+                fullName: fullNameError,
+                email: emailError,
+                password: passwordError
+            });
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const data = await apiService.register(formData.fullName, formData.email, formData.password);
             console.log('Sign up successful:', data);
 
-            // Auto-login after successful registration or redirect to login
-            // You can automatically log them in:
-            // const loginData = await apiService.login(formData.email, formData.password);
+            // Redirect to empty page (dashboard/home)
+            window.location.href = '/dashboard';
 
         } catch (error) {
             console.error('Sign up error:', error);
 
             if (error.status === 422) {
-                // Handle validation errors from backend
                 const validationErrors = {};
                 if (Array.isArray(error.errors)) {
                     error.errors.forEach(err => {
                         if (err.loc && err.msg) {
                             const field = err.loc[err.loc.length - 1];
-                            // Map backend field names to frontend field names
                             const frontendField = field === 'full_name' ? 'fullName' : field;
                             validationErrors[frontendField] = err.msg;
                         }
@@ -74,20 +153,15 @@ const SignUp = () => {
 
     return (
         <div className="h-screen bg-background flex">
-            {/* Left side - Form (without card style) */}
+            {/* Left side - Form */}
             <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
                 <div className="max-w-md w-full">
-                    {/* Logo and Title - At the top */}
+                    {/* Logo and Title */}
                     <div className="flex items-center justify-start mb-16">
-                        <img
-                            src={logo}
-                            alt="Equilibrio"
-                            className="h-12 mr-4"
-                        />
+                        <img src={logo} alt="Equilibrio" className="h-12 mr-4" />
                         <h1 className="text-2xl font-bold text-text">Equilibrio.</h1>
                     </div>
 
-                    {/* Form without card styling */}
                     <div className="mt-8">
                         <h1 className="text-3xl font-bold text-text text-left mb-2">
                             Create an account
@@ -95,13 +169,6 @@ const SignUp = () => {
                         <p className="text-metallic-gray text-left mb-8">
                             Please enter your details to register
                         </p>
-
-                        {/* General error message */}
-                        {errors.general && (
-                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                                <p className="text-red-600 text-sm">{errors.general}</p>
-                            </div>
-                        )}
 
                         <form onSubmit={handleSubmit}>
                             {/* Full Name */}
@@ -114,6 +181,7 @@ const SignUp = () => {
                                     name="fullName"
                                     value={formData.fullName}
                                     onChange={handleChange}
+                                    onBlur={handleBlur}
                                     placeholder="Full name"
                                     className={`w-full p-4 border rounded-lg bg-white placeholder-placeholder focus:outline-none focus:ring-2 focus:ring-blue focus:border-transparent ${
                                         errors.fullName ? 'border-red-500' : 'border-strokes'
@@ -135,6 +203,7 @@ const SignUp = () => {
                                     name="email"
                                     value={formData.email}
                                     onChange={handleChange}
+                                    onBlur={handleBlur}
                                     placeholder="example@gmail.com"
                                     className={`w-full p-4 border rounded-lg bg-white placeholder-placeholder focus:outline-none focus:ring-2 focus:ring-blue focus:border-transparent ${
                                         errors.email ? 'border-red-500' : 'border-strokes'
@@ -157,6 +226,7 @@ const SignUp = () => {
                                         name="password"
                                         value={formData.password}
                                         onChange={handleChange}
+                                        onBlur={handleBlur}
                                         placeholder="••••••••"
                                         className={`w-full p-4 pr-12 border rounded-lg bg-white placeholder-placeholder focus:outline-none focus:ring-2 focus:ring-blue focus:border-transparent ${
                                             errors.password ? 'border-red-500' : 'border-strokes'
@@ -180,6 +250,7 @@ const SignUp = () => {
                                         )}
                                     </button>
                                 </div>
+                                {/* Show password hint ONLY when there's an error */}
                                 {errors.password && (
                                     <p className="text-red-500 text-sm mt-1 text-left">{errors.password}</p>
                                 )}
@@ -203,6 +274,13 @@ const SignUp = () => {
                             </Button>
                         </form>
 
+                        {/* General error message - BELOW the form at bottom left corner */}
+                        {errors.general && (
+                            <div className="mt-6 p-4 bg-red-100 border-l-4 border-red-500 text-left">
+                                <p className="text-red-700 text-sm">{errors.general}</p>
+                            </div>
+                        )}
+
                         {/* Footer */}
                         <div className="text-center mt-6">
                             <p className="text-metallic-gray">
@@ -216,7 +294,7 @@ const SignUp = () => {
                 </div>
             </div>
 
-            {/* Right side - Image without scroll */}
+            {/* Right side - Image */}
             <div className="flex-1 hidden lg:block relative">
                 <img
                     src={clockimage}

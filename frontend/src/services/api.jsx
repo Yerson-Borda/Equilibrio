@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = '/api/v1';
 
 class ApiService {
     constructor() {
@@ -18,48 +18,53 @@ class ApiService {
     }
 
     async handleResponse(response) {
+        const text = await response.text();
+        let data;
+        try {
+            data = text ? JSON.parse(text) : {};
+        } catch {
+            data = {};
+        }
+
         if (!response.ok) {
-            const errorData = await response.json().catch(() => null);
             throw {
                 status: response.status,
-                message: errorData?.detail || 'An error occurred',
-                errors: errorData?.detail || [],
+                message: data?.detail || 'An error occurred',
+                errors: data?.detail || [],
             };
-        }
-        return response.json();
-    }
-
-    // Auth endpoints
-    async login(email, password) {
-        const response = await fetch(`${API_BASE_URL}/users/login`, {
-            method: 'POST',
-            headers: this.getAuthHeaders(),
-            body: JSON.stringify({
-                username: email, // Note: API expects 'username' but we're using email
-                password: password,
-            }),
-        });
-
-        const data = await this.handleResponse(response);
-
-        if (data.access_token) {
-            this.setToken(data.access_token);
         }
 
         return data;
     }
 
+    // LOGIN (backend expects query params)
+    async login(email, password) {
+        const url = new URL(`${API_BASE_URL}/users/login`, window.location.origin);
+        url.searchParams.append('email', email);
+        url.searchParams.append('password', password);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: this.getAuthHeaders(),
+        });
+
+        const data = await this.handleResponse(response);
+        if (data.access_token) this.setToken(data.access_token);
+        return data;
+    }
+
+    // REGISTER (backend expects JSON)
     async register(fullName, email, password) {
+        const body = {
+            email,
+            password,
+            full_name: fullName || null,
+        };
         const response = await fetch(`${API_BASE_URL}/users/register`, {
             method: 'POST',
             headers: this.getAuthHeaders(),
-            body: JSON.stringify({
-                full_name: fullName,
-                email: email,
-                password: password,
-            }),
+            body: JSON.stringify(body),
         });
-
         return this.handleResponse(response);
     }
 
@@ -68,17 +73,14 @@ class ApiService {
             method: 'GET',
             headers: this.getAuthHeaders(),
         });
-
         return this.handleResponse(response);
     }
 
-    // Wallet endpoints
     async getWallets() {
         const response = await fetch(`${API_BASE_URL}/wallets/`, {
             method: 'GET',
             headers: this.getAuthHeaders(),
         });
-
         return this.handleResponse(response);
     }
 
@@ -88,7 +90,6 @@ class ApiService {
             headers: this.getAuthHeaders(),
             body: JSON.stringify(walletData),
         });
-
         return this.handleResponse(response);
     }
 
@@ -97,7 +98,6 @@ class ApiService {
             method: 'GET',
             headers: this.getAuthHeaders(),
         });
-
         return this.handleResponse(response);
     }
 }

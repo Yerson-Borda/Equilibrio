@@ -13,20 +13,67 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
+    const [touched, setTouched] = useState({
+        email: false,
+        password: false
+    });
+
+    const validateEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email) return 'Email is required';
+        if (!emailRegex.test(email)) return 'Please enter a valid email address';
+        return '';
+    };
+
+    const validatePassword = (password) => {
+        if (!password) return 'Password is required';
+        return '';
+    };
 
     const handleChange = (e) => {
-        const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-        setFormData({
-            ...formData,
-            [e.target.name]: value
-        });
-        // Clear errors when user starts typing
-        if (errors[e.target.name]) {
-            setErrors({
-                ...errors,
-                [e.target.name]: ''
-            });
+        const { name, value, type, checked } = e.target;
+        const fieldValue = type === 'checkbox' ? checked : value;
+
+        setFormData(prev => ({
+            ...prev,
+            [name]: fieldValue
+        }));
+
+        // Real-time validation for touched fields
+        if (touched[name]) {
+            let error = '';
+            if (name === 'email') {
+                error = validateEmail(value);
+            } else if (name === 'password') {
+                error = validatePassword(value);
+            }
+
+            setErrors(prev => ({
+                ...prev,
+                [name]: error
+            }));
         }
+    };
+
+    const handleBlur = (e) => {
+        const { name, value } = e.target;
+        setTouched(prev => ({
+            ...prev,
+            [name]: true
+        }));
+
+        // Validate on blur
+        let error = '';
+        if (name === 'email') {
+            error = validateEmail(value);
+        } else if (name === 'password') {
+            error = validatePassword(value);
+        }
+
+        setErrors(prev => ({
+            ...prev,
+            [name]: error
+        }));
     };
 
     const handleSubmit = async (e) => {
@@ -34,12 +81,31 @@ const Login = () => {
         setIsLoading(true);
         setErrors({});
 
+        // Mark all fields as touched
+        setTouched({
+            email: true,
+            password: true
+        });
+
+        // Validate all fields
+        const emailError = validateEmail(formData.email);
+        const passwordError = validatePassword(formData.password);
+
+        if (emailError || passwordError) {
+            setErrors({
+                email: emailError,
+                password: passwordError
+            });
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const data = await apiService.login(formData.email, formData.password);
             console.log('Login successful:', data);
 
-            // Redirect or handle successful login
-            // You can use React Router here: navigate('/dashboard');
+            // Redirect to empty page (dashboard/home)
+            window.location.href = '/dashboard';
 
         } catch (error) {
             console.error('Login error:', error);
@@ -47,7 +113,6 @@ const Login = () => {
             if (error.status === 401) {
                 setErrors({ general: 'The account credentials are incorrect or it doesn\'t exist.' });
             } else if (error.status === 422) {
-                // Handle validation errors from backend
                 const validationErrors = {};
                 if (Array.isArray(error.errors)) {
                     error.errors.forEach(err => {
@@ -70,22 +135,21 @@ const Login = () => {
         setShowPassword(!showPassword);
     };
 
+    const closeError = () => {
+        setErrors(prev => ({ ...prev, general: '' }));
+    };
+
     return (
         <div className="h-screen bg-background flex">
-            {/* Left side - Form (without card style) */}
+            {/* Left side - Form */}
             <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
                 <div className="max-w-md w-full">
-                    {/* Logo and Title - At the top */}
+                    {/* Logo and Title */}
                     <div className="flex items-center justify-start mb-16">
-                        <img
-                            src={logo}
-                            alt="Equilibrio"
-                            className="h-12 mr-4"
-                        />
+                        <img src={logo} alt="Equilibrio" className="h-12 mr-4" />
                         <h1 className="text-2xl font-bold text-text">Equilibrio.</h1>
                     </div>
 
-                    {/* Form without card styling */}
                     <div className="mt-8">
                         <h1 className="text-3xl font-bold text-text text-left mb-2">
                             Welcome back!
@@ -93,13 +157,6 @@ const Login = () => {
                         <p className="text-metallic-gray text-left mb-8">
                             Please enter your details to log in
                         </p>
-
-                        {/* General error message */}
-                        {errors.general && (
-                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                                <p className="text-red-600 text-sm">{errors.general}</p>
-                            </div>
-                        )}
 
                         <form onSubmit={handleSubmit}>
                             {/* Email */}
@@ -112,16 +169,15 @@ const Login = () => {
                                     name="email"
                                     value={formData.email}
                                     onChange={handleChange}
+                                    onBlur={handleBlur}
                                     placeholder="Enter your email"
                                     className={`w-full p-4 border rounded-lg bg-white placeholder-placeholder focus:outline-none focus:ring-2 focus:ring-blue focus:border-transparent ${
-                                        errors.email || errors.username ? 'border-red-500' : 'border-strokes'
+                                        errors.email ? 'border-red-500' : 'border-strokes'
                                     }`}
                                     required
                                 />
-                                {(errors.email || errors.username) && (
-                                    <p className="text-red-500 text-sm mt-1 text-left">
-                                        {errors.email || errors.username}
-                                    </p>
+                                {errors.email && (
+                                    <p className="text-red-500 text-sm mt-1 text-left">{errors.email}</p>
                                 )}
                             </div>
 
@@ -136,6 +192,7 @@ const Login = () => {
                                         name="password"
                                         value={formData.password}
                                         onChange={handleChange}
+                                        onBlur={handleBlur}
                                         placeholder="*********"
                                         className={`w-full p-4 pr-12 border rounded-lg bg-white placeholder-placeholder focus:outline-none focus:ring-2 focus:ring-blue focus:border-transparent ${
                                             errors.password ? 'border-red-500' : 'border-strokes'
@@ -205,7 +262,7 @@ const Login = () => {
                 </div>
             </div>
 
-            {/* Right side - Image without scroll */}
+            {/* Right side - Image */}
             <div className="flex-1 hidden lg:block relative">
                 <img
                     src={clockimage}
@@ -213,6 +270,27 @@ const Login = () => {
                     className="absolute inset-0 w-full h-full object-cover"
                 />
             </div>
+
+            {/* Error Notification - Fixed at bottom left corner */}
+            {errors.general && (
+                <div className="fixed bottom-4 left-4 max-w-sm bg-red-500 bg-opacity-90 text-white p-4 rounded-lg shadow-lg">
+                    <div className="flex items-start justify-between">
+                        <div className="flex items-start">
+                            <span className="text-lg mr-2">☹</span>
+                            <p className="text-sm font-medium">{errors.general}</p>
+                        </div>
+                        <button
+                            type="button"
+                            className="ml-4 text-white hover:text-gray-200 focus:outline-none"
+                            onClick={closeError}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
