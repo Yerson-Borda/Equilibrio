@@ -9,7 +9,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.langswap.ui.navigation.NavigationItem
-import com.example.moneymate.ui.screens.auth.signIn.SignInScreen
+import com.example.moneymate.ui.screens.auth.singIn.SignInScreen
 import com.example.moneymate.ui.screens.auth.signUp.SignUpScreen
 import com.example.moneymate.ui.screens.splash.SplashScreen
 
@@ -45,13 +45,26 @@ fun AppNavHost(
         }
         composable(NavigationItem.SignUp.route) {
             SignUpScreen(
-                onSignUpSuccess = { navController.navigate(NavigationItem.Home.route) }
+                onSignUpSuccess = {
+                    navController.navigate(NavigationItem.Home.route)
+                },
+                onNavigateToLogin = {
+                    navController.navigate(NavigationItem.SignIn.route) {
+                        popUpTo(NavigationItem.SignUp.route) { inclusive = true }
+                    }
+                },
+                onLoginClick = {
+                    navController.navigate((NavigationItem.SignIn.route))
+                }
             )
         }
         composable(NavigationItem.SignIn.route) {
             SignInScreen(
                 onSignInSuccess = {
                     navController.navigate(NavigationItem.Home.route)
+                },
+                onSignUpClick = {
+                    navController.navigate(NavigationItem.SignUp.route)
                 }
             )
         }

@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.moneymate.R
 import kotlinx.coroutines.delay
@@ -32,14 +33,14 @@ fun SplashScreen(onStart: () -> Unit) {
         ) {
             Image(
                 painter = painterResource(id = R.drawable.logo),
-                contentDescription = "App Logo"
+                contentDescription = stringResource(R.string.app_logo)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             Image(
                 painter = painterResource(id = R.drawable.equilibrio),
-                contentDescription = "App Text Logo"
+                contentDescription = stringResource(R.string.app_text_logo)
             )
         }
     }

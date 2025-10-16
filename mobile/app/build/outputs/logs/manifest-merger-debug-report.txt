@@ -1,0 +1,496 @@
+-- Merging decision tree log ---
+manifest
+ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:2:1-32:12
+INJECTED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:2:1-32:12
+INJECTED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:2:1-32:12
+INJECTED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:2:1-32:12
+MERGED from [:data] C:\Users\Belal\Desktop\Equilibrio\mobile\data\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:2:1-7:12
+MERGED from [:domain] C:\Users\Belal\Desktop\Equilibrio\mobile\domain\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.navigation:navigation-common:2.7.7] C:\Users\Belal\.gradle\caches\8.13\transforms\045953f56155d357f370480aa5d3642e\transformed\navigation-common-2.7.7\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.navigation:navigation-runtime:2.7.7] C:\Users\Belal\.gradle\caches\8.13\transforms\3ec576f893f7c28e713b52a4ded8f4b3\transformed\navigation-runtime-2.7.7\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.navigation:navigation-common-ktx:2.7.7] C:\Users\Belal\.gradle\caches\8.13\transforms\84d95b0243cc59b3e7e00ed0f46c8797\transformed\navigation-common-ktx-2.7.7\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.navigation:navigation-runtime-ktx:2.7.7] C:\Users\Belal\.gradle\caches\8.13\transforms\7a1191bad47ade29835ff28dd3dc6659\transformed\navigation-runtime-ktx-2.7.7\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.navigation:navigation-compose:2.7.7] C:\Users\Belal\.gradle\caches\8.13\transforms\a0ff8dd7dba35bfaebf885daad2c88da\transformed\navigation-compose-2.7.7\AndroidManifest.xml:2:1-7:12
+MERGED from [io.insert-koin:koin-androidx-compose:3.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\88ab9a1fef12477b088416fe501ac875\transformed\koin-androidx-compose-3.2.0\AndroidManifest.xml:2:1-7:12
+MERGED from [io.insert-koin:koin-android:3.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a5ec9bea10d0c8800c22f6a3cb0dc07b\transformed\koin-android-3.2.0\AndroidManifest.xml:2:1-9:12
+MERGED from [com.google.android.material:material:1.10.0] C:\Users\Belal\.gradle\caches\8.13\transforms\41e7ce13f8e27359cd6a1ce8393cea60\transformed\material-1.10.0\AndroidManifest.xml:17:1-24:12
+MERGED from [io.coil-kt:coil-compose:2.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\8b284ab05d0708ad6f386ff193bb67b4\transformed\coil-compose-2.4.0\AndroidManifest.xml:2:1-7:12
+MERGED from [io.coil-kt:coil-compose-base:2.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\7713d98aeaf6173e54e0e25df315421e\transformed\coil-compose-base-2.4.0\AndroidManifest.xml:2:1-7:12
+MERGED from [io.coil-kt:coil:2.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\34b5f5c26bde80fd127a5d949b34cc17\transformed\coil-2.4.0\AndroidManifest.xml:2:1-7:12
+MERGED from [io.coil-kt:coil-base:2.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\6b2d6edbbd816fe646939022d231b87c\transformed\coil-base-2.4.0\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.appcompat:appcompat-resources:1.6.1] C:\Users\Belal\.gradle\caches\8.13\transforms\b6c892e233d0ec1178e60420de6f8c02\transformed\appcompat-resources-1.6.1\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.constraintlayout:constraintlayout:2.0.1] C:\Users\Belal\.gradle\caches\8.13\transforms\cf10ec3fd3c4a0cf6880f61cbe0edc53\transformed\constraintlayout-2.0.1\AndroidManifest.xml:2:1-11:12
+MERGED from [androidx.appcompat:appcompat:1.6.1] C:\Users\Belal\.gradle\caches\8.13\transforms\9a09ee9b452e2c9528dcfa3cefdef876\transformed\appcompat-1.6.1\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.compose.material3:material3-android:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\2ad5e4ece511958330371b8b75add3f6\transformed\material3-release\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.compose.material:material-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\685204b951c7cbddc25e82769df60e13\transformed\material-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.animation:animation-core-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\c239cb9962658bcb7e9df36a3385c9e9\transformed\animation-core-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.material:material-ripple-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\6baca868e53605e107700496bd440498\transformed\material-ripple-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.animation:animation-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\269808aefb601520f043576c407b6953\transformed\animation-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.foundation:foundation-layout-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\7dba7fa594c5fd753555ef2f56fffb81\transformed\foundation-layout-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.foundation:foundation-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\0012780b743bcd77e23cb08600cf8803\transformed\foundation-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-tooling-data-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\e20d79e356292b66bd5138ea0bc915ca\transformed\ui-tooling-data-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-unit-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\7b583345e13096c2991c4d911a01b559\transformed\ui-unit-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-geometry-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\bba912e5c8c06202f77198e8acb6ddae\transformed\ui-geometry-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-util-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\eef7fbce0cc025ae493ede6b03190b63\transformed\ui-util-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-text-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\95bf513992d69c7eac39740cc55fbdaf\transformed\ui-text-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-tooling-preview-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\429c5fa082fd4dbb1c63735a24c06dec\transformed\ui-tooling-preview-release\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.compose.ui:ui-tooling-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\dae57cc5139a2cd85d537cd024fdf2f2\transformed\ui-tooling-release\AndroidManifest.xml:17:1-28:12
+MERGED from [androidx.compose.ui:ui-graphics-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\6c1d5fffc3977b05b507d13fda9df6a1\transformed\ui-graphics-release\AndroidManifest.xml:2:1-7:12
+MERGED from [com.google.accompanist:accompanist-drawablepainter:0.30.1] C:\Users\Belal\.gradle\caches\8.13\transforms\797baf09145df984c671d464656c3bde\transformed\accompanist-drawablepainter-0.30.1\AndroidManifest.xml:17:1-25:12
+MERGED from [androidx.compose.material:material-icons-extended-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\2006986e0964ac6f42211eddf4c17343\transformed\material-icons-extended-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.material:material-icons-core-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\feb7cb10f09679647942e467989826a8\transformed\material-icons-core-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.dynamicanimation:dynamicanimation:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\f847d0eda082ae0c0010ab38f6cc3d38\transformed\dynamicanimation-1.0.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.legacy:legacy-support-core-utils:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\9944cee9af67fe89aed90fd0d01f05ed\transformed\legacy-support-core-utils-1.0.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.viewpager2:viewpager2:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\9ee3fff3c0e0daa345bef53a38ca38bf\transformed\viewpager2-1.0.0\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.lifecycle:lifecycle-extensions:2.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\009f8bbadc007a9fe432c1a23fc9c351\transformed\lifecycle-extensions-2.2.0\AndroidManifest.xml:17:1-27:12
+MERGED from [androidx.fragment:fragment-ktx:1.4.1] C:\Users\Belal\.gradle\caches\8.13\transforms\48b36b93b5117ef1db0589781249d7df\transformed\fragment-ktx-1.4.1\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.fragment:fragment:1.4.1] C:\Users\Belal\.gradle\caches\8.13\transforms\a407703483a211443756e511c3669960\transformed\fragment-1.4.1\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.loader:loader:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a0cb9c812b33081cacf1c13369501504\transformed\loader-1.0.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.emoji2:emoji2-views-helper:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\07c6cf720cde4aae7be45849e0b1d310\transformed\emoji2-views-helper-1.3.0\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.emoji2:emoji2:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\898b9318f71ab6408381c3bbbe10a1d1\transformed\emoji2-1.3.0\AndroidManifest.xml:17:1-35:12
+MERGED from [androidx.drawerlayout:drawerlayout:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\1faaff787ac647ced0b4df0a54855de0\transformed\drawerlayout-1.1.1\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.coordinatorlayout:coordinatorlayout:1.1.0] C:\Users\Belal\.gradle\caches\8.13\transforms\dec1ccb4a0c9c09bcbba965a7dd071b0\transformed\coordinatorlayout-1.1.0\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.transition:transition:1.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\1d59da687b398d81258e956f726e25d4\transformed\transition-1.2.0\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] C:\Users\Belal\.gradle\caches\8.13\transforms\c9f2f83246ab9723413b61ff593b1c2d\transformed\vectordrawable-animated-1.1.0\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] C:\Users\Belal\.gradle\caches\8.13\transforms\ea0063de4119780d669b0915ddba6dcd\transformed\vectordrawable-1.1.0\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.recyclerview:recyclerview:1.1.0] C:\Users\Belal\.gradle\caches\8.13\transforms\1db92a74471993acaa3fb9348eb9c272\transformed\recyclerview-1.1.0\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.viewpager:viewpager:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\39d140389206292f4a7213267227748d\transformed\viewpager-1.0.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.customview:customview:1.1.0] C:\Users\Belal\.gradle\caches\8.13\transforms\c64e2df7a1faa094d5b10acc600d2281\transformed\customview-1.1.0\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.autofill:autofill:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\64a4294cf4a324b6010090df4e9e67d8\transformed\autofill-1.0.0\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.graphics:graphics-path:1.0.1] C:\Users\Belal\.gradle\caches\8.13\transforms\2626ceefef1db19538971fe113f5e01a\transformed\graphics-path-1.0.1\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.core:core:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a75af7a72c3c1f48e7fd93f5a6d3fa88\transformed\core-1.16.0\AndroidManifest.xml:17:1-30:12
+MERGED from [androidx.savedstate:savedstate-ktx:1.2.1] C:\Users\Belal\.gradle\caches\8.13\transforms\2aef9b507ab4077d7de2e3430b422148\transformed\savedstate-ktx-1.2.1\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.savedstate:savedstate:1.2.1] C:\Users\Belal\.gradle\caches\8.13\transforms\e98f742ad6fc0f0ba417b976459e6797\transformed\savedstate-1.2.1\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\d937407e3569e75c666c31e6690039e5\transformed\lifecycle-viewmodel-2.8.3\AndroidManifest.xml:2:1-5:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-android:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\3c20edbadbfa4dfba7133ea8bb938cfb\transformed\lifecycle-viewmodel-release\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-runtime-ktx-android:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\57eb873cf80d7694da1f24d87da00e8f\transformed\lifecycle-runtime-ktx-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\df92faf5c86b965843018eeef24bfd7a\transformed\lifecycle-runtime-2.8.3\AndroidManifest.xml:2:1-5:12
+MERGED from [androidx.lifecycle:lifecycle-runtime-android:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\9ad1aa8aaae7e11227300491c8d624fa\transformed\lifecycle-runtime-release\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-process:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\73de7a88f570d587aa8f17078bb0421e\transformed\lifecycle-process-2.8.3\AndroidManifest.xml:17:1-35:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\ea76ba7892407bbcc641f62f1c59c275\transformed\lifecycle-viewmodel-savedstate-2.8.3\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\8009ac117dff878d04ed9c5f1bf87a42\transformed\lifecycle-viewmodel-ktx-2.8.3\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\35a8029998a3f499eee5901462061a9f\transformed\lifecycle-livedata-core-ktx-2.8.3\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\74054e0c478f81138d48c68f1ec9c1bd\transformed\lifecycle-livedata-core-2.8.3\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\54b1fe772f94e8b3dbfbeb8ef8b5e828\transformed\lifecycle-livedata-2.8.3\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-runtime-compose-android:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\ac6966f29d62ba4c9d642e2daaa34412\transformed\lifecycle-runtime-compose-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-compose-android:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\5aff3a085ff26d7f2899a767ebd17746\transformed\lifecycle-viewmodel-compose-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\2e4088f0a0692edcf993c4e600fd717b\transformed\ui-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.ui:ui-test-manifest:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\8eafe2473235fdbde4bbb40059b7a530\transformed\ui-test-manifest-1.7.0\AndroidManifest.xml:17:1-28:12
+MERGED from [androidx.activity:activity:1.10.1] C:\Users\Belal\.gradle\caches\8.13\transforms\18c7a8421f1ddcaf8f6cd6111a1a0dcb\transformed\activity-1.10.1\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.activity:activity-ktx:1.10.1] C:\Users\Belal\.gradle\caches\8.13\transforms\abeb746e7333299d96611656e61e9a0d\transformed\activity-ktx-1.10.1\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.activity:activity-compose:1.10.1] C:\Users\Belal\.gradle\caches\8.13\transforms\6d6b0460bbdd2c22906a4623af55d18a\transformed\activity-compose-1.10.1\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.customview:customview-poolingcontainer:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a04358f64b741fc456895e1cd0176e64\transformed\customview-poolingcontainer-1.0.0\AndroidManifest.xml:17:1-23:12
+MERGED from [androidx.core:core-ktx:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\e863e3f81b8a63aae056aef071753de6\transformed\core-ktx-1.16.0\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.core:core-splashscreen:1.0.1] C:\Users\Belal\.gradle\caches\8.13\transforms\1ffa1d9e10a459e1b409e7a5aa0304c0\transformed\core-splashscreen-1.0.1\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.datastore:datastore-core-android:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\d62604708cc5e3fafbc3cdc7666a9427\transformed\datastore-core-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.datastore:datastore-android:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\6f4ccfd259c4d4ab1e8d206859a285d2\transformed\datastore-release\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.datastore:datastore-preferences-android:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\0f7cb882ee5b4a202913625fd69d25ca\transformed\datastore-preferences-release\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\0ea55d3679128755c7edfad4ef3f1da8\transformed\cursoradapter-1.0.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.cardview:cardview:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\d037111d98d8edcf4c76e670371a5d09\transformed\cardview-1.0.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.interpolator:interpolator:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\363fc154ebf0b5f3bf412bd4e4e568d4\transformed\interpolator-1.0.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:17:1-55:12
+MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\56c471860befbad6179d7c948df6a36d\transformed\startup-runtime-1.1.1\AndroidManifest.xml:17:1-33:12
+MERGED from [androidx.tracing:tracing:1.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\49a0183ea0e0847409902776d665e580\transformed\tracing-1.2.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\3d95b9b264e70a6733a2fab17b8c4db8\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:17:1-27:12
+MERGED from [androidx.compose.runtime:runtime-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a46713e6a3cb5e9be23101ddcd5ad107\transformed\runtime-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.compose.runtime:runtime-saveable-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\0067a552dc89a05649c86b8e9c98fa20\transformed\runtime-saveable-release\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.exifinterface:exifinterface:1.3.6] C:\Users\Belal\.gradle\caches\8.13\transforms\d9ead041c9d2835712d4f226e7b81e10\transformed\exifinterface-1.3.6\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.documentfile:documentfile:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\824948a03feee174b900fa19df6b7bbf\transformed\documentfile-1.0.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\3a7f6e08b92f695540193a1c62c2b7fb\transformed\localbroadcastmanager-1.0.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.print:print:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\d565d13905dd42475b40f5c0cd3493d0\transformed\print-1.0.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.arch.core:core-runtime:2.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4e386ecb499a7449f51272a0d77f703d\transformed\core-runtime-2.2.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.annotation:annotation-experimental:1.4.1] C:\Users\Belal\.gradle\caches\8.13\transforms\c95a9c6e7963c09496c432261d94526e\transformed\annotation-experimental-1.4.1\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.core:core-viewtree:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\1c160f04d1e4f27311d7ae83a5897a6b\transformed\core-viewtree-1.0.0\AndroidManifest.xml:2:1-7:12
+	package
+		INJECTED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml
+	android:versionName
+		INJECTED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml
+	xmlns:tools
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:3:5-51
+	android:versionCode
+		INJECTED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml
+	xmlns:android
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:2:11-69
+uses-permission#android.permission.INTERNET
+ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:4:5-67
+	android:name
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:4:22-64
+application
+ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:6:5-30:19
+INJECTED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:6:5-30:19
+MERGED from [io.insert-koin:koin-android:3.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a5ec9bea10d0c8800c22f6a3cb0dc07b\transformed\koin-android-3.2.0\AndroidManifest.xml:7:5-20
+MERGED from [io.insert-koin:koin-android:3.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a5ec9bea10d0c8800c22f6a3cb0dc07b\transformed\koin-android-3.2.0\AndroidManifest.xml:7:5-20
+MERGED from [com.google.android.material:material:1.10.0] C:\Users\Belal\.gradle\caches\8.13\transforms\41e7ce13f8e27359cd6a1ce8393cea60\transformed\material-1.10.0\AndroidManifest.xml:22:5-20
+MERGED from [com.google.android.material:material:1.10.0] C:\Users\Belal\.gradle\caches\8.13\transforms\41e7ce13f8e27359cd6a1ce8393cea60\transformed\material-1.10.0\AndroidManifest.xml:22:5-20
+MERGED from [androidx.constraintlayout:constraintlayout:2.0.1] C:\Users\Belal\.gradle\caches\8.13\transforms\cf10ec3fd3c4a0cf6880f61cbe0edc53\transformed\constraintlayout-2.0.1\AndroidManifest.xml:9:5-20
+MERGED from [androidx.constraintlayout:constraintlayout:2.0.1] C:\Users\Belal\.gradle\caches\8.13\transforms\cf10ec3fd3c4a0cf6880f61cbe0edc53\transformed\constraintlayout-2.0.1\AndroidManifest.xml:9:5-20
+MERGED from [androidx.compose.ui:ui-tooling-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\dae57cc5139a2cd85d537cd024fdf2f2\transformed\ui-tooling-release\AndroidManifest.xml:22:5-26:19
+MERGED from [androidx.compose.ui:ui-tooling-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\dae57cc5139a2cd85d537cd024fdf2f2\transformed\ui-tooling-release\AndroidManifest.xml:22:5-26:19
+MERGED from [androidx.lifecycle:lifecycle-extensions:2.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\009f8bbadc007a9fe432c1a23fc9c351\transformed\lifecycle-extensions-2.2.0\AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.lifecycle:lifecycle-extensions:2.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\009f8bbadc007a9fe432c1a23fc9c351\transformed\lifecycle-extensions-2.2.0\AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.emoji2:emoji2:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\898b9318f71ab6408381c3bbbe10a1d1\transformed\emoji2-1.3.0\AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.emoji2:emoji2:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\898b9318f71ab6408381c3bbbe10a1d1\transformed\emoji2-1.3.0\AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.core:core:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a75af7a72c3c1f48e7fd93f5a6d3fa88\transformed\core-1.16.0\AndroidManifest.xml:28:5-89
+MERGED from [androidx.core:core:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a75af7a72c3c1f48e7fd93f5a6d3fa88\transformed\core-1.16.0\AndroidManifest.xml:28:5-89
+MERGED from [androidx.lifecycle:lifecycle-process:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\73de7a88f570d587aa8f17078bb0421e\transformed\lifecycle-process-2.8.3\AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.lifecycle:lifecycle-process:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\73de7a88f570d587aa8f17078bb0421e\transformed\lifecycle-process-2.8.3\AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.compose.ui:ui-test-manifest:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\8eafe2473235fdbde4bbb40059b7a530\transformed\ui-test-manifest-1.7.0\AndroidManifest.xml:22:5-26:19
+MERGED from [androidx.compose.ui:ui-test-manifest:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\8eafe2473235fdbde4bbb40059b7a530\transformed\ui-test-manifest-1.7.0\AndroidManifest.xml:22:5-26:19
+MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:23:5-53:19
+MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:23:5-53:19
+MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\56c471860befbad6179d7c948df6a36d\transformed\startup-runtime-1.1.1\AndroidManifest.xml:25:5-31:19
+MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\56c471860befbad6179d7c948df6a36d\transformed\startup-runtime-1.1.1\AndroidManifest.xml:25:5-31:19
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\3d95b9b264e70a6733a2fab17b8c4db8\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\3d95b9b264e70a6733a2fab17b8c4db8\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:24:5-25:19
+	android:extractNativeLibs
+		INJECTED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml
+	android:appComponentFactory
+		ADDED from [androidx.core:core:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a75af7a72c3c1f48e7fd93f5a6d3fa88\transformed\core-1.16.0\AndroidManifest.xml:28:18-86
+	android:supportsRtl
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:14:9-35
+	android:label
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:12:9-41
+	android:fullBackupContent
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:10:9-54
+	android:roundIcon
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:13:9-54
+	tools:targetApi
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:17:9-29
+	android:icon
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:11:9-43
+	android:allowBackup
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:8:9-35
+	android:theme
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:15:9-47
+	android:dataExtractionRules
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:9:9-65
+	android:usesCleartextTraffic
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:16:9-44
+	android:name
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:7:9-45
+activity#com.example.moneymate.MainActivity
+ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:20:9-29:20
+	android:label
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:23:13-45
+	android:exported
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:22:13-36
+	android:theme
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:24:13-51
+	android:name
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:21:13-41
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:25:13-28:29
+action#android.intent.action.MAIN
+ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:26:17-69
+	android:name
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:26:25-66
+category#android.intent.category.LAUNCHER
+ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:27:17-77
+	android:name
+		ADDED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml:27:27-74
+uses-sdk
+INJECTED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml
+INJECTED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml
+MERGED from [:data] C:\Users\Belal\Desktop\Equilibrio\mobile\data\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:5:5-44
+MERGED from [:data] C:\Users\Belal\Desktop\Equilibrio\mobile\data\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:5:5-44
+MERGED from [:domain] C:\Users\Belal\Desktop\Equilibrio\mobile\domain\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:5:5-44
+MERGED from [:domain] C:\Users\Belal\Desktop\Equilibrio\mobile\domain\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:5:5-44
+MERGED from [androidx.navigation:navigation-common:2.7.7] C:\Users\Belal\.gradle\caches\8.13\transforms\045953f56155d357f370480aa5d3642e\transformed\navigation-common-2.7.7\AndroidManifest.xml:20:5-44
+MERGED from [androidx.navigation:navigation-common:2.7.7] C:\Users\Belal\.gradle\caches\8.13\transforms\045953f56155d357f370480aa5d3642e\transformed\navigation-common-2.7.7\AndroidManifest.xml:20:5-44
+MERGED from [androidx.navigation:navigation-runtime:2.7.7] C:\Users\Belal\.gradle\caches\8.13\transforms\3ec576f893f7c28e713b52a4ded8f4b3\transformed\navigation-runtime-2.7.7\AndroidManifest.xml:20:5-44
+MERGED from [androidx.navigation:navigation-runtime:2.7.7] C:\Users\Belal\.gradle\caches\8.13\transforms\3ec576f893f7c28e713b52a4ded8f4b3\transformed\navigation-runtime-2.7.7\AndroidManifest.xml:20:5-44
+MERGED from [androidx.navigation:navigation-common-ktx:2.7.7] C:\Users\Belal\.gradle\caches\8.13\transforms\84d95b0243cc59b3e7e00ed0f46c8797\transformed\navigation-common-ktx-2.7.7\AndroidManifest.xml:5:5-44
+MERGED from [androidx.navigation:navigation-common-ktx:2.7.7] C:\Users\Belal\.gradle\caches\8.13\transforms\84d95b0243cc59b3e7e00ed0f46c8797\transformed\navigation-common-ktx-2.7.7\AndroidManifest.xml:5:5-44
+MERGED from [androidx.navigation:navigation-runtime-ktx:2.7.7] C:\Users\Belal\.gradle\caches\8.13\transforms\7a1191bad47ade29835ff28dd3dc6659\transformed\navigation-runtime-ktx-2.7.7\AndroidManifest.xml:5:5-44
+MERGED from [androidx.navigation:navigation-runtime-ktx:2.7.7] C:\Users\Belal\.gradle\caches\8.13\transforms\7a1191bad47ade29835ff28dd3dc6659\transformed\navigation-runtime-ktx-2.7.7\AndroidManifest.xml:5:5-44
+MERGED from [androidx.navigation:navigation-compose:2.7.7] C:\Users\Belal\.gradle\caches\8.13\transforms\a0ff8dd7dba35bfaebf885daad2c88da\transformed\navigation-compose-2.7.7\AndroidManifest.xml:5:5-44
+MERGED from [androidx.navigation:navigation-compose:2.7.7] C:\Users\Belal\.gradle\caches\8.13\transforms\a0ff8dd7dba35bfaebf885daad2c88da\transformed\navigation-compose-2.7.7\AndroidManifest.xml:5:5-44
+MERGED from [io.insert-koin:koin-androidx-compose:3.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\88ab9a1fef12477b088416fe501ac875\transformed\koin-androidx-compose-3.2.0\AndroidManifest.xml:5:5-44
+MERGED from [io.insert-koin:koin-androidx-compose:3.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\88ab9a1fef12477b088416fe501ac875\transformed\koin-androidx-compose-3.2.0\AndroidManifest.xml:5:5-44
+MERGED from [io.insert-koin:koin-android:3.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a5ec9bea10d0c8800c22f6a3cb0dc07b\transformed\koin-android-3.2.0\AndroidManifest.xml:5:5-44
+MERGED from [io.insert-koin:koin-android:3.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a5ec9bea10d0c8800c22f6a3cb0dc07b\transformed\koin-android-3.2.0\AndroidManifest.xml:5:5-44
+MERGED from [com.google.android.material:material:1.10.0] C:\Users\Belal\.gradle\caches\8.13\transforms\41e7ce13f8e27359cd6a1ce8393cea60\transformed\material-1.10.0\AndroidManifest.xml:20:5-44
+MERGED from [com.google.android.material:material:1.10.0] C:\Users\Belal\.gradle\caches\8.13\transforms\41e7ce13f8e27359cd6a1ce8393cea60\transformed\material-1.10.0\AndroidManifest.xml:20:5-44
+MERGED from [io.coil-kt:coil-compose:2.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\8b284ab05d0708ad6f386ff193bb67b4\transformed\coil-compose-2.4.0\AndroidManifest.xml:5:5-44
+MERGED from [io.coil-kt:coil-compose:2.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\8b284ab05d0708ad6f386ff193bb67b4\transformed\coil-compose-2.4.0\AndroidManifest.xml:5:5-44
+MERGED from [io.coil-kt:coil-compose-base:2.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\7713d98aeaf6173e54e0e25df315421e\transformed\coil-compose-base-2.4.0\AndroidManifest.xml:5:5-44
+MERGED from [io.coil-kt:coil-compose-base:2.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\7713d98aeaf6173e54e0e25df315421e\transformed\coil-compose-base-2.4.0\AndroidManifest.xml:5:5-44
+MERGED from [io.coil-kt:coil:2.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\34b5f5c26bde80fd127a5d949b34cc17\transformed\coil-2.4.0\AndroidManifest.xml:5:5-44
+MERGED from [io.coil-kt:coil:2.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\34b5f5c26bde80fd127a5d949b34cc17\transformed\coil-2.4.0\AndroidManifest.xml:5:5-44
+MERGED from [io.coil-kt:coil-base:2.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\6b2d6edbbd816fe646939022d231b87c\transformed\coil-base-2.4.0\AndroidManifest.xml:5:5-44
+MERGED from [io.coil-kt:coil-base:2.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\6b2d6edbbd816fe646939022d231b87c\transformed\coil-base-2.4.0\AndroidManifest.xml:5:5-44
+MERGED from [androidx.appcompat:appcompat-resources:1.6.1] C:\Users\Belal\.gradle\caches\8.13\transforms\b6c892e233d0ec1178e60420de6f8c02\transformed\appcompat-resources-1.6.1\AndroidManifest.xml:20:5-44
+MERGED from [androidx.appcompat:appcompat-resources:1.6.1] C:\Users\Belal\.gradle\caches\8.13\transforms\b6c892e233d0ec1178e60420de6f8c02\transformed\appcompat-resources-1.6.1\AndroidManifest.xml:20:5-44
+MERGED from [androidx.constraintlayout:constraintlayout:2.0.1] C:\Users\Belal\.gradle\caches\8.13\transforms\cf10ec3fd3c4a0cf6880f61cbe0edc53\transformed\constraintlayout-2.0.1\AndroidManifest.xml:5:5-7:41
+MERGED from [androidx.constraintlayout:constraintlayout:2.0.1] C:\Users\Belal\.gradle\caches\8.13\transforms\cf10ec3fd3c4a0cf6880f61cbe0edc53\transformed\constraintlayout-2.0.1\AndroidManifest.xml:5:5-7:41
+MERGED from [androidx.appcompat:appcompat:1.6.1] C:\Users\Belal\.gradle\caches\8.13\transforms\9a09ee9b452e2c9528dcfa3cefdef876\transformed\appcompat-1.6.1\AndroidManifest.xml:20:5-44
+MERGED from [androidx.appcompat:appcompat:1.6.1] C:\Users\Belal\.gradle\caches\8.13\transforms\9a09ee9b452e2c9528dcfa3cefdef876\transformed\appcompat-1.6.1\AndroidManifest.xml:20:5-44
+MERGED from [androidx.compose.material3:material3-android:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\2ad5e4ece511958330371b8b75add3f6\transformed\material3-release\AndroidManifest.xml:20:5-44
+MERGED from [androidx.compose.material3:material3-android:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\2ad5e4ece511958330371b8b75add3f6\transformed\material3-release\AndroidManifest.xml:20:5-44
+MERGED from [androidx.compose.material:material-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\685204b951c7cbddc25e82769df60e13\transformed\material-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material:material-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\685204b951c7cbddc25e82769df60e13\transformed\material-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.animation:animation-core-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\c239cb9962658bcb7e9df36a3385c9e9\transformed\animation-core-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.animation:animation-core-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\c239cb9962658bcb7e9df36a3385c9e9\transformed\animation-core-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material:material-ripple-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\6baca868e53605e107700496bd440498\transformed\material-ripple-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material:material-ripple-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\6baca868e53605e107700496bd440498\transformed\material-ripple-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.animation:animation-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\269808aefb601520f043576c407b6953\transformed\animation-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.animation:animation-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\269808aefb601520f043576c407b6953\transformed\animation-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.foundation:foundation-layout-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\7dba7fa594c5fd753555ef2f56fffb81\transformed\foundation-layout-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.foundation:foundation-layout-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\7dba7fa594c5fd753555ef2f56fffb81\transformed\foundation-layout-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.foundation:foundation-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\0012780b743bcd77e23cb08600cf8803\transformed\foundation-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.foundation:foundation-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\0012780b743bcd77e23cb08600cf8803\transformed\foundation-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-tooling-data-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\e20d79e356292b66bd5138ea0bc915ca\transformed\ui-tooling-data-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-tooling-data-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\e20d79e356292b66bd5138ea0bc915ca\transformed\ui-tooling-data-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-unit-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\7b583345e13096c2991c4d911a01b559\transformed\ui-unit-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-unit-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\7b583345e13096c2991c4d911a01b559\transformed\ui-unit-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-geometry-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\bba912e5c8c06202f77198e8acb6ddae\transformed\ui-geometry-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-geometry-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\bba912e5c8c06202f77198e8acb6ddae\transformed\ui-geometry-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-util-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\eef7fbce0cc025ae493ede6b03190b63\transformed\ui-util-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-util-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\eef7fbce0cc025ae493ede6b03190b63\transformed\ui-util-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-text-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\95bf513992d69c7eac39740cc55fbdaf\transformed\ui-text-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-text-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\95bf513992d69c7eac39740cc55fbdaf\transformed\ui-text-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-tooling-preview-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\429c5fa082fd4dbb1c63735a24c06dec\transformed\ui-tooling-preview-release\AndroidManifest.xml:20:5-44
+MERGED from [androidx.compose.ui:ui-tooling-preview-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\429c5fa082fd4dbb1c63735a24c06dec\transformed\ui-tooling-preview-release\AndroidManifest.xml:20:5-44
+MERGED from [androidx.compose.ui:ui-tooling-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\dae57cc5139a2cd85d537cd024fdf2f2\transformed\ui-tooling-release\AndroidManifest.xml:20:5-44
+MERGED from [androidx.compose.ui:ui-tooling-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\dae57cc5139a2cd85d537cd024fdf2f2\transformed\ui-tooling-release\AndroidManifest.xml:20:5-44
+MERGED from [androidx.compose.ui:ui-graphics-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\6c1d5fffc3977b05b507d13fda9df6a1\transformed\ui-graphics-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-graphics-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\6c1d5fffc3977b05b507d13fda9df6a1\transformed\ui-graphics-release\AndroidManifest.xml:5:5-44
+MERGED from [com.google.accompanist:accompanist-drawablepainter:0.30.1] C:\Users\Belal\.gradle\caches\8.13\transforms\797baf09145df984c671d464656c3bde\transformed\accompanist-drawablepainter-0.30.1\AndroidManifest.xml:21:5-23:42
+MERGED from [com.google.accompanist:accompanist-drawablepainter:0.30.1] C:\Users\Belal\.gradle\caches\8.13\transforms\797baf09145df984c671d464656c3bde\transformed\accompanist-drawablepainter-0.30.1\AndroidManifest.xml:21:5-23:42
+MERGED from [androidx.compose.material:material-icons-extended-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\2006986e0964ac6f42211eddf4c17343\transformed\material-icons-extended-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material:material-icons-extended-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\2006986e0964ac6f42211eddf4c17343\transformed\material-icons-extended-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material:material-icons-core-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\feb7cb10f09679647942e467989826a8\transformed\material-icons-core-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.material:material-icons-core-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\feb7cb10f09679647942e467989826a8\transformed\material-icons-core-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.dynamicanimation:dynamicanimation:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\f847d0eda082ae0c0010ab38f6cc3d38\transformed\dynamicanimation-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.dynamicanimation:dynamicanimation:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\f847d0eda082ae0c0010ab38f6cc3d38\transformed\dynamicanimation-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.legacy:legacy-support-core-utils:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\9944cee9af67fe89aed90fd0d01f05ed\transformed\legacy-support-core-utils-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.legacy:legacy-support-core-utils:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\9944cee9af67fe89aed90fd0d01f05ed\transformed\legacy-support-core-utils-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.viewpager2:viewpager2:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\9ee3fff3c0e0daa345bef53a38ca38bf\transformed\viewpager2-1.0.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.viewpager2:viewpager2:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\9ee3fff3c0e0daa345bef53a38ca38bf\transformed\viewpager2-1.0.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.lifecycle:lifecycle-extensions:2.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\009f8bbadc007a9fe432c1a23fc9c351\transformed\lifecycle-extensions-2.2.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.lifecycle:lifecycle-extensions:2.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\009f8bbadc007a9fe432c1a23fc9c351\transformed\lifecycle-extensions-2.2.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.fragment:fragment-ktx:1.4.1] C:\Users\Belal\.gradle\caches\8.13\transforms\48b36b93b5117ef1db0589781249d7df\transformed\fragment-ktx-1.4.1\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.fragment:fragment-ktx:1.4.1] C:\Users\Belal\.gradle\caches\8.13\transforms\48b36b93b5117ef1db0589781249d7df\transformed\fragment-ktx-1.4.1\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.fragment:fragment:1.4.1] C:\Users\Belal\.gradle\caches\8.13\transforms\a407703483a211443756e511c3669960\transformed\fragment-1.4.1\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.fragment:fragment:1.4.1] C:\Users\Belal\.gradle\caches\8.13\transforms\a407703483a211443756e511c3669960\transformed\fragment-1.4.1\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.loader:loader:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a0cb9c812b33081cacf1c13369501504\transformed\loader-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.loader:loader:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a0cb9c812b33081cacf1c13369501504\transformed\loader-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.emoji2:emoji2-views-helper:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\07c6cf720cde4aae7be45849e0b1d310\transformed\emoji2-views-helper-1.3.0\AndroidManifest.xml:5:5-44
+MERGED from [androidx.emoji2:emoji2-views-helper:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\07c6cf720cde4aae7be45849e0b1d310\transformed\emoji2-views-helper-1.3.0\AndroidManifest.xml:5:5-44
+MERGED from [androidx.emoji2:emoji2:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\898b9318f71ab6408381c3bbbe10a1d1\transformed\emoji2-1.3.0\AndroidManifest.xml:21:5-44
+MERGED from [androidx.emoji2:emoji2:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\898b9318f71ab6408381c3bbbe10a1d1\transformed\emoji2-1.3.0\AndroidManifest.xml:21:5-44
+MERGED from [androidx.drawerlayout:drawerlayout:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\1faaff787ac647ced0b4df0a54855de0\transformed\drawerlayout-1.1.1\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.drawerlayout:drawerlayout:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\1faaff787ac647ced0b4df0a54855de0\transformed\drawerlayout-1.1.1\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.coordinatorlayout:coordinatorlayout:1.1.0] C:\Users\Belal\.gradle\caches\8.13\transforms\dec1ccb4a0c9c09bcbba965a7dd071b0\transformed\coordinatorlayout-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.coordinatorlayout:coordinatorlayout:1.1.0] C:\Users\Belal\.gradle\caches\8.13\transforms\dec1ccb4a0c9c09bcbba965a7dd071b0\transformed\coordinatorlayout-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.transition:transition:1.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\1d59da687b398d81258e956f726e25d4\transformed\transition-1.2.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.transition:transition:1.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\1d59da687b398d81258e956f726e25d4\transformed\transition-1.2.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] C:\Users\Belal\.gradle\caches\8.13\transforms\c9f2f83246ab9723413b61ff593b1c2d\transformed\vectordrawable-animated-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] C:\Users\Belal\.gradle\caches\8.13\transforms\c9f2f83246ab9723413b61ff593b1c2d\transformed\vectordrawable-animated-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] C:\Users\Belal\.gradle\caches\8.13\transforms\ea0063de4119780d669b0915ddba6dcd\transformed\vectordrawable-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] C:\Users\Belal\.gradle\caches\8.13\transforms\ea0063de4119780d669b0915ddba6dcd\transformed\vectordrawable-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.recyclerview:recyclerview:1.1.0] C:\Users\Belal\.gradle\caches\8.13\transforms\1db92a74471993acaa3fb9348eb9c272\transformed\recyclerview-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.recyclerview:recyclerview:1.1.0] C:\Users\Belal\.gradle\caches\8.13\transforms\1db92a74471993acaa3fb9348eb9c272\transformed\recyclerview-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.viewpager:viewpager:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\39d140389206292f4a7213267227748d\transformed\viewpager-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.viewpager:viewpager:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\39d140389206292f4a7213267227748d\transformed\viewpager-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.customview:customview:1.1.0] C:\Users\Belal\.gradle\caches\8.13\transforms\c64e2df7a1faa094d5b10acc600d2281\transformed\customview-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.customview:customview:1.1.0] C:\Users\Belal\.gradle\caches\8.13\transforms\c64e2df7a1faa094d5b10acc600d2281\transformed\customview-1.1.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.autofill:autofill:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\64a4294cf4a324b6010090df4e9e67d8\transformed\autofill-1.0.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.autofill:autofill:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\64a4294cf4a324b6010090df4e9e67d8\transformed\autofill-1.0.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.graphics:graphics-path:1.0.1] C:\Users\Belal\.gradle\caches\8.13\transforms\2626ceefef1db19538971fe113f5e01a\transformed\graphics-path-1.0.1\AndroidManifest.xml:5:5-44
+MERGED from [androidx.graphics:graphics-path:1.0.1] C:\Users\Belal\.gradle\caches\8.13\transforms\2626ceefef1db19538971fe113f5e01a\transformed\graphics-path-1.0.1\AndroidManifest.xml:5:5-44
+MERGED from [androidx.core:core:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a75af7a72c3c1f48e7fd93f5a6d3fa88\transformed\core-1.16.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.core:core:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a75af7a72c3c1f48e7fd93f5a6d3fa88\transformed\core-1.16.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.savedstate:savedstate-ktx:1.2.1] C:\Users\Belal\.gradle\caches\8.13\transforms\2aef9b507ab4077d7de2e3430b422148\transformed\savedstate-ktx-1.2.1\AndroidManifest.xml:20:5-44
+MERGED from [androidx.savedstate:savedstate-ktx:1.2.1] C:\Users\Belal\.gradle\caches\8.13\transforms\2aef9b507ab4077d7de2e3430b422148\transformed\savedstate-ktx-1.2.1\AndroidManifest.xml:20:5-44
+MERGED from [androidx.savedstate:savedstate:1.2.1] C:\Users\Belal\.gradle\caches\8.13\transforms\e98f742ad6fc0f0ba417b976459e6797\transformed\savedstate-1.2.1\AndroidManifest.xml:20:5-44
+MERGED from [androidx.savedstate:savedstate:1.2.1] C:\Users\Belal\.gradle\caches\8.13\transforms\e98f742ad6fc0f0ba417b976459e6797\transformed\savedstate-1.2.1\AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\d937407e3569e75c666c31e6690039e5\transformed\lifecycle-viewmodel-2.8.3\AndroidManifest.xml:4:5-43
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\d937407e3569e75c666c31e6690039e5\transformed\lifecycle-viewmodel-2.8.3\AndroidManifest.xml:4:5-43
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-android:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\3c20edbadbfa4dfba7133ea8bb938cfb\transformed\lifecycle-viewmodel-release\AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-android:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\3c20edbadbfa4dfba7133ea8bb938cfb\transformed\lifecycle-viewmodel-release\AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime-ktx-android:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\57eb873cf80d7694da1f24d87da00e8f\transformed\lifecycle-runtime-ktx-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime-ktx-android:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\57eb873cf80d7694da1f24d87da00e8f\transformed\lifecycle-runtime-ktx-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\df92faf5c86b965843018eeef24bfd7a\transformed\lifecycle-runtime-2.8.3\AndroidManifest.xml:4:5-43
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\df92faf5c86b965843018eeef24bfd7a\transformed\lifecycle-runtime-2.8.3\AndroidManifest.xml:4:5-43
+MERGED from [androidx.lifecycle:lifecycle-runtime-android:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\9ad1aa8aaae7e11227300491c8d624fa\transformed\lifecycle-runtime-release\AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime-android:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\9ad1aa8aaae7e11227300491c8d624fa\transformed\lifecycle-runtime-release\AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-process:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\73de7a88f570d587aa8f17078bb0421e\transformed\lifecycle-process-2.8.3\AndroidManifest.xml:21:5-44
+MERGED from [androidx.lifecycle:lifecycle-process:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\73de7a88f570d587aa8f17078bb0421e\transformed\lifecycle-process-2.8.3\AndroidManifest.xml:21:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\ea76ba7892407bbcc641f62f1c59c275\transformed\lifecycle-viewmodel-savedstate-2.8.3\AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\ea76ba7892407bbcc641f62f1c59c275\transformed\lifecycle-viewmodel-savedstate-2.8.3\AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\8009ac117dff878d04ed9c5f1bf87a42\transformed\lifecycle-viewmodel-ktx-2.8.3\AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\8009ac117dff878d04ed9c5f1bf87a42\transformed\lifecycle-viewmodel-ktx-2.8.3\AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\35a8029998a3f499eee5901462061a9f\transformed\lifecycle-livedata-core-ktx-2.8.3\AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core-ktx:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\35a8029998a3f499eee5901462061a9f\transformed\lifecycle-livedata-core-ktx-2.8.3\AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\74054e0c478f81138d48c68f1ec9c1bd\transformed\lifecycle-livedata-core-2.8.3\AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\74054e0c478f81138d48c68f1ec9c1bd\transformed\lifecycle-livedata-core-2.8.3\AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\54b1fe772f94e8b3dbfbeb8ef8b5e828\transformed\lifecycle-livedata-2.8.3\AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\54b1fe772f94e8b3dbfbeb8ef8b5e828\transformed\lifecycle-livedata-2.8.3\AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime-compose-android:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\ac6966f29d62ba4c9d642e2daaa34412\transformed\lifecycle-runtime-compose-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime-compose-android:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\ac6966f29d62ba4c9d642e2daaa34412\transformed\lifecycle-runtime-compose-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-compose-android:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\5aff3a085ff26d7f2899a767ebd17746\transformed\lifecycle-viewmodel-compose-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-compose-android:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\5aff3a085ff26d7f2899a767ebd17746\transformed\lifecycle-viewmodel-compose-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\2e4088f0a0692edcf993c4e600fd717b\transformed\ui-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\2e4088f0a0692edcf993c4e600fd717b\transformed\ui-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.ui:ui-test-manifest:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\8eafe2473235fdbde4bbb40059b7a530\transformed\ui-test-manifest-1.7.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.compose.ui:ui-test-manifest:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\8eafe2473235fdbde4bbb40059b7a530\transformed\ui-test-manifest-1.7.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.activity:activity:1.10.1] C:\Users\Belal\.gradle\caches\8.13\transforms\18c7a8421f1ddcaf8f6cd6111a1a0dcb\transformed\activity-1.10.1\AndroidManifest.xml:20:5-44
+MERGED from [androidx.activity:activity:1.10.1] C:\Users\Belal\.gradle\caches\8.13\transforms\18c7a8421f1ddcaf8f6cd6111a1a0dcb\transformed\activity-1.10.1\AndroidManifest.xml:20:5-44
+MERGED from [androidx.activity:activity-ktx:1.10.1] C:\Users\Belal\.gradle\caches\8.13\transforms\abeb746e7333299d96611656e61e9a0d\transformed\activity-ktx-1.10.1\AndroidManifest.xml:5:5-44
+MERGED from [androidx.activity:activity-ktx:1.10.1] C:\Users\Belal\.gradle\caches\8.13\transforms\abeb746e7333299d96611656e61e9a0d\transformed\activity-ktx-1.10.1\AndroidManifest.xml:5:5-44
+MERGED from [androidx.activity:activity-compose:1.10.1] C:\Users\Belal\.gradle\caches\8.13\transforms\6d6b0460bbdd2c22906a4623af55d18a\transformed\activity-compose-1.10.1\AndroidManifest.xml:5:5-44
+MERGED from [androidx.activity:activity-compose:1.10.1] C:\Users\Belal\.gradle\caches\8.13\transforms\6d6b0460bbdd2c22906a4623af55d18a\transformed\activity-compose-1.10.1\AndroidManifest.xml:5:5-44
+MERGED from [androidx.customview:customview-poolingcontainer:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a04358f64b741fc456895e1cd0176e64\transformed\customview-poolingcontainer-1.0.0\AndroidManifest.xml:20:5-21:38
+MERGED from [androidx.customview:customview-poolingcontainer:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a04358f64b741fc456895e1cd0176e64\transformed\customview-poolingcontainer-1.0.0\AndroidManifest.xml:20:5-21:38
+MERGED from [androidx.core:core-ktx:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\e863e3f81b8a63aae056aef071753de6\transformed\core-ktx-1.16.0\AndroidManifest.xml:5:5-44
+MERGED from [androidx.core:core-ktx:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\e863e3f81b8a63aae056aef071753de6\transformed\core-ktx-1.16.0\AndroidManifest.xml:5:5-44
+MERGED from [androidx.core:core-splashscreen:1.0.1] C:\Users\Belal\.gradle\caches\8.13\transforms\1ffa1d9e10a459e1b409e7a5aa0304c0\transformed\core-splashscreen-1.0.1\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.core:core-splashscreen:1.0.1] C:\Users\Belal\.gradle\caches\8.13\transforms\1ffa1d9e10a459e1b409e7a5aa0304c0\transformed\core-splashscreen-1.0.1\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.datastore:datastore-core-android:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\d62604708cc5e3fafbc3cdc7666a9427\transformed\datastore-core-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.datastore:datastore-core-android:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\d62604708cc5e3fafbc3cdc7666a9427\transformed\datastore-core-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.datastore:datastore-android:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\6f4ccfd259c4d4ab1e8d206859a285d2\transformed\datastore-release\AndroidManifest.xml:20:5-44
+MERGED from [androidx.datastore:datastore-android:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\6f4ccfd259c4d4ab1e8d206859a285d2\transformed\datastore-release\AndroidManifest.xml:20:5-44
+MERGED from [androidx.datastore:datastore-preferences-android:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\0f7cb882ee5b4a202913625fd69d25ca\transformed\datastore-preferences-release\AndroidManifest.xml:20:5-44
+MERGED from [androidx.datastore:datastore-preferences-android:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\0f7cb882ee5b4a202913625fd69d25ca\transformed\datastore-preferences-release\AndroidManifest.xml:20:5-44
+MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\0ea55d3679128755c7edfad4ef3f1da8\transformed\cursoradapter-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\0ea55d3679128755c7edfad4ef3f1da8\transformed\cursoradapter-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.cardview:cardview:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\d037111d98d8edcf4c76e670371a5d09\transformed\cardview-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.cardview:cardview:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\d037111d98d8edcf4c76e670371a5d09\transformed\cardview-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.interpolator:interpolator:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\363fc154ebf0b5f3bf412bd4e4e568d4\transformed\interpolator-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.interpolator:interpolator:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\363fc154ebf0b5f3bf412bd4e4e568d4\transformed\interpolator-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:21:5-44
+MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:21:5-44
+MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\56c471860befbad6179d7c948df6a36d\transformed\startup-runtime-1.1.1\AndroidManifest.xml:21:5-23:41
+MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\56c471860befbad6179d7c948df6a36d\transformed\startup-runtime-1.1.1\AndroidManifest.xml:21:5-23:41
+MERGED from [androidx.tracing:tracing:1.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\49a0183ea0e0847409902776d665e580\transformed\tracing-1.2.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.tracing:tracing:1.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\49a0183ea0e0847409902776d665e580\transformed\tracing-1.2.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\3d95b9b264e70a6733a2fab17b8c4db8\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\3d95b9b264e70a6733a2fab17b8c4db8\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.compose.runtime:runtime-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a46713e6a3cb5e9be23101ddcd5ad107\transformed\runtime-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.runtime:runtime-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a46713e6a3cb5e9be23101ddcd5ad107\transformed\runtime-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.runtime:runtime-saveable-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\0067a552dc89a05649c86b8e9c98fa20\transformed\runtime-saveable-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.compose.runtime:runtime-saveable-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\0067a552dc89a05649c86b8e9c98fa20\transformed\runtime-saveable-release\AndroidManifest.xml:5:5-44
+MERGED from [androidx.exifinterface:exifinterface:1.3.6] C:\Users\Belal\.gradle\caches\8.13\transforms\d9ead041c9d2835712d4f226e7b81e10\transformed\exifinterface-1.3.6\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.exifinterface:exifinterface:1.3.6] C:\Users\Belal\.gradle\caches\8.13\transforms\d9ead041c9d2835712d4f226e7b81e10\transformed\exifinterface-1.3.6\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.documentfile:documentfile:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\824948a03feee174b900fa19df6b7bbf\transformed\documentfile-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.documentfile:documentfile:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\824948a03feee174b900fa19df6b7bbf\transformed\documentfile-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\3a7f6e08b92f695540193a1c62c2b7fb\transformed\localbroadcastmanager-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\3a7f6e08b92f695540193a1c62c2b7fb\transformed\localbroadcastmanager-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.print:print:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\d565d13905dd42475b40f5c0cd3493d0\transformed\print-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.print:print:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\d565d13905dd42475b40f5c0cd3493d0\transformed\print-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.arch.core:core-runtime:2.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4e386ecb499a7449f51272a0d77f703d\transformed\core-runtime-2.2.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.arch.core:core-runtime:2.2.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4e386ecb499a7449f51272a0d77f703d\transformed\core-runtime-2.2.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.annotation:annotation-experimental:1.4.1] C:\Users\Belal\.gradle\caches\8.13\transforms\c95a9c6e7963c09496c432261d94526e\transformed\annotation-experimental-1.4.1\AndroidManifest.xml:5:5-44
+MERGED from [androidx.annotation:annotation-experimental:1.4.1] C:\Users\Belal\.gradle\caches\8.13\transforms\c95a9c6e7963c09496c432261d94526e\transformed\annotation-experimental-1.4.1\AndroidManifest.xml:5:5-44
+MERGED from [androidx.core:core-viewtree:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\1c160f04d1e4f27311d7ae83a5897a6b\transformed\core-viewtree-1.0.0\AndroidManifest.xml:5:5-44
+MERGED from [androidx.core:core-viewtree:1.0.0] C:\Users\Belal\.gradle\caches\8.13\transforms\1c160f04d1e4f27311d7ae83a5897a6b\transformed\core-viewtree-1.0.0\AndroidManifest.xml:5:5-44
+	android:targetSdkVersion
+		INJECTED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml
+	tools:ignore
+		ADDED from [com.google.accompanist:accompanist-drawablepainter:0.30.1] C:\Users\Belal\.gradle\caches\8.13\transforms\797baf09145df984c671d464656c3bde\transformed\accompanist-drawablepainter-0.30.1\AndroidManifest.xml:23:9-39
+	android:minSdkVersion
+		INJECTED from C:\Users\Belal\Desktop\Equilibrio\mobile\app\src\main\AndroidManifest.xml
+activity#androidx.compose.ui.tooling.PreviewActivity
+ADDED from [androidx.compose.ui:ui-tooling-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\dae57cc5139a2cd85d537cd024fdf2f2\transformed\ui-tooling-release\AndroidManifest.xml:23:9-25:39
+	android:exported
+		ADDED from [androidx.compose.ui:ui-tooling-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\dae57cc5139a2cd85d537cd024fdf2f2\transformed\ui-tooling-release\AndroidManifest.xml:25:13-36
+	android:name
+		ADDED from [androidx.compose.ui:ui-tooling-android:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\dae57cc5139a2cd85d537cd024fdf2f2\transformed\ui-tooling-release\AndroidManifest.xml:24:13-71
+provider#androidx.startup.InitializationProvider
+ADDED from [androidx.emoji2:emoji2:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\898b9318f71ab6408381c3bbbe10a1d1\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.lifecycle:lifecycle-process:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\73de7a88f570d587aa8f17078bb0421e\transformed\lifecycle-process-2.8.3\AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.lifecycle:lifecycle-process:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\73de7a88f570d587aa8f17078bb0421e\transformed\lifecycle-process-2.8.3\AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\56c471860befbad6179d7c948df6a36d\transformed\startup-runtime-1.1.1\AndroidManifest.xml:26:9-30:34
+MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\Belal\.gradle\caches\8.13\transforms\56c471860befbad6179d7c948df6a36d\transformed\startup-runtime-1.1.1\AndroidManifest.xml:26:9-30:34
+	tools:node
+		ADDED from [androidx.emoji2:emoji2:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\898b9318f71ab6408381c3bbbe10a1d1\transformed\emoji2-1.3.0\AndroidManifest.xml:28:13-31
+	android:authorities
+		ADDED from [androidx.emoji2:emoji2:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\898b9318f71ab6408381c3bbbe10a1d1\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
+	android:exported
+		ADDED from [androidx.emoji2:emoji2:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\898b9318f71ab6408381c3bbbe10a1d1\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
+	android:name
+		ADDED from [androidx.emoji2:emoji2:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\898b9318f71ab6408381c3bbbe10a1d1\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
+meta-data#androidx.emoji2.text.EmojiCompatInitializer
+ADDED from [androidx.emoji2:emoji2:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\898b9318f71ab6408381c3bbbe10a1d1\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+	android:value
+		ADDED from [androidx.emoji2:emoji2:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\898b9318f71ab6408381c3bbbe10a1d1\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+	android:name
+		ADDED from [androidx.emoji2:emoji2:1.3.0] C:\Users\Belal\.gradle\caches\8.13\transforms\898b9318f71ab6408381c3bbbe10a1d1\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a75af7a72c3c1f48e7fd93f5a6d3fa88\transformed\core-1.16.0\AndroidManifest.xml:22:5-24:47
+	android:protectionLevel
+		ADDED from [androidx.core:core:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a75af7a72c3c1f48e7fd93f5a6d3fa88\transformed\core-1.16.0\AndroidManifest.xml:24:9-44
+	android:name
+		ADDED from [androidx.core:core:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a75af7a72c3c1f48e7fd93f5a6d3fa88\transformed\core-1.16.0\AndroidManifest.xml:23:9-81
+permission#com.example.moneymate.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a75af7a72c3c1f48e7fd93f5a6d3fa88\transformed\core-1.16.0\AndroidManifest.xml:22:5-24:47
+	android:protectionLevel
+		ADDED from [androidx.core:core:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a75af7a72c3c1f48e7fd93f5a6d3fa88\transformed\core-1.16.0\AndroidManifest.xml:24:9-44
+	android:name
+		ADDED from [androidx.core:core:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a75af7a72c3c1f48e7fd93f5a6d3fa88\transformed\core-1.16.0\AndroidManifest.xml:23:9-81
+uses-permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a75af7a72c3c1f48e7fd93f5a6d3fa88\transformed\core-1.16.0\AndroidManifest.xml:26:5-97
+	android:name
+		ADDED from [androidx.core:core:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a75af7a72c3c1f48e7fd93f5a6d3fa88\transformed\core-1.16.0\AndroidManifest.xml:26:22-94
+uses-permission#com.example.moneymate.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a75af7a72c3c1f48e7fd93f5a6d3fa88\transformed\core-1.16.0\AndroidManifest.xml:26:5-97
+	android:name
+		ADDED from [androidx.core:core:1.16.0] C:\Users\Belal\.gradle\caches\8.13\transforms\a75af7a72c3c1f48e7fd93f5a6d3fa88\transformed\core-1.16.0\AndroidManifest.xml:26:22-94
+meta-data#androidx.lifecycle.ProcessLifecycleInitializer
+ADDED from [androidx.lifecycle:lifecycle-process:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\73de7a88f570d587aa8f17078bb0421e\transformed\lifecycle-process-2.8.3\AndroidManifest.xml:29:13-31:52
+	android:value
+		ADDED from [androidx.lifecycle:lifecycle-process:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\73de7a88f570d587aa8f17078bb0421e\transformed\lifecycle-process-2.8.3\AndroidManifest.xml:31:17-49
+	android:name
+		ADDED from [androidx.lifecycle:lifecycle-process:2.8.3] C:\Users\Belal\.gradle\caches\8.13\transforms\73de7a88f570d587aa8f17078bb0421e\transformed\lifecycle-process-2.8.3\AndroidManifest.xml:30:17-78
+activity#androidx.activity.ComponentActivity
+ADDED from [androidx.compose.ui:ui-test-manifest:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\8eafe2473235fdbde4bbb40059b7a530\transformed\ui-test-manifest-1.7.0\AndroidManifest.xml:23:9-25:39
+	android:exported
+		ADDED from [androidx.compose.ui:ui-test-manifest:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\8eafe2473235fdbde4bbb40059b7a530\transformed\ui-test-manifest-1.7.0\AndroidManifest.xml:25:13-36
+	android:name
+		ADDED from [androidx.compose.ui:ui-test-manifest:1.7.0] C:\Users\Belal\.gradle\caches\8.13\transforms\8eafe2473235fdbde4bbb40059b7a530\transformed\ui-test-manifest-1.7.0\AndroidManifest.xml:24:13-63
+meta-data#androidx.profileinstaller.ProfileInstallerInitializer
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:29:13-31:52
+	android:value
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:31:17-49
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:30:17-85
+receiver#androidx.profileinstaller.ProfileInstallReceiver
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:34:9-52:20
+	android:enabled
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:37:13-35
+	android:exported
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:38:13-36
+	android:permission
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:39:13-57
+	android:directBootAware
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:36:13-44
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:35:13-76
+intent-filter#action:name:androidx.profileinstaller.action.INSTALL_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:40:13-42:29
+action#androidx.profileinstaller.action.INSTALL_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:41:17-91
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:41:25-88
+intent-filter#action:name:androidx.profileinstaller.action.SKIP_FILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:43:13-45:29
+action#androidx.profileinstaller.action.SKIP_FILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:44:17-85
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:44:25-82
+intent-filter#action:name:androidx.profileinstaller.action.SAVE_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:46:13-48:29
+action#androidx.profileinstaller.action.SAVE_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:47:17-88
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:47:25-85
+intent-filter#action:name:androidx.profileinstaller.action.BENCHMARK_OPERATION
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:49:13-51:29
+action#androidx.profileinstaller.action.BENCHMARK_OPERATION
+ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:50:17-95
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Belal\.gradle\caches\8.13\transforms\4d45b9522d6f28ac72ed13b5c2f8a377\transformed\profileinstaller-1.4.0\AndroidManifest.xml:50:25-92

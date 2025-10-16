@@ -11,11 +11,8 @@ class MoneyMateApplication  : Application() {
         super.onCreate()
 
         startKoin {
-            // Log Koin into Android logger
             androidLogger()
-            // Reference Android context
             androidContext(this@MoneyMateApplication )
-            // Load modules
             modules(appComponent)
         }
     }

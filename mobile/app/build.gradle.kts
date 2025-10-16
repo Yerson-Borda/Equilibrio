@@ -74,6 +74,9 @@ dependencies {
     implementation(libs.logging.interceptor)
     // coil
     implementation("io.coil-kt:coil-compose:2.4.0")
+    // icon
+    implementation("androidx.compose.material:material-icons-extended:1.5.4")
+
     //splshscreen
     implementation("androidx.core:core-splashscreen:1.0.1")
 
