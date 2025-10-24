@@ -3,13 +3,16 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 import os
 from typing import Optional
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Bcrypt is broken. Using a different algo
 pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
 
 SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ALGORITHM = os.getenv("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)

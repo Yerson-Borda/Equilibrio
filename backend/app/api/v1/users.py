@@ -19,13 +19,8 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
                 detail="Email already registered"
             )
         
-        print(f"DEBUG: Password received: '{user_data.password}'")
-        print(f"DEBUG: Password length: {len(user_data.password)}")
-        print(f"DEBUG: Password bytes: {len(user_data.password.encode('utf-8'))}")
-        
         # Create new user
         hashed_password = get_password_hash(user_data.password)
-        print(f"DEBUG: Hash generated successfully: {hashed_password[:20]}...")
         
         user = User(
             email=user_data.email,
@@ -38,14 +33,9 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(user)
         
-        print("DEBUG: User created successfully")
         return user
         
     except Exception as e:
-        print(f"DEBUG: ERROR in register: {e}")
-        print(f"DEBUG: Error type: {type(e)}")
-        import traceback
-        print(f"DEBUG: Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error during registration"
