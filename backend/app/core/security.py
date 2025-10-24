@@ -36,5 +36,3 @@ def verify_token(token: str):
         return payload
     except JWTError:
         return None
-
-token_blacklist = set()

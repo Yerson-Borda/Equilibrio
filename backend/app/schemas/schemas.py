@@ -1,18 +1,15 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime, date
 from decimal import Decimal
-from app.models.models import TransactionType, WalletType
 
 class UserBase(BaseModel):
     email: EmailStr
     full_name: Optional[str] = None
-    phone_number: Optional[str] = None
-    date_of_birth: Optional[date] = None
     default_currency: str = "USD"
 
 class UserCreate(UserBase):
-    password: str = Field(..., min_length=6, max_length=128)
+    password: str
 
 class UserResponse(UserBase):
     id: int
@@ -22,21 +19,9 @@ class UserResponse(UserBase):
     class Config:
         from_attributes = True
 
-class UserUpdate(BaseModel): 
-    email: Optional[EmailStr] = None
-    full_name: Optional[str] = None
-    phone_number: Optional[str] = None
-    date_of_birth: Optional[date] = None
-    default_currency: Optional[str] = None
-    password: Optional[str] = Field(None, min_length=6, max_length=128)
-
 class WalletBase(BaseModel):
     name: str
     currency: str = "USD"
-    wallet_type: WalletType
-    initial_balance: Decimal = Decimal('0.00')
-    card_number: Optional[str] = None
-    color: str = "#3B82F6"
 
 class WalletCreate(WalletBase):
     pass
@@ -52,16 +37,15 @@ class WalletResponse(WalletBase):
 
 class CategoryBase(BaseModel):
     name: str
-    type: str  # "income" or "expense"
+    type: str
     color: Optional[str] = "#000000"
-    icon: Optional[str] = None
 
 class CategoryCreate(CategoryBase):
     pass
 
 class CategoryResponse(CategoryBase):
     id: int
-    user_id: Optional[int]
+    user_id: int
 
     class Config:
         from_attributes = True
@@ -69,7 +53,7 @@ class CategoryResponse(CategoryBase):
 class TransactionBase(BaseModel):
     amount: Decimal
     description: Optional[str] = None
-    type: TransactionType
+    type: str
     transaction_date: date
     wallet_id: int
     category_id: int

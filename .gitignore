@@ -16,7 +16,3 @@ build/
 .vscode/
 *.swp
 Thumbs.db
-.kt
-.xml
-.webp
-.kts
