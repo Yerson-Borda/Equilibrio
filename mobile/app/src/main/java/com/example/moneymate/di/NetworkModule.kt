@@ -13,7 +13,6 @@ val networkModule = module {
     factoryOf(Network::getLoggingInterceptor)
     factoryOf(Network::getHeadersInterceptor)
     factoryOf(Network::getRefreshTokenAuthenticator)
-    factoryOf(Network::getStatusCodeInterceptor)
     singleOf(Network::getHttpClient)
     singleOf(Network::getRetrofit)
     // apis

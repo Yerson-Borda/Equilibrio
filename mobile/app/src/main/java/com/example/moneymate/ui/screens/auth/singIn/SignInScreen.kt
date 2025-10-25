@@ -13,7 +13,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,12 +36,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.moneymate.R
 import com.example.moneymate.ui.components.CustomButton
 import com.example.moneymate.ui.components.CustomTextField
 import com.example.moneymate.ui.screens.auth.signUp.SignUpScreen
+import com.example.moneymate.ui.theme.MoneyMateTheme
 import com.example.moneymate.utils.Validation
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -50,16 +57,16 @@ fun SignInScreen(
     val context = LocalContext.current
 
     LaunchedEffect(key1 = Unit) {
-        launch {
+
             viewModel.showError.collect { error ->
                 Toast.makeText(context, error, Toast.LENGTH_LONG).show()
             }
-        }
+    }
 
-        launch {
+    LaunchedEffect (key1 = Unit) {
             viewModel.navigateToHome.collect {
                 onSignInSuccess()
-            }
+
         }
     }
 
@@ -86,6 +93,8 @@ fun SignInContent(
         null
     }
 
+    val scrollState = rememberScrollState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -95,13 +104,18 @@ fun SignInContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(scrollState)
                 .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top
         ) {
+            Spacer(Modifier.height(130.dp))
             Image(
                 painter = painterResource(R.drawable.logo),
-                contentDescription = stringResource(R.string.logo)
+                contentDescription = stringResource(R.string.logo),
+                modifier = Modifier
+                    .height(117.dp)
+                    .width(180.dp)
             )
             Spacer(Modifier.height(26.dp))
             Text(
@@ -134,7 +148,6 @@ fun SignInContent(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Password field
             CustomTextField(
                 value = password.value,
                 onValueChange = { password.value = it },
@@ -191,6 +204,20 @@ fun SignInContent(
                         .clickable(onClick = onSignUpClick)
                 )
             }
+
+            // Add extra space at the bottom to ensure all content is visible
+            Spacer(Modifier.height(50.dp))
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SignInScreenPreview() {
+    MaterialTheme  {
+        SignInScreen(
+            onSignUpClick = {} ,
+            onSignInSuccess = {}
+        )
     }
 }
