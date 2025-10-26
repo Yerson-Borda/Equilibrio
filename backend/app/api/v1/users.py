@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Optional
+from sqlalchemy.exc import IntegrityError
 from app.database import get_db
 from app.models.models import User, Wallet, Transaction, TransactionType
 from app.schemas.schemas import UserCreate, UserResponse, UserUpdate, Token
@@ -21,21 +22,20 @@ def logout(
     
     return {"message": "Successfully logged out"}
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user_data: UserCreate, db: Session = Depends(get_db)):
     try:
         # Check if user already exists
         existing_user = db.query(User).filter(User.email == user_data.email).first()
         if existing_user:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT, 
                 detail="Email already registered"
             )
         
         print(f"DEBUG: Password received: '{user_data.password}'")
         print(f"DEBUG: Password length: {len(user_data.password)}")
         
-        # Create new user
         hashed_password = get_password_hash(user_data.password)
         print(f"DEBUG: Hash generated successfully: {hashed_password[:20]}...")
         
@@ -55,7 +55,21 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
         print("DEBUG: User created successfully")
         return user
         
+    except HTTPException:
+        raise
+    except IntegrityError as e:
+        db.rollback()
+        if "unique constraint" in str(e).lower() or "duplicate key" in str(e).lower():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email already registered"
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid data provided"
+        )
     except Exception as e:
+        db.rollback()
         print(f"DEBUG: ERROR in register: {e}")
         print(f"DEBUG: Error type: {type(e)}")
         import traceback
@@ -88,10 +102,8 @@ def get_detailed_user_info(
 ):
     """Get detailed user information with wallet and transaction counts"""
     
-    # wallet count and total balance
     wallet_count = db.query(Wallet).filter(Wallet.user_id == current_user.id).count()
     
-    # transaction counts by type
     expense_count = db.query(Transaction).filter(
         Transaction.user_id == current_user.id,
         Transaction.type == TransactionType.EXPENSE
@@ -127,35 +139,56 @@ def update_user_info(
     db: Session = Depends(get_db)
 ):
     """Update user information - all fields optional"""
-    # Update fields if provided
-    if user_data.email is not None:
-        # Check if email is already taken by another user
-        existing_user = db.query(User).filter(
-            User.email == user_data.email,
-            User.id != current_user.id
-        ).first()
-        if existing_user:
+    try:
+        if user_data.email is not None:
+            # Check if email is already taken by another user
+            existing_user = db.query(User).filter(
+                User.email == user_data.email,
+                User.id != current_user.id
+            ).first()
+            if existing_user:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Email already registered by another user"
+                )
+            current_user.email = user_data.email
+        
+        if user_data.full_name is not None:
+            current_user.full_name = user_data.full_name
+        
+        if user_data.phone_number is not None:
+            current_user.phone_number = user_data.phone_number
+        
+        if user_data.date_of_birth is not None:
+            current_user.date_of_birth = user_data.date_of_birth
+        
+        if user_data.default_currency is not None:
+            current_user.default_currency = user_data.default_currency.upper()
+        
+        if user_data.password is not None:
+            current_user.hashed_password = get_password_hash(user_data.password)
+        
+        db.commit()
+        db.refresh(current_user)
+        return current_user
+        
+    except HTTPException:
+        raise
+    except IntegrityError as e:
+        db.rollback()
+        if "unique constraint" in str(e).lower() or "duplicate key" in str(e).lower():
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="Email already registered by another user"
             )
-        current_user.email = user_data.email
-    
-    if user_data.full_name is not None:
-        current_user.full_name = user_data.full_name
-    
-    if user_data.phone_number is not None:
-        current_user.phone_number = user_data.phone_number
-    
-    if user_data.date_of_birth is not None:
-        current_user.date_of_birth = user_data.date_of_birth
-    
-    if user_data.default_currency is not None:
-        current_user.default_currency = user_data.default_currency.upper()
-    
-    if user_data.password is not None:
-        current_user.hashed_password = get_password_hash(user_data.password)
-    
-    db.commit()
-    db.refresh(current_user)
-    return current_user
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid data provided"
+        )
+    except Exception as e:
+        db.rollback()
+        print(f"DEBUG: ERROR in update_user_info: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error during profile update"
+        )

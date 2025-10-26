@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
-from app.models.models import Wallet, WalletType
+from app.models.models import Wallet
 from app.schemas.schemas import WalletCreate, WalletResponse
 from app.auth import get_current_user
 from decimal import Decimal
@@ -17,38 +17,37 @@ def get_user_total_balance(
 ):
     wallets = db.query(Wallet).filter(Wallet.user_id == current_user.id).all()
     total_balance = Decimal('0.0')
+    breakdown = []
     
     for wallet in wallets:
-        if wallet.currency == current_user.default_currency:
+        if wallet.currency.upper() == current_user.default_currency.upper():
             total_balance += wallet.balance
+            converted_balance = wallet.balance
+            exchange_rate = 1.0
         else:
-            # Convert to user's default currency
             converted_balance = currency_service.convert_amount(
                 wallet.balance, 
                 wallet.currency, 
                 current_user.default_currency
             )
+            exchange_rate = currency_service.get_exchange_rate(wallet.currency, current_user.default_currency)
             total_balance += converted_balance
+        
+        breakdown.append({
+            "wallet_id": wallet.id,
+            "wallet_name": wallet.name,
+            "wallet_type": wallet.wallet_type.value,
+            "original_balance": float(wallet.balance),
+            "original_currency": wallet.currency,
+            "converted_balance": float(converted_balance),
+            "converted_currency": current_user.default_currency,
+            "exchange_rate_used": float(exchange_rate)
+        })
     
     return {
         "total_balance": float(total_balance), 
         "currency": current_user.default_currency,
-        "breakdown": [
-            {
-                "wallet_id": wallet.id,
-                "wallet_name": wallet.name,
-                "wallet_type": wallet.wallet_type.value,
-                "original_balance": float(wallet.balance),
-                "original_currency": wallet.currency,
-                "converted_balance": float(
-                    currency_service.convert_amount(wallet.balance, wallet.currency, current_user.default_currency)
-                    if wallet.currency != current_user.default_currency 
-                    else wallet.balance
-                ),
-                "converted_currency": current_user.default_currency
-            }
-            for wallet in wallets
-        ]
+        "breakdown": breakdown
     }
 
 @router.post("/", response_model=WalletResponse, status_code=status.HTTP_201_CREATED)
@@ -75,7 +74,7 @@ def create_wallet(
         card_number=wallet_data.card_number,
         color=wallet_data.color,
         user_id=current_user.id,
-        balance=wallet_data.initial_balance  
+        balance=wallet_data.initial_balance
     )
     
     db.add(wallet)
