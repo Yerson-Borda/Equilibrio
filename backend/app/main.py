@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from app.database import engine, get_db
 from app.models import models
 from app.api.v1 import users, wallets, transactions, categories
@@ -12,7 +13,8 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# creating default categories here for the system
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 def create_default_categories():
     db = next(get_db())
     try:
@@ -26,13 +28,17 @@ def create_default_categories():
                 {"name": "Housing", "type": models.TransactionType.EXPENSE, "color": "#45B7D1", "icon": "home"},
                 {"name": "Transportation", "type": models.TransactionType.EXPENSE, "color": "#96CEB4", "icon": "bus"},
                 {"name": "Vehicle", "type": models.TransactionType.EXPENSE, "color": "#FFEAA7", "icon": "car"},
-                {"name": "Entertainment", "type": models.TransactionType.EXPENSE, "color": "#DDA0DD", "icon": "dice"},
+                {"name": "Entertainment", "type": models.TransactionType.EXPENSE, "color": "#DDA0DD", "icon": "film"},
                 {"name": "Communication", "type": models.TransactionType.EXPENSE, "color": "#98D8C8", "icon": "phone"},
-                {"name": "Investments", "type": models.TransactionType.EXPENSE, "color": "#F7DC6F", "icon": "coin"},
+                {"name": "Investments", "type": models.TransactionType.EXPENSE, "color": "#F7DC6F", "icon": "chart-line"},
                 {"name": "Others", "type": models.TransactionType.EXPENSE, "color": "#85C1E9", "icon": "ellipsis-h"},
                 
                 # Income category (only one)
                 {"name": "Income", "type": models.TransactionType.INCOME, "color": "#98D8C8", "icon": "money-bill"},
+                
+                # Transfer category
+                {"name": "Transfer Out", "type": models.TransactionType.TRANSFER, "color": "#FFA500", "icon": "arrow-up"},
+                {"name": "Transfer In", "type": models.TransactionType.TRANSFER, "color": "#32CD32", "icon": "arrow-down"},
             ]
             
             for cat_data in default_categories:
@@ -57,9 +63,10 @@ app.include_router(categories.router, prefix="/api/v1/categories", tags=["catego
 @app.get("/")
 def root():
     return {
-        "message": "Personal Finance Tracker API",
+        "message": "Equilibrio API",
         "version": "1.0.0",
-        "docs": "/docs"
+        "docs": "/docs",
+        "redoc": "/redoc"
     }
 
 @app.get("/health")

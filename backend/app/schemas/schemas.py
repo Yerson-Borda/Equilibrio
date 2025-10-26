@@ -9,6 +9,7 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
     phone_number: Optional[str] = None
     date_of_birth: Optional[date] = None
+    avatar_url: Optional[str] = None
     default_currency: str = "USD"
 
 class UserCreate(UserBase):
@@ -22,11 +23,12 @@ class UserResponse(UserBase):
     class Config:
         from_attributes = True
 
-class UserUpdate(BaseModel): 
+class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     full_name: Optional[str] = None
     phone_number: Optional[str] = None
     date_of_birth: Optional[date] = None
+    avatar_url: Optional[str] = None
     default_currency: Optional[str] = None
     password: Optional[str] = Field(None, min_length=6, max_length=128)
 
@@ -41,6 +43,14 @@ class WalletBase(BaseModel):
 class WalletCreate(WalletBase):
     pass
 
+class WalletUpdate(BaseModel):
+    name: Optional[str] = None
+    currency: Optional[str] = None
+    wallet_type: Optional[WalletType] = None
+    initial_balance: Optional[Decimal] = None
+    card_number: Optional[str] = None
+    color: Optional[str] = None
+
 class WalletResponse(WalletBase):
     id: int
     balance: Decimal
@@ -52,7 +62,7 @@ class WalletResponse(WalletBase):
 
 class CategoryBase(BaseModel):
     name: str
-    type: str  # "income" or "expense"
+    type: TransactionType
     color: Optional[str] = "#000000"
     icon: Optional[str] = None
 
@@ -69,6 +79,7 @@ class CategoryResponse(CategoryBase):
 class TransactionBase(BaseModel):
     amount: Decimal
     description: Optional[str] = None
+    note: Optional[str] = None
     type: TransactionType
     transaction_date: date
     wallet_id: int
@@ -84,6 +95,19 @@ class TransactionResponse(TransactionBase):
 
     class Config:
         from_attributes = True
+
+class TransferCreate(BaseModel):
+    source_wallet_id: int
+    destination_wallet_id: int
+    amount: Decimal
+    note: Optional[str] = None
+
+class TransferResponse(BaseModel):
+    message: str
+    source_transaction: TransactionResponse
+    destination_transaction: TransactionResponse
+    exchange_rate: float
+    converted_amount: float
 
 class Token(BaseModel):
     access_token: str
