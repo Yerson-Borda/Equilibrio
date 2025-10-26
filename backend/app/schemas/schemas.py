@@ -9,6 +9,7 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
     phone_number: Optional[str] = None
     date_of_birth: Optional[date] = None
+    avatar_url: Optional[str] = None
     default_currency: str = "USD"
 
 class UserCreate(UserBase):
@@ -22,11 +23,12 @@ class UserResponse(UserBase):
     class Config:
         from_attributes = True
 
-class UserUpdate(BaseModel): 
+class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     full_name: Optional[str] = None
     phone_number: Optional[str] = None
     date_of_birth: Optional[date] = None
+    avatar_url: Optional[str] = None
     default_currency: Optional[str] = None
     password: Optional[str] = Field(None, min_length=6, max_length=128)
 
@@ -52,7 +54,7 @@ class WalletResponse(WalletBase):
 
 class CategoryBase(BaseModel):
     name: str
-    type: str  # "income" or "expense"
+    type: str
     color: Optional[str] = "#000000"
     icon: Optional[str] = None
 

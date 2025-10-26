@@ -1,15 +1,25 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import Optional
-from sqlalchemy.exc import IntegrityError
+import shutil
+import os
+from pathlib import Path
+import uuid
 from app.database import get_db
 from app.models.models import User, Wallet, Transaction, TransactionType
 from app.schemas.schemas import UserCreate, UserResponse, UserUpdate, Token
 from app.core.security import get_password_hash, verify_password, create_access_token, token_blacklist
 from app.auth import get_current_user, security
 from fastapi.security import HTTPAuthorizationCredentials
+from sqlalchemy.exc import IntegrityError
 
 router = APIRouter()
+
+# Avatar config
+AVATAR_UPLOAD_DIR = Path("static/avatars")
+AVATAR_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif'}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 @router.post("/logout", operation_id="logout_user") 
 def logout(
@@ -29,15 +39,11 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
         existing_user = db.query(User).filter(User.email == user_data.email).first()
         if existing_user:
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, 
+                status_code=status.HTTP_409_CONFLICT,
                 detail="Email already registered"
             )
         
-        print(f"DEBUG: Password received: '{user_data.password}'")
-        print(f"DEBUG: Password length: {len(user_data.password)}")
-        
         hashed_password = get_password_hash(user_data.password)
-        print(f"DEBUG: Hash generated successfully: {hashed_password[:20]}...")
         
         user = User(
             email=user_data.email,
@@ -46,13 +52,13 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
             phone_number=user_data.phone_number,
             date_of_birth=user_data.date_of_birth,
             default_currency=user_data.default_currency
+            # Note: avatar_url is not set during registration
         )
         
         db.add(user)
         db.commit()
         db.refresh(user)
         
-        print("DEBUG: User created successfully")
         return user
         
     except HTTPException:
@@ -70,10 +76,6 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
         )
     except Exception as e:
         db.rollback()
-        print(f"DEBUG: ERROR in register: {e}")
-        print(f"DEBUG: Error type: {type(e)}")
-        import traceback
-        print(f"DEBUG: Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error during registration"
@@ -121,6 +123,7 @@ def get_detailed_user_info(
             "full_name": current_user.full_name,
             "phone_number": current_user.phone_number,
             "date_of_birth": current_user.date_of_birth,
+            "avatar_url": current_user.avatar_url,
             "default_currency": current_user.default_currency,
             "created_at": current_user.created_at
         },
@@ -141,7 +144,6 @@ def update_user_info(
     """Update user information - all fields optional"""
     try:
         if user_data.email is not None:
-            # Check if email is already taken by another user
             existing_user = db.query(User).filter(
                 User.email == user_data.email,
                 User.id != current_user.id
@@ -161,6 +163,9 @@ def update_user_info(
         
         if user_data.date_of_birth is not None:
             current_user.date_of_birth = user_data.date_of_birth
+        
+        if user_data.avatar_url is not None:
+            current_user.avatar_url = user_data.avatar_url
         
         if user_data.default_currency is not None:
             current_user.default_currency = user_data.default_currency.upper()
@@ -187,8 +192,81 @@ def update_user_info(
         )
     except Exception as e:
         db.rollback()
-        print(f"DEBUG: ERROR in update_user_info: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error during profile update"
         )
+
+@router.post("/me/avatar", response_model=UserResponse)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Upload user avatar image
+    """
+    file_extension = Path(file.filename).suffix.lower()
+    if file_extension not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only JPG, JPEG, PNG, and GIF files are allowed"
+        )
+    
+    file.file.seek(0, 2)
+    file_size = file.file.tell()
+    file.file.seek(0)
+    
+    if file_size > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File size must be less than 5MB"
+        )
+    
+    unique_filename = f"{current_user.id}_{uuid.uuid4()}{file_extension}"
+    file_path = AVATAR_UPLOAD_DIR / unique_filename
+    
+    try:
+        if current_user.avatar_url:
+            old_filename = current_user.avatar_url.split("/")[-1]
+            old_file_path = AVATAR_UPLOAD_DIR / old_filename
+            if old_file_path.exists():
+                old_file_path.unlink()
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        avatar_url = f"/static/avatars/{unique_filename}"
+        current_user.avatar_url = avatar_url
+        db.commit()
+        db.refresh(current_user)
+        
+        return current_user
+        
+    except Exception as e:
+        if file_path.exists():
+            file_path.unlink()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to upload avatar"
+        )
+
+@router.delete("/me/avatar", response_model=UserResponse)
+def delete_avatar(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete user avatar
+    """
+    if current_user.avatar_url:
+        filename = current_user.avatar_url.split("/")[-1]
+        file_path = AVATAR_UPLOAD_DIR / filename
+        if file_path.exists():
+            file_path.unlink()
+    
+    current_user.avatar_url = None
+    db.commit()
+    db.refresh(current_user)
+    
+    return current_user

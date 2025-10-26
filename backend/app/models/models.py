@@ -24,8 +24,9 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     full_name = Column(String)
-    phone_number = Column(String, nullable=True)  
-    date_of_birth = Column(Date, nullable=True)   
+    phone_number = Column(String, nullable=True)
+    date_of_birth = Column(Date, nullable=True)
+    avatar_url = Column(String, nullable=True)
     default_currency = Column(String, default="USD")
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -43,8 +44,8 @@ class Wallet(Base):
     currency = Column(String, nullable=False, default="USD")
     balance = Column(DECIMAL(10, 2), default=0.00)
     wallet_type = Column(Enum(WalletType), nullable=False, default=WalletType.CASH)
-    card_number = Column(String, nullable=True)  # Optional card number
-    color = Column(String, default="#3B82F6")  # Default blue color
+    card_number = Column(String, nullable=True)
+    color = Column(String, default="#3B82F6")
     user_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -56,10 +57,10 @@ class Category(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    type = Column(Enum(TransactionType), nullable=False)  # income or expense
+    type = Column(Enum(TransactionType), nullable=False)
     color = Column(String, default="#000000")
-    icon = Column(String)  # For UI icons
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True) 
+    icon = Column(String)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     
     user = relationship("User", back_populates="categories")
     transactions = relationship("Transaction", back_populates="category")
