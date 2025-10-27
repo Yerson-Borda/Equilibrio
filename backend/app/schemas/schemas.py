@@ -62,7 +62,7 @@ class WalletResponse(WalletBase):
 
 class CategoryBase(BaseModel):
     name: str
-    type: str
+    type: TransactionType
     color: Optional[str] = "#000000"
     icon: Optional[str] = None
 
