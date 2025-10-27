@@ -7,14 +7,23 @@ class ApiService {
 
     setToken(token) {
         this.token = token;
-        localStorage.setItem('token', token);
+        if (token) {
+            localStorage.setItem('token', token);
+        } else {
+            localStorage.removeItem('token');
+        }
     }
 
     getAuthHeaders() {
-        return {
+        const headers = {
             'Content-Type': 'application/json',
-            ...(this.token && { 'Authorization': `Bearer ${this.token}` }),
         };
+
+        if (this.token) {
+            headers['Authorization'] = `Bearer ${this.token}`;
+        }
+
+        return headers;
     }
 
     async handleResponse(response) {
@@ -27,17 +36,23 @@ class ApiService {
         }
 
         if (!response.ok) {
-            throw {
+            const error = {
                 status: response.status,
                 message: data?.detail || 'An error occurred',
                 errors: data?.detail || [],
             };
+
+            if (response.status === 401) {
+                this.setToken(null);
+            }
+
+            throw error;
         }
 
         return data;
     }
 
-    // LOGIN (backend expects query params)
+    // AUTH ENDPOINTS
     async login(email, password) {
         const url = new URL(`${API_BASE_URL}/users/login`, window.location.origin);
         url.searchParams.append('email', email);
@@ -45,29 +60,47 @@ class ApiService {
 
         const response = await fetch(url, {
             method: 'POST',
-            headers: this.getAuthHeaders(),
+            headers: {
+                'Content-Type': 'application/json',
+            },
         });
 
         const data = await this.handleResponse(response);
-        if (data.access_token) this.setToken(data.access_token);
+        if (data.access_token) {
+            this.setToken(data.access_token);
+        }
         return data;
     }
 
-    // REGISTER (backend expects JSON)
     async register(fullName, email, password) {
         const body = {
-            email,
-            password,
+            email: email,
+            password: password,
             full_name: fullName || null,
         };
+
         const response = await fetch(`${API_BASE_URL}/users/register`, {
             method: 'POST',
-            headers: this.getAuthHeaders(),
+            headers: {
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify(body),
         });
+
+        const data = await this.handleResponse(response);
+        return data;
+    }
+
+    async logout() {
+        const response = await fetch(`${API_BASE_URL}/users/logout`, {
+            method: 'POST',
+            headers: this.getAuthHeaders(),
+        });
+        this.setToken(null);
         return this.handleResponse(response);
     }
 
+    // USER ENDPOINTS
     async getCurrentUser() {
         const response = await fetch(`${API_BASE_URL}/users/me`, {
             method: 'GET',
@@ -76,6 +109,38 @@ class ApiService {
         return this.handleResponse(response);
     }
 
+    async updateUser(userData) {
+        const response = await fetch(`${API_BASE_URL}/users/me`, {
+            method: 'PUT',
+            headers: this.getAuthHeaders(),
+            body: JSON.stringify(userData),
+        });
+        return this.handleResponse(response);
+    }
+
+    async uploadAvatar(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API_BASE_URL}/users/me/avatar`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.token}`,
+            },
+            body: formData,
+        });
+        return this.handleResponse(response);
+    }
+
+    async getDetailedUserInfo() {
+        const response = await fetch(`${API_BASE_URL}/users/me/detailed`, {
+            method: 'GET',
+            headers: this.getAuthHeaders(),
+        });
+        return this.handleResponse(response);
+    }
+
+    // WALLET ENDPOINTS
     async getWallets() {
         const response = await fetch(`${API_BASE_URL}/wallets/`, {
             method: 'GET',
@@ -95,6 +160,57 @@ class ApiService {
 
     async getWallet(walletId) {
         const response = await fetch(`${API_BASE_URL}/wallets/${walletId}`, {
+            method: 'GET',
+            headers: this.getAuthHeaders(),
+        });
+        return this.handleResponse(response);
+    }
+
+    async getWalletBalance(walletId) {
+        const response = await fetch(`${API_BASE_URL}/wallets/${walletId}/balance`, {
+            method: 'GET',
+            headers: this.getAuthHeaders(),
+        });
+        return this.handleResponse(response);
+    }
+
+    async getUserTotalBalance() {
+        const response = await fetch(`${API_BASE_URL}/wallets/user/total`, {
+            method: 'GET',
+            headers: this.getAuthHeaders(),
+        });
+        return this.handleResponse(response);
+    }
+
+    // TRANSACTION ENDPOINTS
+    async getTransactions() {
+        const response = await fetch(`${API_BASE_URL}/transactions/`, {
+            method: 'GET',
+            headers: this.getAuthHeaders(),
+        });
+        return this.handleResponse(response);
+    }
+
+    async createTransaction(transactionData) {
+        const response = await fetch(`${API_BASE_URL}/transactions/`, {
+            method: 'POST',
+            headers: this.getAuthHeaders(),
+            body: JSON.stringify(transactionData),
+        });
+        return this.handleResponse(response);
+    }
+
+    async getWalletTransactions(walletId) {
+        const response = await fetch(`${API_BASE_URL}/transactions/wallet/${walletId}`, {
+            method: 'GET',
+            headers: this.getAuthHeaders(),
+        });
+        return this.handleResponse(response);
+    }
+
+    // CATEGORY ENDPOINTS
+    async getCategories() {
+        const response = await fetch(`${API_BASE_URL}/categories/`, {
             method: 'GET',
             headers: this.getAuthHeaders(),
         });

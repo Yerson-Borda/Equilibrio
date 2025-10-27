@@ -2,6 +2,23 @@ import React from 'react';
 import Button from '../ui/Button';
 
 const WalletOverview = ({ wallets, totalBalance, totalSaved, onCreateWallet }) => {
+    const formatCardNumber = (number) => {
+        if (!number) return '5495 7381 3759 2321';
+        return number.replace(/(\d{4})/g, '$1 ').trim();
+    };
+
+    const getCardType = (type) => {
+        const typeMap = {
+            'debit': 'VISA',
+            'credit': 'VISA',
+            'cash': 'CASH',
+            'savings': 'SAVINGS',
+            'investment': 'INVESTMENT',
+            'loan': 'LOAN'
+        };
+        return typeMap[type] || 'VISA';
+    };
+
     return (
         <div className="max-w-6xl mx-auto pt-8">
             {/* Total Balance Section */}
@@ -13,7 +30,7 @@ const WalletOverview = ({ wallets, totalBalance, totalSaved, onCreateWallet }) =
             {/* Wallets List */}
             <div className="space-y-6 mb-8">
                 {wallets.map((wallet) => (
-                    <div key={wallet.id} className="bg-white rounded-lg shadow-sm p-6 border border-strokes">
+                    <div key={wallet.id} className="bg-white rounded-xl shadow-sm p-6 border border-strokes">
                         {/* Wallet Header */}
                         <div className="flex justify-between items-start mb-6">
                             <div>
@@ -24,19 +41,24 @@ const WalletOverview = ({ wallets, totalBalance, totalSaved, onCreateWallet }) =
                         </div>
 
                         {/* Card Preview */}
-                        <div className="bg-gradient-to-r from-blue to-blue-dark rounded-xl p-6 text-white">
+                        <div
+                            className="bg-gradient-to-r from-[#2260FF] to-[#2260FF] rounded-2xl p-6 text-white shadow-lg"
+                            style={{
+                                background: wallet.color ? `linear-gradient(to right, ${wallet.color}, ${wallet.color})` : undefined
+                            }}
+                        >
                             <div className="flex justify-between items-center mb-6">
                                 <span className="text-sm opacity-90">Saved</span>
                                 <span className="text-lg font-bold">{wallet.saved_amount || '00'}</span>
                             </div>
                             <div className="flex justify-between items-center mb-2">
-                                <span className="tracking-wider font-mono text-lg">
-                                    {wallet.card_number || '5495 7381 3759 2321'}
+                                <span className="tracking-wider font-mono text-xl">
+                                    {formatCardNumber(wallet.card_number)}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-sm opacity-90">{wallet.expiry_date || '09/30'}</span>
-                                <span className="text-sm font-semibold">{wallet.type || 'VISA'}</span>
+                                <span className="text-sm font-semibold">{getCardType(wallet.type)}</span>
                             </div>
                         </div>
                     </div>
@@ -44,11 +66,11 @@ const WalletOverview = ({ wallets, totalBalance, totalSaved, onCreateWallet }) =
             </div>
 
             {/* Add Wallet Card */}
-            <div className="bg-white rounded-lg shadow-sm p-8 border border-strokes border-dashed">
+            <div className="bg-white rounded-xl shadow-sm p-8 border border-strokes border-dashed">
                 <div className="text-center">
                     <h3 className="text-xl font-bold text-text mb-6">Add New Wallet</h3>
 
-                    <div className="bg-gray-50 rounded-lg p-6 mb-6">
+                    <div className="bg-gray-50 rounded-xl p-6 mb-6">
                         <div className="space-y-4 text-left">
                             {/* Initial Value */}
                             <div>
@@ -105,7 +127,7 @@ const WalletOverview = ({ wallets, totalBalance, totalSaved, onCreateWallet }) =
                     <Button
                         variant="primary"
                         onClick={onCreateWallet}
-                        className="w-full py-4 text-lg font-semibold"
+                        className="w-full py-4 text-lg font-semibold rounded-xl"
                     >
                         Add Wallet
                     </Button>
