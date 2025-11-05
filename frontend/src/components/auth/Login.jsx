@@ -3,6 +3,7 @@ import Button from '../ui/Button';
 import logo from '../../assets/images/logo.png';
 import clockimage from '../../assets/images/clock-image.png';
 import { apiService } from '../../services/api';
+import { syncService } from '../../services/syncService';
 
 const Login = () => {
     const [formData, setFormData] = useState({
@@ -104,7 +105,17 @@ const Login = () => {
             const data = await apiService.login(formData.email, formData.password);
             console.log('Login successful:', data);
 
-            // Redirect to empty page (dashboard/home)
+            // Initialize sync service
+            await syncService.init();
+
+            // Trigger initial sync
+            console.log('Starting initial sync...');
+            await syncService.sync();
+
+            // Start periodic sync
+            syncService.startPeriodicSync();
+
+            // Redirect to dashboard
             window.location.href = '/dashboard';
 
         } catch (error) {

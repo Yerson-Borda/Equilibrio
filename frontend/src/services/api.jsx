@@ -166,6 +166,23 @@ class ApiService {
         return this.handleResponse(response);
     }
 
+    async updateWallet(walletId, walletData) {
+        const response = await fetch(`${API_BASE_URL}/wallets/${walletId}`, {
+            method: 'PUT',
+            headers: this.getAuthHeaders(),
+            body: JSON.stringify(walletData),
+        });
+        return this.handleResponse(response);
+    }
+
+    async deleteWallet(walletId) {
+        const response = await fetch(`${API_BASE_URL}/wallets/${walletId}`, {
+            method: 'DELETE',
+            headers: this.getAuthHeaders(),
+        });
+        return this.handleResponse(response);
+    }
+
     async getWalletBalance(walletId) {
         const response = await fetch(`${API_BASE_URL}/wallets/${walletId}/balance`, {
             method: 'GET',
@@ -200,6 +217,23 @@ class ApiService {
         return this.handleResponse(response);
     }
 
+    async updateTransaction(transactionId, transactionData) {
+        const response = await fetch(`${API_BASE_URL}/transactions/${transactionId}`, {
+            method: 'PUT',
+            headers: this.getAuthHeaders(),
+            body: JSON.stringify(transactionData),
+        });
+        return this.handleResponse(response);
+    }
+
+    async deleteTransaction(transactionId) {
+        const response = await fetch(`${API_BASE_URL}/transactions/${transactionId}`, {
+            method: 'DELETE',
+            headers: this.getAuthHeaders(),
+        });
+        return this.handleResponse(response);
+    }
+
     async getWalletTransactions(walletId) {
         const response = await fetch(`${API_BASE_URL}/transactions/wallet/${walletId}`, {
             method: 'GET',
@@ -208,9 +242,82 @@ class ApiService {
         return this.handleResponse(response);
     }
 
+    async transferFunds(transferData) {
+        const response = await fetch(`${API_BASE_URL}/transactions/transfer`, {
+            method: 'POST',
+            headers: this.getAuthHeaders(),
+            body: JSON.stringify(transferData),
+        });
+        return this.handleResponse(response);
+    }
+
     // CATEGORY ENDPOINTS
     async getCategories() {
         const response = await fetch(`${API_BASE_URL}/categories/`, {
+            method: 'GET',
+            headers: this.getAuthHeaders(),
+        });
+        return this.handleResponse(response);
+    }
+
+    async createCategory(categoryData) {
+        const response = await fetch(`${API_BASE_URL}/categories/`, {
+            method: 'POST',
+            headers: this.getAuthHeaders(),
+            body: JSON.stringify(categoryData),
+        });
+        return this.handleResponse(response);
+    }
+
+    async updateCategory(categoryId, categoryData) {
+        const response = await fetch(`${API_BASE_URL}/categories/${categoryId}`, {
+            method: 'PUT',
+            headers: this.getAuthHeaders(),
+            body: JSON.stringify(categoryData),
+        });
+        return this.handleResponse(response);
+    }
+
+    async deleteCategory(categoryId) {
+        const response = await fetch(`${API_BASE_URL}/categories/${categoryId}`, {
+            method: 'DELETE',
+            headers: this.getAuthHeaders(),
+        });
+        return this.handleResponse(response);
+    }
+
+    // SYNC ENDPOINTS
+    async syncPull(lastSyncAt = null) {
+        const body = lastSyncAt ? { last_sync_at: lastSyncAt } : {};
+
+        const response = await fetch(`${API_BASE_URL}/sync/pull`, {
+            method: 'POST',
+            headers: this.getAuthHeaders(),
+            body: JSON.stringify(body),
+        });
+        return this.handleResponse(response);
+    }
+
+    async syncPush(changes) {
+        const response = await fetch(`${API_BASE_URL}/sync/push`, {
+            method: 'POST',
+            headers: this.getAuthHeaders(),
+            body: JSON.stringify(changes),
+        });
+        return this.handleResponse(response);
+    }
+
+    async resolveConflicts(resolutions) {
+        const response = await fetch(`${API_BASE_URL}/sync/resolve-conflicts`, {
+            method: 'POST',
+            headers: this.getAuthHeaders(),
+            body: JSON.stringify(resolutions),
+        });
+        return this.handleResponse(response);
+    }
+
+    async getSyncStatus() {
+        const response = await fetch(`${API_BASE_URL}/sync/status`, {
             method: 'GET',
             headers: this.getAuthHeaders(),
         });

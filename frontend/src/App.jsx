@@ -1,12 +1,22 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
 import DashboardPage from './pages/DashboardPage';
 import MyWalletsPage from './pages/MyWalletsPage';
 import SettingsPage from './pages/SettingsPage';
+import { syncService } from './services/syncService';
 
 function App() {
+    useEffect(() => {
+        // Initialize sync service when app starts
+        const initSync = async () => {
+            await syncService.init();
+        };
+
+        initSync();
+    }, []);
+
     return (
         <Router>
             <div className="App">
