@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import MyWalletsContent from '../components/wallet/MyWalletsContent';
 import AddTransactionModal from '../components/wallet/AddTransactionModal';
+import TransferModal from '../components/wallet/TransferModal';
 import { apiService } from '../services/api';
 
 const MyWalletsPage = () => {
@@ -11,19 +12,19 @@ const MyWalletsPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
     const [selectedWallet, setSelectedWallet] = useState(null);
     const [isCreatingTransaction, setIsCreatingTransaction] = useState(false);
+    const [isCreatingTransfer, setIsCreatingTransfer] = useState(false);
 
     const location = useLocation();
 
     useEffect(() => {
         fetchWallets();
 
-        // Check if we need to open transaction modal from dashboard
         if (location.state?.openTransactionModal) {
             setIsTransactionModalOpen(true);
             setSelectedWallet(location.state.selectedWallet);
-            // Clear the state to prevent reopening on refresh
             window.history.replaceState({}, document.title);
         }
     }, [location.state]);
@@ -49,6 +50,16 @@ const MyWalletsPage = () => {
         setWallets(prev => [...prev, newWallet]);
     };
 
+    const handleWalletUpdated = (updatedWallet) => {
+        setWallets(prev => prev.map(wallet =>
+            wallet.id === updatedWallet.id ? updatedWallet : wallet
+        ));
+    };
+
+    const handleWalletDeleted = (walletId) => {
+        setWallets(prev => prev.filter(wallet => wallet.id !== walletId));
+    };
+
     const handleAddTransaction = async (transactionData) => {
         try {
             setIsCreatingTransaction(true);
@@ -58,23 +69,20 @@ const MyWalletsPage = () => {
                 amount: parseFloat(transactionData.amount),
                 description: transactionData.note || '',
                 type: transactionData.type,
-                transaction_date: new Date().toISOString().split('T')[0], // Today's date
+                transaction_date: new Date().toISOString().split('T')[0],
                 wallet_id: parseInt(transactionData.wallet_id),
                 category_id: await getCategoryId(transactionData.category)
             };
 
             console.log('Creating transaction:', formattedData);
 
-            // Create the transaction via API
             const newTransaction = await apiService.createTransaction(formattedData);
 
-            // Refresh wallets to update balances
             await fetchWallets();
 
             setIsTransactionModalOpen(false);
             setSelectedWallet(null);
 
-            // Show success message
             alert('Transaction added successfully!');
 
         } catch (error) {
@@ -85,15 +93,36 @@ const MyWalletsPage = () => {
         }
     };
 
-    // Helper function to get category ID from category name
+    const handleTransfer = async (transferData) => {
+        try {
+            setIsCreatingTransfer(true);
+
+            console.log('Creating transfer:', transferData);
+
+            const result = await apiService.transferFunds(transferData);
+
+            await fetchWallets();
+
+            setIsTransferModalOpen(false);
+
+            alert('Transfer completed successfully!');
+
+        } catch (error) {
+            console.error('Error creating transfer:', error);
+            alert(`Failed to create transfer: ${error.message || 'Please try again.'}`);
+        } finally {
+            setIsCreatingTransfer(false);
+        }
+    };
+
     const getCategoryId = async (categoryName) => {
         try {
             const categories = await apiService.getCategories();
             const category = categories.find(cat => cat.name === categoryName);
-            return category ? category.id : 1; // Default to first category if not found
+            return category ? category.id : 1;
         } catch (error) {
             console.error('Error fetching categories:', error);
-            return 1; // Default category ID
+            return 1;
         }
     };
 
@@ -102,9 +131,17 @@ const MyWalletsPage = () => {
         setIsTransactionModalOpen(true);
     };
 
+    const handleOpenTransferModal = () => {
+        setIsTransferModalOpen(true);
+    };
+
     const handleCloseTransactionModal = () => {
         setIsTransactionModalOpen(false);
         setSelectedWallet(null);
+    };
+
+    const handleCloseTransferModal = () => {
+        setIsTransferModalOpen(false);
     };
 
     if (loading) {
@@ -124,9 +161,21 @@ const MyWalletsPage = () => {
             <div className="flex-1 ml-64 flex flex-col bg-background">
                 <Header />
                 <div className="flex-1 p-8 overflow-auto bg-background">
+                    {/* Add Transfer Button */}
+                    <div className="flex justify-end mb-4">
+                        <button
+                            onClick={handleOpenTransferModal}
+                            className="bg-white border-2 border-blue-500 text-blue-500 hover:bg-blue-50 px-6 py-3 rounded-lg font-semibold transition-colors duration-200"
+                        >
+                            💸 Transfer Funds
+                        </button>
+                    </div>
+
                     <MyWalletsContent
                         wallets={wallets}
                         onWalletCreated={handleWalletCreated}
+                        onWalletUpdated={handleWalletUpdated}
+                        onWalletDeleted={handleWalletDeleted}
                         onAddTransaction={handleOpenTransactionModal}
                     />
                 </div>
@@ -140,6 +189,15 @@ const MyWalletsPage = () => {
                 isLoading={isCreatingTransaction}
                 wallets={wallets}
                 selectedWallet={selectedWallet}
+            />
+
+            {/* Transfer Modal */}
+            <TransferModal
+                isOpen={isTransferModalOpen}
+                onClose={handleCloseTransferModal}
+                onSubmit={handleTransfer}
+                isLoading={isCreatingTransfer}
+                wallets={wallets}
             />
         </div>
     );

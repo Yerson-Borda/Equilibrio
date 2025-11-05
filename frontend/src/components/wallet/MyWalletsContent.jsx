@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../ui/Button';
 import CreateWalletModal from './CreateWalletModal';
+import EditWalletModal from './EditWalletModal';
 import AddTransactionModal from './AddTransactionModal';
 import { apiService } from '../../services/api';
 
-const MyWalletsContent = ({ wallets, onWalletCreated }) => {
+const MyWalletsContent = ({ wallets, onWalletCreated, onWalletUpdated, onWalletDeleted }) => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedWallet, setSelectedWallet] = useState(null);
+    const [walletToEdit, setWalletToEdit] = useState(null);
+    const [walletToDelete, setWalletToDelete] = useState(null);
     const [transactions, setTransactions] = useState([]);
     const [upcomingPayments, setUpcomingPayments] = useState([]);
 
@@ -58,6 +62,46 @@ const MyWalletsContent = ({ wallets, onWalletCreated }) => {
         }
     };
 
+    const handleUpdateWallet = async (walletData, walletId) => {
+        try {
+            setIsLoading(true);
+            const formattedData = {
+                name: walletData.name,
+                currency: walletData.currency,
+                wallet_type: walletData.wallet_type,
+                initial_balance: parseFloat(walletData.initial_balance) || 0,
+                card_number: walletData.card_number || '',
+                color: walletData.color || '#6FBAFC'
+            };
+
+            const updatedWallet = await apiService.updateWallet(walletId, formattedData);
+            onWalletUpdated(updatedWallet);
+            setIsEditModalOpen(false);
+            setWalletToEdit(null);
+        } catch (error) {
+            console.error('Error updating wallet:', error);
+            alert(`Failed to update wallet: ${error.message || 'Please try again.'}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDeleteWallet = async (walletId) => {
+        if (window.confirm('Are you sure you want to delete this wallet? This action cannot be undone.')) {
+            try {
+                setIsLoading(true);
+                await apiService.deleteWallet(walletId);
+                onWalletDeleted(walletId);
+                alert('Wallet deleted successfully!');
+            } catch (error) {
+                console.error('Error deleting wallet:', error);
+                alert('Failed to delete wallet');
+            } finally {
+                setIsLoading(false);
+            }
+        }
+    };
+
     const handleAddTransaction = async (transactionData) => {
         try {
             setIsLoading(true);
@@ -94,20 +138,6 @@ const MyWalletsContent = ({ wallets, onWalletCreated }) => {
         }
     };
 
-    const handleDeleteWallet = async (walletId) => {
-        if (window.confirm('Are you sure you want to delete this wallet? This action cannot be undone.')) {
-            try {
-                // You'll need to implement deleteWallet in your apiService
-                // await apiService.deleteWallet(walletId);
-                console.log('Delete wallet:', walletId);
-                alert('Wallet deletion would be implemented here');
-            } catch (error) {
-                console.error('Error deleting wallet:', error);
-                alert('Failed to delete wallet');
-            }
-        }
-    };
-
     const getCategoryId = async (categoryName) => {
         try {
             const categories = await apiService.getCategories();
@@ -122,6 +152,11 @@ const MyWalletsContent = ({ wallets, onWalletCreated }) => {
     const handleOpenTransactionModal = (wallet = null) => {
         setSelectedWallet(wallet);
         setIsTransactionModalOpen(true);
+    };
+
+    const handleOpenEditModal = (wallet) => {
+        setWalletToEdit(wallet);
+        setIsEditModalOpen(true);
     };
 
     const formatCardNumber = (number) => {
@@ -141,7 +176,7 @@ const MyWalletsContent = ({ wallets, onWalletCreated }) => {
 
     return (
         <div className="max-w-7xl mx-auto">
-            {/* Header with Add Wallet Button - White box with green text */}
+            {/* Header with Add Wallet Button */}
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-2xl font-bold text-text">My Wallets</h1>
                 <button
@@ -192,7 +227,7 @@ const MyWalletsContent = ({ wallets, onWalletCreated }) => {
                                 </div>
                             </div>
 
-                            {/* Action Buttons - Add Transaction (green text, white box) and Delete (red) */}
+                            {/* Action Buttons */}
                             <div className="flex space-x-3">
                                 <button
                                     onClick={() => handleOpenTransactionModal(wallet)}
@@ -201,10 +236,17 @@ const MyWalletsContent = ({ wallets, onWalletCreated }) => {
                                     Add Transaction
                                 </button>
                                 <button
+                                    onClick={() => handleOpenEditModal(wallet)}
+                                    className="flex-1 bg-white border-2 border-blue-500 text-blue-500 hover:bg-blue-50 py-2 rounded-lg font-semibold transition-colors duration-200"
+                                >
+                                    Edit
+                                </button>
+                                <button
                                     onClick={() => handleDeleteWallet(wallet.id)}
                                     className="flex-1 bg-[#D06978] text-white hover:bg-red-700 py-2 rounded-lg font-semibold transition-colors duration-200"
+                                    disabled={isLoading}
                                 >
-                                    Delete
+                                    {isLoading ? 'Deleting...' : 'Delete'}
                                 </button>
                             </div>
                         </div>
@@ -242,6 +284,9 @@ const MyWalletsContent = ({ wallets, onWalletCreated }) => {
                                     <div>
                                         <p className="font-medium text-text">{transaction.description || 'Transaction'}</p>
                                         <p className="text-sm text-metallic-gray">{transaction.type}</p>
+                                        {transaction.note && (
+                                            <p className="text-xs text-metallic-gray mt-1">{transaction.note}</p>
+                                        )}
                                     </div>
                                     <p className={`font-semibold ${
                                         transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
@@ -293,6 +338,18 @@ const MyWalletsContent = ({ wallets, onWalletCreated }) => {
                 onClose={() => setIsCreateModalOpen(false)}
                 onSubmit={handleCreateWallet}
                 isLoading={isLoading}
+            />
+
+            {/* Edit Wallet Modal */}
+            <EditWalletModal
+                isOpen={isEditModalOpen}
+                onClose={() => {
+                    setIsEditModalOpen(false);
+                    setWalletToEdit(null);
+                }}
+                onSubmit={handleUpdateWallet}
+                isLoading={isLoading}
+                wallet={walletToEdit}
             />
 
             {/* Add Transaction Modal */}
