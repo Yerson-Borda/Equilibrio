@@ -8,6 +8,15 @@ import spendingIcon from '../../assets/icons/spending-icon.png';
 import savedIcon from '../../assets/icons/saved-icon.png';
 
 const EmptyState = ({ onCreateWallet, userStats }) => {
+    // Provide default values if userStats is null
+    const safeUserStats = userStats || {
+        totalBalance: 0,
+        totalSpending: 0,
+        totalSaved: 0
+    };
+
+    const { totalBalance, totalSpending, totalSaved } = safeUserStats;
+
     return (
         <div className="max-w-7xl mx-auto pt-8">
             {/* Stats Cards with Left-Centered Icons - Same design as before but with real data */}
@@ -18,7 +27,7 @@ const EmptyState = ({ onCreateWallet, userStats }) => {
                         <img src={balanceIcon} alt="Balance" className="w-10 h-10 mr-4" />
                         <div className="flex-1 text-center">
                             <h3 className="text-sm font-medium text-white mb-1">Total balance</h3>
-                            <p className="text-2xl font-bold text-white">${userStats.totalBalance.toFixed(2)}</p>
+                            <p className="text-2xl font-bold text-white">${totalBalance.toFixed(2)}</p>
                         </div>
                     </div>
                 </div>
@@ -29,7 +38,7 @@ const EmptyState = ({ onCreateWallet, userStats }) => {
                         <img src={spendingIcon} alt="Spending" className="w-10 h-10 mr-4" />
                         <div className="flex-1 text-center">
                             <h3 className="text-sm font-medium text-metallic-gray mb-1">Total spending</h3>
-                            <p className="text-2xl font-bold text-text">${userStats.totalSpending.toFixed(2)}</p>
+                            <p className="text-2xl font-bold text-text">${totalSpending.toFixed(2)}</p>
                         </div>
                     </div>
                 </div>
@@ -40,7 +49,7 @@ const EmptyState = ({ onCreateWallet, userStats }) => {
                         <img src={savedIcon} alt="Saved" className="w-10 h-10 mr-4" />
                         <div className="flex-1 text-center">
                             <h3 className="text-sm font-medium text-metallic-gray mb-1">Total saved</h3>
-                            <p className="text-2xl font-bold text-text">${userStats.totalSaved.toFixed(2)}</p>
+                            <p className="text-2xl font-bold text-text">${totalSaved.toFixed(2)}</p>
                         </div>
                     </div>
                 </div>

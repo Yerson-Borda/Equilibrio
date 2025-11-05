@@ -108,9 +108,11 @@ class LocalDB {
         });
     }
 
-    // Sync metadata operations
+    // Sync metadata operations - FIXED VERSION
     async getSyncMetadata() {
-        return this.get('syncMetadata', 'lastSync') || {
+        const metadata = await this.get('syncMetadata', 'lastSync');
+        // Return default metadata if none exists
+        return metadata || {
             lastSyncAt: null,
             userSyncVersion: 0,
             pendingChanges: []

@@ -1,5 +1,5 @@
-import { apiService } from './api';
-import { localDB } from './localDB';
+import { apiService } from '././api.jsx';
+import { localDB } from '././localDB.js';
 
 class SyncService {
     constructor() {
@@ -23,19 +23,6 @@ class SyncService {
         }
     }
 
-    handleOnline() {
-        this.isOnline = true;
-        console.log('App is online, triggering sync...');
-        this.sync();
-        this.processOfflineQueue();
-    }
-
-    handleOffline() {
-        this.isOnline = false;
-        console.log('App is offline, queuing operations...');
-    }
-
-    // Start periodic sync
     startPeriodicSync() {
         if (this.syncTimer) {
             clearInterval(this.syncTimer);
@@ -43,20 +30,35 @@ class SyncService {
 
         this.syncTimer = setInterval(() => {
             if (this.isOnline) {
-                this.sync();
+                this.sync().catch(error => {
+                    console.error('Periodic sync failed:', error);
+                });
             }
         }, this.syncInterval);
 
-        console.log('Periodic sync started');
+        console.log('Periodic sync started (5 minutes interval)');
     }
 
-    // Stop periodic sync
     stopPeriodicSync() {
         if (this.syncTimer) {
             clearInterval(this.syncTimer);
             this.syncTimer = null;
         }
         console.log('Periodic sync stopped');
+    }
+
+    handleOnline() {
+        this.isOnline = true;
+        console.log('App is online, triggering background sync...');
+        this.sync().catch(error => {
+            console.error('Online sync failed:', error);
+        });
+        this.processOfflineQueue();
+    }
+
+    handleOffline() {
+        this.isOnline = false;
+        console.log('App is offline, queuing operations...');
     }
 
     // Main sync method
@@ -255,8 +257,13 @@ class SyncService {
 
     // Get last sync time
     async getLastSyncTime() {
-        const metadata = await localDB.getSyncMetadata();
-        return metadata.lastSyncAt;
+        try {
+            const metadata = await localDB.getSyncMetadata();
+            return metadata.lastSyncAt;
+        } catch (error) {
+            console.error('Error getting last sync time:', error);
+            return null;
+        }
     }
 
     // Check if data is fresh (less than 5 minutes old)

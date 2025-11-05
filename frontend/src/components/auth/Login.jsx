@@ -108,11 +108,13 @@ const Login = () => {
             // Initialize sync service
             await syncService.init();
 
-            // Trigger initial sync
-            console.log('Starting initial sync...');
-            await syncService.sync();
+            // Trigger initial sync (silently in background)
+            console.log('Starting initial background sync...');
+            syncService.sync().catch(error => {
+                console.error('Initial sync failed:', error);
+            });
 
-            // Start periodic sync
+            // Start periodic sync (silently in background)
             syncService.startPeriodicSync();
 
             // Redirect to dashboard

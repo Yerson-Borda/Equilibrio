@@ -12,57 +12,86 @@ const Dashboard = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [wallets, setWallets] = useState([]);
-    const [userStats, setUserStats] = useState(null);
-    const [lastSync, setLastSync] = useState(null);
+    const [userStats, setUserStats] = useState({
+        totalBalance: 0,
+        totalSpending: 0,
+        totalSaved: 0
+    });
 
     useEffect(() => {
         loadData();
-        setupSyncListener();
+        setupAutomaticSync();
     }, []);
+
+    const setupAutomaticSync = () => {
+        // Auto-sync every 5 minutes
+        const syncInterval = setInterval(() => {
+            if (navigator.onLine) {
+                syncService.sync().catch(error => {
+                    console.error('Background sync failed:', error);
+                });
+            }
+        }, 5 * 60 * 1000); // 5 minutes
+
+        // Sync when coming online
+        const handleOnline = () => {
+            console.log('App came online, triggering sync...');
+            syncService.sync().catch(error => {
+                console.error('Online sync failed:', error);
+            });
+        };
+
+        window.addEventListener('online', handleOnline);
+
+        return () => {
+            clearInterval(syncInterval);
+            window.removeEventListener('online', handleOnline);
+        };
+    };
 
     const loadData = async () => {
         try {
             setIsLoading(true);
 
             // Load wallets with cache fallback
-            const walletsData = await syncService.getDataWithFallback(
-                () => apiService.getWallets(),
-                'wallets'
-            );
-            setWallets(walletsData);
+            try {
+                const walletsData = await syncService.getDataWithFallback(
+                    () => apiService.getWallets(),
+                    'wallets'
+                );
+                setWallets(walletsData || []);
+            } catch (error) {
+                console.error('Error loading wallets:', error);
+                setWallets([]);
+            }
 
-            // Load user stats
-            const statsData = await apiService.getDetailedUserInfo();
-            setUserStats(statsData);
+            // Load user stats with error handling
+            try {
+                const statsData = await apiService.getDetailedUserInfo();
+                console.log('User stats response:', statsData);
 
-            // Get last sync time
-            const metadata = await localDB.getSyncMetadata();
-            setLastSync(metadata.lastSyncAt);
+                // Transform the API response to match the expected format
+                setUserStats({
+                    totalBalance: statsData.stats?.total_balance ||
+                        statsData.total_balance ||
+                        statsData.balance || 0,
+                    totalSpending: statsData.stats?.total_spending ||
+                        statsData.total_spending ||
+                        statsData.spending || 0,
+                    totalSaved: statsData.stats?.total_saved ||
+                        statsData.total_saved ||
+                        statsData.saved || 0
+                });
+            } catch (error) {
+                console.error('Error loading user stats:', error);
+                // Keep default values if API fails
+            }
 
         } catch (error) {
             console.error('Error loading dashboard data:', error);
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const setupSyncListener = () => {
-        // Listen for sync completion
-        const handleSyncComplete = () => {
-            loadData(); // Refresh data after sync
-        };
-
-        // You can implement a custom event system or use a state management solution
-        // For now, we'll use a simple interval to check for updates
-        const interval = setInterval(async () => {
-            const metadata = await localDB.getSyncMetadata();
-            if (metadata.lastSyncAt !== lastSync) {
-                setLastSync(metadata.lastSyncAt);
-                loadData();
-            }
-        }, 30000); // Check every 30 seconds
-
-        return () => clearInterval(interval);
     };
 
     const handleCreateWallet = async (walletData) => {
@@ -103,11 +132,6 @@ const Dashboard = () => {
         }
     };
 
-    const handleRefresh = () => {
-        loadData();
-        syncService.sync();
-    };
-
     return (
         <div className="min-h-screen bg-background flex">
             <Sidebar activeItem="dashboard" />
@@ -115,33 +139,7 @@ const Dashboard = () => {
             <div className="flex-1 ml-64 flex flex-col bg-background">
                 <Header />
 
-                {/* Sync Status Indicator */}
-                <div className="px-8 pt-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                            {lastSync && (
-                                <div className="text-sm text-metallic-gray">
-                                    Last synced: {new Date(lastSync).toLocaleTimeString()}
-                                </div>
-                            )}
-                            {!navigator.onLine && (
-                                <div className="text-sm text-orange-500 bg-orange-50 px-2 py-1 rounded">
-                                    Offline Mode
-                                </div>
-                            )}
-                        </div>
-                        <button
-                            onClick={handleRefresh}
-                            disabled={isLoading}
-                            className="text-sm text-blue hover:text-blue-600 flex items-center space-x-1"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            <span>Refresh</span>
-                        </button>
-                    </div>
-                </div>
+                {/* Removed sync status indicator */}
 
                 <div className="flex-1 p-8 overflow-auto bg-background">
                     {isLoading && wallets.length === 0 ? (
