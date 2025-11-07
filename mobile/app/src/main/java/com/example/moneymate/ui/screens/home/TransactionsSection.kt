@@ -13,10 +13,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.domain.home.model.Transaction
 import kotlin.math.abs
 
 @Composable
-fun TransactionsSection(onSeeAll: () -> Unit) {
+fun TransactionsSection(
+    transactions: List<Transaction>,
+    onSeeAllTransactions: () -> Unit
+) {
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -24,7 +28,7 @@ fun TransactionsSection(onSeeAll: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Transactions",
+                text = "Recent Transactions",
                 color = Color(0xFF1E1E1E),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold
@@ -34,22 +38,34 @@ fun TransactionsSection(onSeeAll: () -> Unit) {
                 text = "See All",
                 color = Color(0xFF2196F3),
                 fontSize = 14.sp,
-                modifier = Modifier.clickable { onSeeAll() }
+                modifier = Modifier.clickable { onSeeAllTransactions() }
             )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        val transactions = listOf(
-            Transaction("Adobe Illustrator", "Subscriptions", -32.0, "Today"),
-            Transaction("Dribbble", "Subscriptions", -15.0, "Today"),
-            Transaction("Sony Camera", "Shopping", -200.0, "Today"),
-            Transaction("Paypal", "Income", 32.0, "Today")
-        )
-
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            transactions.forEach { transaction ->
-                TransactionItemRow(transaction)
+        if (transactions.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = Color(0xFF1E1E1E),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No recent transactions",
+                    color = Color(0xFFAAAAAA),
+                    fontSize = 14.sp
+                )
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                transactions.take(5).forEach { transaction -> // Show only last 5 transactions
+                    TransactionItemRow(transaction)
+                }
             }
         }
     }
@@ -57,6 +73,11 @@ fun TransactionsSection(onSeeAll: () -> Unit) {
 
 @Composable
 fun TransactionItemRow(transaction: Transaction) {
+    val isIncome = transaction.type == "income"
+    val amountColor = if (isIncome) Color(0xFF4CAF50) else Color(0xFFF44336)
+    val amountPrefix = if (isIncome) "+" else "-"
+    val iconBackground = if (isIncome) Color(0xFF2E7D32) else Color(0xFFC62828)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -67,11 +88,20 @@ fun TransactionItemRow(transaction: Transaction) {
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Category icon
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .background(Color(0xFF333333), CircleShape)
-        )
+                .background(iconBackground, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = transaction.category.first().toString(),
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
+        }
 
         Spacer(modifier = Modifier.width(12.dp))
 
@@ -83,17 +113,32 @@ fun TransactionItemRow(transaction: Transaction) {
                 fontWeight = FontWeight.Medium
             )
             Text(
-                text = transaction.category,
+                text = "${transaction.category} • ${formatTransactionDate(transaction.date)}",
                 color = Color(0xFFAAAAAA),
                 fontSize = 14.sp
             )
         }
 
         Text(
-            text = if (transaction.amount >= 0) "+$${transaction.amount}" else "-$${abs(transaction.amount)}",
-            color = if (transaction.amount >= 0) Color(0xFF4CAF50) else Color(0xFFF44336),
+            text = "$amountPrefix$${"%.2f".format(abs(transaction.amount))}",
+            color = amountColor,
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium
         )
+    }
+}
+
+// Helper function to format transaction date
+private fun formatTransactionDate(dateString: String): String {
+    return try {
+        // You might want to use a proper date formatter based on your backend date format
+        // For now, just return the date as is or do simple formatting
+        if (dateString.contains("T")) {
+            dateString.substring(0, 10) // Extract just the date part from ISO format
+        } else {
+            dateString
+        }
+    } catch (e: Exception) {
+        dateString
     }
 }

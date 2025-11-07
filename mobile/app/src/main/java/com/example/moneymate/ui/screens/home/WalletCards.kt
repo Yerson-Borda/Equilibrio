@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.sp
 import com.example.moneymate.R
 
 @Composable
-fun WalletBalanceCard() {
+fun WalletBalanceCard(totalBalance: Double) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -41,7 +41,7 @@ fun WalletBalanceCard() {
                 fontSize = 14.sp
             )
             Text(
-                text = "$0.00",
+                text = "$${"%.2f".format(totalBalance)}",
                 color = Color.White,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold
@@ -71,7 +71,7 @@ fun WalletBalanceCard() {
 }
 
 @Composable
-fun FinancialOverviewCard() {
+fun FinancialOverviewCard(savedAmount: Double, spentAmount: Double) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -84,26 +84,23 @@ fun FinancialOverviewCard() {
     ) {
         Row(
             modifier = Modifier.weight(1f)
-                .padding(start = 24.dp , top = 12.dp),
+                .padding(start = 24.dp, top = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
                 painter = painterResource(R.drawable.ic_saving),
                 contentDescription = "saved arrow",
-                modifier = Modifier
-                    .size(24.dp)
+                modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
-            Column(
-                horizontalAlignment = Alignment.Start
-            ) {
+            Column {
                 Text(
                     text = "Saved",
                     color = Color(0xFFF3F3F3),
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "$0.00",
+                    text = "$${"%.2f".format(savedAmount)}",
                     color = Color(0xFFFFFFFF),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold
@@ -140,7 +137,7 @@ fun FinancialOverviewCard() {
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "$0.00",
+                    text = "$${"%.2f".format(spentAmount)}",
                     color = Color(0xFFFFFFFF),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold
@@ -149,17 +146,17 @@ fun FinancialOverviewCard() {
         }
     }
 }
-@Preview(showBackground = true, backgroundColor = 0xFF121212)
-@Composable
-fun WalletBalanceCardRegularPreview() {
-    MaterialTheme {
-        WalletBalanceCard()
-    }
-}
-@Preview(showBackground = true, backgroundColor = 0xFF121212)
-@Composable
-fun FinancialOverviewCardRegularPreview() {
-    MaterialTheme {
-        FinancialOverviewCard()
-    }
-}
+//@Preview(showBackground = true, backgroundColor = 0xFF121212)
+//@Composable
+//fun WalletBalanceCardRegularPreview() {
+//    MaterialTheme {
+//        WalletBalanceCard()
+//    }
+//}
+//@Preview(showBackground = true, backgroundColor = 0xFF121212)
+//@Composable
+//fun FinancialOverviewCardRegularPreview() {
+//    MaterialTheme {
+//        FinancialOverviewCard()
+//    }
+//}

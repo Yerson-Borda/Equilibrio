@@ -12,9 +12,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.domain.home.model.HomeData
 
 @Composable
 fun RegularHomeContent(
+    homeData: HomeData,
     onSeeAllBudget: () -> Unit,
     onSeeAllTransactions: () -> Unit
 ) {
@@ -23,16 +25,27 @@ fun RegularHomeContent(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
     ) {
-        BudgetExpenseSection(onSeeAllBudget)
+        BudgetExpenseSection(
+            budgetRemaining = homeData.budgetRemaining,
+            budgetStatus = homeData.budgetStatus,
+            onSeeAll = onSeeAllBudget
+        )
         Spacer(modifier = Modifier.height(24.dp))
-        SavingsSection()
+        SavingsSection(savingsGoals = homeData.savingsGoals)
         Spacer(modifier = Modifier.height(24.dp))
-        TransactionsSection(onSeeAllTransactions)
+        TransactionsSection(
+            transactions = homeData.recentTransactions,
+            onSeeAllTransactions = onSeeAllTransactions
+        )
     }
 }
 
 @Composable
-fun BudgetExpenseSection(onSeeAll: () -> Unit) {
+fun BudgetExpenseSection(
+    budgetRemaining: Double?,
+    budgetStatus: String?,
+    onSeeAll: () -> Unit
+) {
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -66,20 +79,42 @@ fun BudgetExpenseSection(onSeeAll: () -> Unit) {
                 .padding(16.dp)
         ) {
             Column {
-                Text(
-                    text = "You can spend \$76 more this month",
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                if (budgetRemaining != null) {
+                    Text(
+                        text = "You can spend $${"%.2f".format(budgetRemaining)} more this month",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = "Normal",
-                    color = Color(0xFF4CAF50),
-                    fontSize = 14.sp
-                )
+                    Text(
+                        text = budgetStatus ?: "No Budget Set",
+                        color = when (budgetStatus?.lowercase()) {
+                            "normal", "on track" -> Color(0xFF4CAF50)
+                            "warning", "close to limit" -> Color(0xFFFF9800)
+                            "exceeded", "over budget" -> Color(0xFFF44336)
+                            else -> Color(0xFFAAAAAA)
+                        },
+                        fontSize = 14.sp
+                    )
+                } else {
+                    Text(
+                        text = "No budget set for this month",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Set a budget to track your spending",
+                        color = Color(0xFFAAAAAA),
+                        fontSize = 14.sp
+                    )
+                }
             }
         }
     }
