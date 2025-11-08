@@ -1,53 +1,49 @@
 package com.example.data.network.home
 
-import com.example.data.network.home.model.HomeResponse
-import com.example.data.network.home.model.SavingsGoalResponse
-import com.example.data.network.home.model.TransactionResponse
-import com.example.domain.home.HomeRepository
-import com.example.domain.home.model.HomeData
-import com.example.domain.home.model.SavingsGoal
-import com.example.domain.home.model.Transaction
+import com.example.data.network.home.model.StatsResponse
+import com.example.data.network.home.model.UserDetailedResponse
+import com.example.data.network.home.model.UserResponse
+import com.example.domain.home.UserRepository
+import com.example.domain.home.model.StatsData
+import com.example.domain.home.model.UserData
+import com.example.domain.home.model.UserDetailedData
 
-class HomeRepositoryImpl(
-    private val homeApi: HomeApi
-) : HomeRepository {
+class UserRepositoryImpl(
+    private val userApi: UserApi
+) : UserRepository {
 
-    override suspend fun getHomeData(): HomeData {
-        val response = homeApi.getHomeData()
+    override suspend fun getUserDetailed(): UserDetailedData {
+        val response = userApi.getUserDetailed()
         return response.toDomain()
     }
 }
 
 // Extension functions to convert from network to domain models
-private fun HomeResponse.toDomain(): HomeData {
-    return HomeData(
-        totalBalance = totalBalance,
-        savedAmount = savedAmount,
-        spentAmount = spentAmount,
-        budgetRemaining = budgetRemaining,
-        budgetStatus = budgetStatus,
-        savingsGoals = savingsGoals.map { it.toDomain() },
-        recentTransactions = recentTransactions.map { it.toDomain() },
-        hasWallets = hasWallets
+private fun UserDetailedResponse.toDomain(): UserDetailedData {
+    return UserDetailedData(
+        user = user.toDomain(),
+        stats = stats.toDomain()
     )
 }
 
-private fun SavingsGoalResponse.toDomain(): SavingsGoal {
-    return SavingsGoal(
-        id = id,
-        name = name,
-        targetAmount = targetAmount,
-        currentAmount = currentAmount
+private fun UserResponse.toDomain(): UserData {
+    return UserData(
+        id = id.toString(),
+        email = email,
+        fullName = fullName,
+        phoneNumber = phoneNumber,
+        dateOfBirth = dateOfBirth,
+        avatarUrl = avatarUrl,
+        defaultCurrency = defaultCurrency,
+        createdAt = createdAt
     )
 }
 
-private fun TransactionResponse.toDomain(): Transaction {
-    return Transaction(
-        id = id,
-        merchant = merchant,
-        category = category,
-        amount = amount,
-        date = date,
-        type = type
+private fun StatsResponse.toDomain(): StatsData {
+    return StatsData(
+        walletCount = walletCount,
+        totalTransactions = totalTransactions,
+        expenseCount = expenseCount,
+        incomeCount = incomeCount
     )
 }

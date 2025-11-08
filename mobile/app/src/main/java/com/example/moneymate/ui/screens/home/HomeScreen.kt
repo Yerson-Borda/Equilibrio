@@ -35,7 +35,7 @@ fun HomeScreen(
     currentScreen: String = "home",
     onNavigationItemSelected: (String) -> Unit = {}
 ) {
-    val homeData by viewModel.homeData.collectAsState()
+    val userData by viewModel.userData.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val scrollState = rememberScrollState()
 
@@ -47,7 +47,7 @@ fun HomeScreen(
         }
     }
 
-    if (isLoading && homeData == null) {
+    if (isLoading && userData == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -66,37 +66,40 @@ fun HomeScreen(
                 .verticalScroll(scrollState)
         ) {
             TopAppBarSection(
-                userName = "User", // You might want to get this from user profile
-                profileImage = null,
+                userName = userData?.user?.fullName ?: "User",
+                profileImage = userData?.user?.avatarUrl,
                 onProfileClick = onProfileClick
             )
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            homeData?.let { data ->
-                WalletBalanceCard(totalBalance = data.totalBalance)
+            userData?.let { data ->
+                // ALWAYS show these cards, even when walletCount is 0
+                WalletBalanceCard()
                 Spacer(modifier = Modifier.height(16.dp))
                 FinancialOverviewCard(
-                    savedAmount = data.savedAmount,
-                    spentAmount = data.spentAmount
+                    expenseCount = data.stats.expenseCount,
+                    incomeCount = data.stats.incomeCount
                 )
 
-                if (!data.hasWallets) {
+                // Only show FirstLoginContent if there are no wallets AND no transactions
+                if (data.stats.walletCount == 0 && data.stats.totalTransactions == 0) {
                     FirstLoginContent(
                         onAddRecord = onAddRecord,
                         onAddWallet = onAddWallet
                     )
                 } else {
                     RegularHomeContent(
-                        homeData = data,
+                        stats = data.stats,
                         onSeeAllBudget = onSeeAllBudget,
                         onSeeAllTransactions = onSeeAllTransactions
                     )
                 }
             } ?: run {
-                // Show empty state or error
-                EmptyHomeState(
-                    onRetry = { viewModel.refreshHomeData() }
+                // Show empty state when no data at all
+                FirstLoginContent(
+                    onAddRecord = onAddRecord,
+                    onAddWallet = onAddWallet
                 )
             }
 

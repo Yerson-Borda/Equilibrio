@@ -9,6 +9,7 @@ sealed class NavigationItem(val route: String) {
     object  Home : NavigationItem("Home")
     object Transactions: NavigationItem("Transactions")
     object Wallets: NavigationItem("Wallets")
+    object CreateWallet: NavigationItem("createWallet")
     object Goals: NavigationItem("Goals")
     object Profile: NavigationItem("Profile")
     object EditProfile: NavigationItem("EditProfile")

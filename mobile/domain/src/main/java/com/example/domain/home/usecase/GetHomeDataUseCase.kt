@@ -1,12 +1,12 @@
 package com.example.domain.home.usecase
 
-import com.example.domain.home.HomeRepository
-import com.example.domain.home.model.HomeData
+import com.example.domain.home.UserRepository
+import com.example.domain.home.model.UserDetailedData
 
-class GetHomeDataUseCase(
-    private val homeRepository: HomeRepository
+class GetUserDetailedUseCase(
+    private val userRepository: UserRepository
 ) {
-    suspend operator fun invoke(): HomeData {
-        return homeRepository.getHomeData()
+    suspend operator fun invoke(): UserDetailedData {
+        return userRepository.getUserDetailed()
     }
 }

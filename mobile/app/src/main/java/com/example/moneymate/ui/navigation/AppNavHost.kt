@@ -16,6 +16,8 @@ import com.example.moneymate.ui.screens.home.HomeScreen
 import com.example.moneymate.ui.screens.profile.editprofile.EditProfileScreen
 import com.example.moneymate.ui.screens.profile.profileoptions.ProfileOptionsScreen
 import com.example.moneymate.ui.screens.splash.SplashScreen
+import com.example.moneymate.ui.screens.wallet.CreateWalletScreen
+import com.example.moneymate.ui.screens.wallet.WalletScreen
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -75,7 +77,6 @@ fun AppNavHost(
 
         composable(NavigationItem.Home.route) {
             HomeScreen(
-                isFirstLogin = false, // Set to false after login
                 currentScreen = "home", // Pass current screen for bottom nav
                 onNavigationItemSelected = { route ->
                     when (route) {
@@ -106,7 +107,6 @@ fun AppNavHost(
         // Add other screen destinations
         composable(NavigationItem.Transactions.route) {
             HomeScreen(
-                isFirstLogin = false,
                 currentScreen = "transactions", // Mark transactions as active
                 onNavigationItemSelected = { route ->
                     when (route) {
@@ -120,9 +120,11 @@ fun AppNavHost(
         }
 
         composable(NavigationItem.Wallets.route) {
-            HomeScreen(
-                isFirstLogin = false,
-                currentScreen = "wallets", // Mark wallets as active
+            WalletScreen(
+                currentScreen = "wallets",
+                onNavigateToWalletCreation = {
+                    navController.navigate(NavigationItem.CreateWallet.route)
+                },
                 onNavigationItemSelected = { route ->
                     when (route) {
                         "home" -> navController.navigate(NavigationItem.Home.route)
@@ -130,13 +132,21 @@ fun AppNavHost(
                         "goals" -> navController.navigate(NavigationItem.Goals.route)
                     }
                 },
-                // ... other parameters
+                onBackClick = {
+                    navController.navigate(NavigationItem.Transactions.route)
+                },
+                onAddRecord = {}
+            )
+        }
+
+        composable(NavigationItem.CreateWallet.route) {
+            CreateWalletScreen(
+                onBackClick = { navController.popBackStack() }
             )
         }
 
         composable(NavigationItem.Goals.route) {
             HomeScreen(
-                isFirstLogin = false,
                 currentScreen = "goals", // Mark goals as active
                 onNavigationItemSelected = { route ->
                     when (route) {

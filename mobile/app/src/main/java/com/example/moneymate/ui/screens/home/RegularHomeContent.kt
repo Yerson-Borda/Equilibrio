@@ -12,11 +12,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.domain.home.model.HomeData
+import com.example.domain.home.model.StatsData
 
 @Composable
 fun RegularHomeContent(
-    homeData: HomeData,
+    stats: StatsData,
     onSeeAllBudget: () -> Unit,
     onSeeAllTransactions: () -> Unit
 ) {
@@ -25,17 +25,102 @@ fun RegularHomeContent(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
     ) {
-        BudgetExpenseSection(
-            budgetRemaining = homeData.budgetRemaining,
-            budgetStatus = homeData.budgetStatus,
-            onSeeAll = onSeeAllBudget
+        // Show basic stats since we don't have detailed data yet
+        BasicStatsSection(stats = stats)
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Placeholder for future features
+        ComingSoonSection()
+    }
+}
+
+@Composable
+fun BasicStatsSection(stats: StatsData) {
+    Column {
+        Text(
+            text = "Overview",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
         )
-        Spacer(modifier = Modifier.height(24.dp))
-        SavingsSection(savingsGoals = homeData.savingsGoals)
-        Spacer(modifier = Modifier.height(24.dp))
-        TransactionsSection(
-            transactions = homeData.recentTransactions,
-            onSeeAllTransactions = onSeeAllTransactions
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    color = Color(0xFF1E1E1E),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                .padding(16.dp)
+        ) {
+            Column {
+                Text(
+                    text = "Financial Summary",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Wallets:",
+                        color = Color(0xFFAAAAAA),
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        text = "${stats.walletCount}",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Total Transactions:",
+                        color = Color(0xFFAAAAAA),
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        text = "${stats.totalTransactions}",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ComingSoonSection() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = Color(0xFF1E1E1E),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "More features coming soon!",
+            color = Color(0xFFAAAAAA),
+            fontSize = 14.sp
         )
     }
 }

@@ -2,7 +2,8 @@ package com.example.moneymate.di
 
 import com.example.data.network.auth.AuthApi
 import com.example.data.network.common.Network
-import com.example.data.network.home.HomeApi
+import com.example.data.network.home.UserApi
+import com.example.data.network.wallet.WalletApi
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
@@ -18,6 +19,7 @@ val networkModule = module {
     singleOf(Network::getRetrofit)
     // apis
     single<AuthApi> { Network.getApi(get()) }
-    single<HomeApi> { Network.getApi(get()) }
+    single<UserApi> { Network.getApi(get()) }
+    single<WalletApi> { Network.getApi(get()) }
 
 }
