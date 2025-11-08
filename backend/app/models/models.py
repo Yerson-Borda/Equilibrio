@@ -71,7 +71,6 @@ class Transaction(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     amount = Column(DECIMAL(10, 2), nullable=False)
-    description = Column(Text)
     note = Column(Text, nullable=True)
     type = Column(Enum(TransactionType), nullable=False)
     transaction_date = Column(Date, nullable=False, server_default=func.now())

@@ -23,18 +23,27 @@ def create_default_categories():
         if not existing:
             default_categories = [
                 # Expense categories
-                {"name": "Foods & Drinks", "type": models.TransactionType.EXPENSE, "color": "#FF6B6B", "icon": "utensils"},
-                {"name": "Shopping", "type": models.TransactionType.EXPENSE, "color": "#4ECDC4", "icon": "shopping-bag"},
-                {"name": "Housing", "type": models.TransactionType.EXPENSE, "color": "#45B7D1", "icon": "home"},
-                {"name": "Transportation", "type": models.TransactionType.EXPENSE, "color": "#96CEB4", "icon": "bus"},
-                {"name": "Vehicle", "type": models.TransactionType.EXPENSE, "color": "#FFEAA7", "icon": "car"},
-                {"name": "Entertainment", "type": models.TransactionType.EXPENSE, "color": "#DDA0DD", "icon": "film"},
-                {"name": "Communication", "type": models.TransactionType.EXPENSE, "color": "#98D8C8", "icon": "phone"},
-                {"name": "Investments", "type": models.TransactionType.EXPENSE, "color": "#F7DC6F", "icon": "chart-line"},
-                {"name": "Others", "type": models.TransactionType.EXPENSE, "color": "#85C1E9", "icon": "ellipsis-h"},
+                {"name": "Foods & Drinks", "type": models.TransactionType.EXPENSE, "color": "#18D2E6", "icon": "utensils"},
+                {"name": "Shopping", "type": models.TransactionType.EXPENSE, "color": "#F6BDE9", "icon": "shopping-bag"},
+                {"name": "Housing", "type": models.TransactionType.EXPENSE, "color": "#FFAB4C", "icon": "home"},
+                {"name": "Transportation", "type": models.TransactionType.EXPENSE, "color": "#AE45FF", "icon": "bus"},
+                {"name": "Vehicle", "type": models.TransactionType.EXPENSE, "color": "#403BD7", "icon": "car"},
+                {"name": "Entertainment", "type": models.TransactionType.EXPENSE, "color": "#E53838", "icon": "film"},
+                {"name": "Communication", "type": models.TransactionType.EXPENSE, "color": "#FFCB66", "icon": "phone"},
+                {"name": "Investments", "type": models.TransactionType.EXPENSE, "color": "#53D258", "icon": "chart-line"},
+                {"name": "Others", "type": models.TransactionType.EXPENSE, "color": "#4E5C75", "icon": "ellipsis-h"},
                 
-                # Income category (only one)
-                {"name": "Income", "type": models.TransactionType.INCOME, "color": "#98D8C8", "icon": "money-bill"},
+                # Income category
+                {"name": "Refunds", "type": models.TransactionType.INCOME, "color": "#18E637", "icon": "arrow-in"},
+                {"name": "Rental Income", "type": models.TransactionType.INCOME, "color": "#D90BAA", "icon": "home"},
+                {"name": "Gambling", "type": models.TransactionType.INCOME, "color": "#AC5C02", "icon": "cards"},
+                {"name": "Lending", "type": models.TransactionType.INCOME, "color": "#1676BA", "icon": "arrow-out"},
+                {"name": "Sale", "type": models.TransactionType.INCOME, "color": "#ABC418", "icon": "coins"},
+                {"name": "Wage, invoices", "type": models.TransactionType.INCOME, "color": "#16A0A4", "icon": "money-hand"},
+                {"name": "Gifts", "type": models.TransactionType.INCOME, "color": "#CFA147", "icon": "gift"},
+                {"name": "Dues & grants", "type": models.TransactionType.INCOME, "color": "#0F6AD2", "icon": "check"},
+                {"name": "Interests", "type": models.TransactionType.INCOME, "color": "#4520DE", "icon": "pencentage"},
+                {"name": "Others", "type": models.TransactionType.INCOME, "color": "#4E5C75", "icon": "ellipsis-h"},
                 
                 # Transfer category
                 {"name": "Transfer Out", "type": models.TransactionType.TRANSFER, "color": "#FFA500", "icon": "arrow-up"},
@@ -46,9 +55,7 @@ def create_default_categories():
                 db.add(category)
             
             db.commit()
-            print("✅ Default categories created successfully")
     except Exception as e:
-        print(f"❌ Error creating default categories: {e}")
         db.rollback()
     finally:
         db.close()

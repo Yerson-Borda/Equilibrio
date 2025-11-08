@@ -37,7 +37,6 @@ def create_transaction(
     
     transaction = Transaction(
         amount=transaction_data.amount,
-        description=transaction_data.description,
         note=transaction_data.note,
         type=transaction_data.type,
         transaction_date=transaction_data.transaction_date,
@@ -220,7 +219,6 @@ def transfer_funds(
     # Source transaction (Transfer Out)
     source_transaction = Transaction(
         amount=transfer_data.amount,
-        description=f"Transfer to {destination_wallet.name}",
         note=transfer_data.note,
         type=TransactionType.TRANSFER,
         transaction_date=today,
@@ -232,7 +230,6 @@ def transfer_funds(
     # Destination transaction (Transfer In)
     destination_transaction = Transaction(
         amount=converted_amount,
-        description=f"Transfer from {source_wallet.name}",
         note=transfer_data.note,
         type=TransactionType.TRANSFER,
         transaction_date=today,

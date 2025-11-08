@@ -28,7 +28,6 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     phone_number: Optional[str] = None
     date_of_birth: Optional[date] = None
-    avatar_url: Optional[str] = None
     default_currency: Optional[str] = None
     password: Optional[str] = Field(None, min_length=6, max_length=128)
 
@@ -78,7 +77,6 @@ class CategoryResponse(CategoryBase):
 
 class TransactionBase(BaseModel):
     amount: Decimal
-    description: Optional[str] = None
     note: Optional[str] = None
     type: TransactionType
     transaction_date: date
