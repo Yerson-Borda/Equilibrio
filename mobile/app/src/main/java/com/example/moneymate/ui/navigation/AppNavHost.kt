@@ -7,8 +7,10 @@ import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.example.langswap.ui.navigation.NavigationItem
 import com.example.moneymate.ui.screens.auth.singIn.SignInScreen
 import com.example.moneymate.ui.screens.auth.signUp.SignUpScreen
@@ -17,6 +19,8 @@ import com.example.moneymate.ui.screens.profile.editprofile.EditProfileScreen
 import com.example.moneymate.ui.screens.profile.profileoptions.ProfileOptionsScreen
 import com.example.moneymate.ui.screens.splash.SplashScreen
 import com.example.moneymate.ui.screens.wallet.CreateWalletScreen
+import com.example.moneymate.ui.screens.wallet.EditWalletScreen
+import com.example.moneymate.ui.screens.wallet.WalletDetailScreen
 import com.example.moneymate.ui.screens.wallet.WalletScreen
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -125,6 +129,10 @@ fun AppNavHost(
                 onNavigateToWalletCreation = {
                     navController.navigate(NavigationItem.CreateWallet.route)
                 },
+                onNavigateToWalletDetail = { walletId ->
+                    // Pass the walletId when navigating
+                    navController.navigate(NavigationItem.WalletDetail.createRoute(walletId))
+                },
                 onNavigationItemSelected = { route ->
                     when (route) {
                         "home" -> navController.navigate(NavigationItem.Home.route)
@@ -136,6 +144,37 @@ fun AppNavHost(
                     navController.navigate(NavigationItem.Transactions.route)
                 },
                 onAddRecord = {}
+            )
+        }
+
+        composable(
+            NavigationItem.WalletDetail.route,
+            arguments = listOf(navArgument("walletId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val walletId = backStackEntry.arguments?.getInt("walletId") ?: 0
+            WalletDetailScreen(
+                walletId = walletId,
+                onBackClick = { navController.popBackStack() },
+                onEditWallet = { walletId ->
+                    navController.navigate(NavigationItem.EditWallet.createRoute(walletId))
+                }
+            )
+        }
+
+        composable(
+            NavigationItem.EditWallet.route,
+            arguments = listOf(navArgument("walletId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val walletId = backStackEntry.arguments?.getInt("walletId") ?: 0
+            EditWalletScreen(
+                walletId = walletId,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(NavigationItem.CreateWallet.route) {
+            CreateWalletScreen(
+                onBackClick = { navController.popBackStack() }
             )
         }
 

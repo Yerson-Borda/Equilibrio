@@ -14,5 +14,11 @@ sealed class NavigationItem(val route: String) {
     object Profile: NavigationItem("Profile")
     object EditProfile: NavigationItem("EditProfile")
     object Settings: NavigationItem("Settings")
-
+    object WalletDetail : NavigationItem("walletDetail/{walletId}") {
+        fun createRoute(walletId: Int) = "walletDetail/$walletId"
+    }
+    object EditWallet : NavigationItem("editWallet/{walletId}") { // Add this
+        fun createRoute(walletId: Int) = "editWallet/$walletId"
+    }
 }
+

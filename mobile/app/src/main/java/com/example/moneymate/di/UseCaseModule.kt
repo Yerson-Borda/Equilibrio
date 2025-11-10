@@ -8,10 +8,13 @@ import com.example.domain.auth.usecase.SignInUseCase
 import com.example.domain.auth.usecase.SignInUseCaseImpl
 import com.example.domain.home.usecase.GetUserDetailedUseCase
 import com.example.domain.wallet.usecase.CreateWalletUseCase
+import com.example.domain.wallet.usecase.DeleteWalletUseCase
 import com.example.domain.wallet.usecase.GetTotalBalanceUseCase
+import com.example.domain.wallet.usecase.GetWalletDetailUseCase
 import com.example.domain.wallet.usecase.GetWalletTransactionsUseCase
 import com.example.domain.wallet.usecase.GetWalletUseCase
 import com.example.domain.wallet.usecase.GetWalletsUseCase
+import com.example.domain.wallet.usecase.UpdateWalletUseCase
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.factoryOf
 import org.koin.dsl.module
@@ -26,4 +29,7 @@ val useCaseModule = module {
     factory { CreateWalletUseCase(get()) }
     factory { GetWalletTransactionsUseCase(get()) }
     factory { GetTotalBalanceUseCase(get()) }
+    factory { GetWalletDetailUseCase(get()) }
+    factory { DeleteWalletUseCase(get()) }
+    factory { UpdateWalletUseCase(get()) }
 }

@@ -37,6 +37,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.domain.wallet.model.Transaction
 import com.example.domain.wallet.model.Wallet
 import com.example.moneymate.R
@@ -47,11 +48,12 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun WalletScreen(
     onNavigateToWalletCreation: () -> Unit,
+    onNavigateToWalletDetail: (Int) -> Unit,
     viewModel: WalletViewModel = koinViewModel(),
     currentScreen: String = "home",
     onNavigationItemSelected: (String) -> Unit = {},
     onBackClick: () -> Unit,
-    onAddRecord: () -> Unit
+    onAddRecord: () -> Unit,
 ) {
     val wallets by viewModel.wallets.collectAsState()
     val transactions by viewModel.transactions.collectAsState()
@@ -101,6 +103,11 @@ Box (modifier = Modifier.fillMaxSize()){
             wallets = wallets,
             selectedWallet = selectedWallet,
             onWalletSelected = viewModel::selectWallet,
+            onWalletDetail = { wallet ->
+                wallet.id?.let { walletId ->
+                    onNavigateToWalletDetail(walletId)
+                }
+            },
             onCreateNewWallet = onNavigateToWalletCreation,
             modifier = Modifier.fillMaxWidth()
         )
@@ -147,6 +154,7 @@ private fun WalletsCardsSection(
     wallets: List<Wallet>,
     selectedWallet: Wallet?,
     onWalletSelected: (Wallet) -> Unit,
+    onWalletDetail: (Wallet) -> Unit,
     onCreateNewWallet: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -164,7 +172,10 @@ private fun WalletsCardsSection(
                 WalletCardItem(
                     wallet = wallet,
                     isSelected = wallet.id == selectedWallet?.id,
-                    onSelected = { onWalletSelected(wallet) }
+                    onSelected = {
+                        onWalletSelected(wallet)
+                        onWalletDetail(wallet)
+                    }
                 )
             }
         }
@@ -362,9 +373,4 @@ private fun EmptyTransactionsState() {
             color = Color(0xFF666666)
         )
     }
-}
-
-private fun formatCardNumber(cardNumber: String?): String {
-    if (cardNumber.isNullOrEmpty()) return "****  ****  ****  ****"
-    return cardNumber.chunked(4).joinToString("  ")
 }
