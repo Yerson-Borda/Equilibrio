@@ -74,7 +74,7 @@ def create_wallet(
         card_number=wallet_data.card_number,
         color=wallet_data.color,
         user_id=current_user.id,
-        balance=wallet_data.initial_balance
+        balance=wallet_data.balance
     )
     
     db.add(wallet)
@@ -154,7 +154,7 @@ def update_wallet(
             )
         wallet.name = wallet_data.name
     
-    if wallet_data.initial_balance is not None:
+    if wallet_data.balance is not None:
         transactions = db.query(Transaction).filter(Transaction.wallet_id == wallet_id).all()
         
         net_transaction_amount = Decimal('0.0')
@@ -165,13 +165,13 @@ def update_wallet(
                 net_transaction_amount -= transaction.amount
         
         # Calculate what the new balance would be with the new initial balance
-        new_balance = wallet_data.initial_balance + net_transaction_amount
+        new_balance = wallet_data.balance + net_transaction_amount
         
         # Check if new balance would be negative
         if new_balance < Decimal('0.0'):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot set initial balance to {wallet_data.initial_balance}. "
+                detail=f"Cannot set initial balance to {wallet_data.balance}. "
                        f"This would result in a negative wallet balance of {new_balance} after accounting for {len(transactions)} transactions."
             )
         

@@ -35,18 +35,18 @@ class WalletBase(BaseModel):
     name: str
     currency: str = "USD"
     wallet_type: WalletType
-    initial_balance: Decimal = Decimal('0.00')
     card_number: Optional[str] = None
     color: str = "#3B82F6"
 
 class WalletCreate(WalletBase):
+    balance: Decimal = Decimal('0.00')
     pass
 
 class WalletUpdate(BaseModel):
     name: Optional[str] = None
     currency: Optional[str] = None
     wallet_type: Optional[WalletType] = None
-    initial_balance: Optional[Decimal] = None
+    balance: Optional[Decimal] = None
     card_number: Optional[str] = None
     color: Optional[str] = None
 
