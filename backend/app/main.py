@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from app.database import engine, get_db
 from app.models import models
-from app.api.v1 import users, wallets, transactions, categories
+from app.api.v1 import budget, users, wallets, transactions, categories
 from sqlalchemy.orm import Session
 
 models.Base.metadata.create_all(bind=engine)
@@ -66,6 +66,7 @@ app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(wallets.router, prefix="/api/v1/wallets", tags=["wallets"])
 app.include_router(transactions.router, prefix="/api/v1/transactions", tags=["transactions"])
 app.include_router(categories.router, prefix="/api/v1/categories", tags=["categories"])
+app.include_router(budget.router, prefix="/api/v1/budget", tags=["budget"])
 
 @app.get("/")
 def root():

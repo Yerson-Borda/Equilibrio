@@ -8,6 +8,7 @@ from app.auth import get_current_user
 from datetime import datetime, date
 from decimal import Decimal
 from app.services.currency_service import currency_service
+from app.services import budget_service
 
 router = APIRouter()
 
@@ -54,6 +55,12 @@ def create_transaction(
                 detail="Insufficient balance in wallet"
             )
         wallet.balance -= transaction_data.amount
+
+        budget_service.record_expense(
+            db=db,
+            user_id=current_user.id,
+            amount=float(transaction_data.amount)
+        )
     
     db.add(transaction)
     db.commit()
@@ -133,6 +140,12 @@ def delete_transaction(
             wallet.balance = 0  # Prevent negative balance
     else:
         wallet.balance += transaction.amount
+
+
+        budget = budget_service.get_or_create_current_budget(db, current_user.id)
+        budget.daily_spent = max(Decimal('0.00'), budget.daily_spent - transaction.amount)
+        budget.monthly_spent = max(Decimal('0.00'), budget.monthly_spent - transaction.amount)
+        db.commit()
     
     # Delete the transaction
     db.delete(transaction)

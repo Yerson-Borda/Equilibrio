@@ -107,6 +107,29 @@ class TransferResponse(BaseModel):
     exchange_rate: float
     converted_amount: float
 
+class BudgetBase(BaseModel):
+    monthly_limit: Decimal = Decimal("0.00")
+    daily_limit: Decimal = Decimal("0.00")
+
+class BudgetCreate(BudgetBase):
+    pass
+
+class BudgetUpdate(BaseModel):
+    monthly_limit: Decimal | None = None
+    daily_limit: Decimal | None = None
+
+class BudgetResponse(BudgetBase):
+    id: int
+    month: int
+    year: int
+    monthly_spent: Decimal
+    daily_spent: Decimal
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str
