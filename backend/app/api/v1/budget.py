@@ -15,7 +15,7 @@ def get_current_budget(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    budget = budget_service.get_or_create_current_budget(db, current_user.id)
+    budget = budget_service.refresh_budget_if_needed(db, current_user.id)
     return budget
     
 

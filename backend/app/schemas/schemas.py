@@ -124,6 +124,7 @@ class BudgetResponse(BudgetBase):
     year: int
     monthly_spent: Decimal
     daily_spent: Decimal
+    last_updated_date: date
     created_at: datetime
 
     class Config:
