@@ -19,11 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.moneymate.ui.components.wallet.CardNumberPreview
-import com.example.moneymate.ui.components.wallet.ColorSelectionSection
-import com.example.moneymate.ui.components.wallet.CurrencyDropdown
-import com.example.moneymate.ui.components.wallet.TotalBalanceCard
-import com.example.moneymate.ui.components.wallet.WalletTypeDropdown
 
 
 @Composable

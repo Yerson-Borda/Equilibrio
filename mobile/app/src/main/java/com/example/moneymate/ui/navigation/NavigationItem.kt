@@ -20,5 +20,6 @@ sealed class NavigationItem(val route: String) {
     object EditWallet : NavigationItem("editWallet/{walletId}") { // Add this
         fun createRoute(walletId: Int) = "editWallet/$walletId"
     }
+    object AddTransaction : NavigationItem("add_transaction")
 }
 

@@ -18,6 +18,7 @@ import com.example.moneymate.ui.screens.home.HomeScreen
 import com.example.moneymate.ui.screens.profile.editprofile.EditProfileScreen
 import com.example.moneymate.ui.screens.profile.profileoptions.ProfileOptionsScreen
 import com.example.moneymate.ui.screens.splash.SplashScreen
+import com.example.moneymate.ui.screens.transaction.AddTransactionScreen
 import com.example.moneymate.ui.screens.wallet.CreateWalletScreen
 import com.example.moneymate.ui.screens.wallet.EditWalletScreen
 import com.example.moneymate.ui.screens.wallet.WalletDetailScreen
@@ -90,8 +91,7 @@ fun AppNavHost(
                     }
                 },
                 onAddRecord = {
-                    // Handle add record action
-                    // You might want to navigate to an "Add Record" screen or show a dialog
+                    navController.navigate(NavigationItem.AddTransaction.route)
                 },
                 onAddWallet = {
                     // Handle add wallet action
@@ -119,7 +119,9 @@ fun AppNavHost(
                         "goals" -> navController.navigate(NavigationItem.Goals.route)
                     }
                 },
-                // ... other parameters
+                onAddRecord = {
+                    navController.navigate(NavigationItem.AddTransaction.route)
+                }
             )
         }
 
@@ -143,7 +145,9 @@ fun AppNavHost(
                 onBackClick = {
                     navController.navigate(NavigationItem.Transactions.route)
                 },
-                onAddRecord = {}
+                onAddRecord = {
+                    navController.navigate(NavigationItem.AddTransaction.route)
+                }
             )
         }
 
@@ -195,6 +199,13 @@ fun AppNavHost(
                     }
                 },
                 // ... other parameters
+            )
+        }
+
+        composable(NavigationItem.AddTransaction.route) {
+            AddTransactionScreen(
+                onBackClick = { navController.navigate(NavigationItem.Home.route) },
+                onAddTransaction = {navController.navigate(NavigationItem.Home.route)}
             )
         }
 

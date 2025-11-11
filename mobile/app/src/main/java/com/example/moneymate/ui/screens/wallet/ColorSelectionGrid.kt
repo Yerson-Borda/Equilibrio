@@ -57,7 +57,12 @@ private fun ColorOption(
     onSelected: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val backgroundColor = Color(android.graphics.Color.parseColor(color))
+    // Safe color parsing
+    val backgroundColor = try {
+        Color(android.graphics.Color.parseColor(color))
+    } catch (e: Exception) {
+        Color(0xFF4D6BFA) // Fallback color
+    }
 
     Box(
         modifier = modifier

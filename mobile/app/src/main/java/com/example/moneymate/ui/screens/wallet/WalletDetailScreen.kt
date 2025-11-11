@@ -238,12 +238,20 @@ private fun WalletCard(walletDetail: Wallet) {
     // Use balance if available, otherwise use initialBalance
     val displayBalance = walletDetail.balance ?: walletDetail.initialBalance
 
+    // Safe color parsing with fallback
+    val backgroundColor = try {
+        Color(android.graphics.Color.parseColor(walletDetail.color))
+    } catch (e: Exception) {
+        // Fallback to default color if parsing fails
+        Color(0xFF4D6BFA) // Your app's primary color
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
-            containerColor = Color(android.graphics.Color.parseColor(walletDetail.color))
+            containerColor = backgroundColor
         )
     ) {
         Column(
@@ -320,11 +328,20 @@ private fun WalletInfoCard(
 ) {
     val displayBalance = walletDetail.balance ?: walletDetail.initialBalance
 
+    // Safe color parsing with fallback
+    val walletColor = try {
+        Color(android.graphics.Color.parseColor(walletDetail.color))
+    } catch (e: Exception) {
+        Color(0xFF4D6BFA) // Fallback color
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF3F4F6))
+        colors = CardDefaults.cardColors(
+            containerColor = walletColor.copy(alpha = 0.1f)
+        )
     ) {
         Column(
             modifier = Modifier
@@ -352,28 +369,27 @@ private fun WalletInfoCard(
                     )
                 }
             }
+
+            Text(
+                text = "$$displayBalance",
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color(0xFF1A1A1A),
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Income and Expense Row
-            Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-
-                Text(
-                    text = "$$displayBalance",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = Color(0xFF1A1A1A),
-                    fontWeight = FontWeight.Bold
-                )
-
                 // Income
                 IncomeExpenseItem(
                     amount = income,
                     isIncome = true,
                     modifier = Modifier.weight(1f)
                 )
-
-                Spacer(modifier = Modifier.width(16.dp))
 
                 // Expense
                 IncomeExpenseItem(

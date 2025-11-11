@@ -222,6 +222,13 @@ private fun WalletCardItem(
     isSelected: Boolean,
     onSelected: () -> Unit
 ) {
+    // Safe color parsing with fallback
+    val walletColor = try {
+        Color(android.graphics.Color.parseColor(wallet.color))
+    } catch (e: Exception) {
+        Color(0xFF4D6BFA) // Fallback color
+    }
+
     Card(
         modifier = Modifier
             .width(160.dp)
@@ -231,7 +238,7 @@ private fun WalletCardItem(
         ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(android.graphics.Color.parseColor(wallet.color)).copy(alpha = 0.1f)
+            containerColor = walletColor.copy(alpha = 0.1f)
         ),
         border = if (isSelected) BorderStroke(2.dp, Color(0xFF4D6BFA)) else null,
         onClick = onSelected
@@ -265,7 +272,7 @@ private fun WalletCardItem(
             }
 
             Text(
-                text = formatCardNumber(wallet.cardNumber),
+                text = formatCardNumber(wallet.cardNumber ?: ""),
                 style = MaterialTheme.typography.bodySmall,
                 color = Color(0xFF1A1A1A),
                 fontWeight = FontWeight.Medium,
@@ -290,6 +297,8 @@ private fun WalletCardItem(
         }
     }
 }
+
+
 
 @Composable
 private fun TransactionsSection(
