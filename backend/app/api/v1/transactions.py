@@ -9,6 +9,7 @@ from datetime import datetime, date
 from decimal import Decimal
 from app.services.currency_service import currency_service
 from app.services import budget_service
+from app.services.financial_summary_service import update_monthly_summary
 
 router = APIRouter()
 
@@ -65,6 +66,8 @@ def create_transaction(
     db.add(transaction)
     db.commit()
     db.refresh(transaction)
+
+    update_monthly_summary(db, current_user.id, transaction)
     
     return transaction
 

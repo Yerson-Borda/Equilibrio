@@ -38,6 +38,8 @@ class User(Base):
     categories = relationship("Category", back_populates="user")
     transactions = relationship("Transaction", back_populates="user")
     budgets = relationship("Budget", back_populates="user", cascade="all, delete-orphan")
+    financial_summaries = relationship("FinancialSummary", back_populates="user", cascade="all, delete-orphan")
+
 
 class Wallet(Base):
     __tablename__ = "wallets"
@@ -106,3 +108,22 @@ class Budget(Base):
     last_updated_date = Column(Date, default=date.today)
 
     user = relationship("User", back_populates="budgets")
+
+class FinancialSummary(Base):
+    __tablename__ = "financial_summaries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    month = Column(Integer, nullable=False)
+    year = Column(Integer, nullable=False)
+
+    total_income = Column(DECIMAL(10, 2), default=0.00)
+    total_spent = Column(DECIMAL(10, 2), default=0.00)
+    total_saved = Column(DECIMAL(10, 2), default=0.00)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    user = relationship("User", back_populates="financial_summaries")
+
