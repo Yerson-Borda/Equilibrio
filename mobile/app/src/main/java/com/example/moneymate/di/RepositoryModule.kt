@@ -4,9 +4,9 @@ import com.example.domain.accessToken.AccessTokenRepository
 import com.example.domain.accessToken.AccessTokenRepositoryImpl
 import com.example.domain.auth.AuthRepository
 import com.example.domain.auth.AuthRepositoryImpl
-import com.example.data.network.home.UserRepositoryImpl
+import com.example.data.network.user.UserRepositoryImpl
 import com.example.data.network.wallet.WalletRepositoryImpl
-import com.example.domain.home.UserRepository
+import com.example.domain.user.UserRepository
 import com.example.domain.transaction.TransactionRepository
 import com.example.data.network.transaction.TransactionRepositoryImpl
 import com.example.domain.wallet.WalletRepository

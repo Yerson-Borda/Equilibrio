@@ -1,4 +1,4 @@
-package com.example.data.network.home.model
+package com.example.data.network.user.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

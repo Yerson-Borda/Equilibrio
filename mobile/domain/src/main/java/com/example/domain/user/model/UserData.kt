@@ -1,4 +1,4 @@
-package com.example.domain.home.model
+package com.example.domain.user.model
 
 data class UserDetailedData(
     val user: UserData,

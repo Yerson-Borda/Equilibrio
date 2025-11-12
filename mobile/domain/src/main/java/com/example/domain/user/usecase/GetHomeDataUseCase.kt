@@ -1,7 +1,7 @@
-package com.example.domain.home.usecase
+package com.example.domain.user.usecase
 
-import com.example.domain.home.UserRepository
-import com.example.domain.home.model.UserDetailedData
+import com.example.domain.user.UserRepository
+import com.example.domain.user.model.UserDetailedData
 
 class GetUserDetailedUseCase(
     private val userRepository: UserRepository

@@ -6,7 +6,7 @@ import com.example.domain.auth.usecase.SignUpUseCase
 import com.example.domain.auth.usecase.SignUpUseCaseImpl
 import com.example.domain.auth.usecase.SignInUseCase
 import com.example.domain.auth.usecase.SignInUseCaseImpl
-import com.example.domain.home.usecase.GetUserDetailedUseCase
+import com.example.domain.user.usecase.GetUserDetailedUseCase
 import com.example.domain.transaction.usecase.CreateTransactionUseCase
 import com.example.domain.transaction.usecase.CreateTransferUseCase
 import com.example.domain.transaction.usecase.GetTransactionsUseCase

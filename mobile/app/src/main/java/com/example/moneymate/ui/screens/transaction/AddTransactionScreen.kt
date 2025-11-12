@@ -3,6 +3,10 @@
 package com.example.moneymate.ui.screens.transaction
 
 import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -51,6 +55,7 @@ import androidx.compose.ui.unit.sp
 import org.koin.androidx.compose.koinViewModel
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 import com.example.domain.wallet.model.Wallet
 
 
@@ -64,6 +69,29 @@ fun AddTransactionScreen(
     val uiState by viewModel.uiState.collectAsState()
     val wallets by viewModel.wallets.collectAsState()
     val navigationEvent by viewModel.navigationEvent.collectAsState()
+    val errorState by viewModel.errorState.collectAsState()
+    val context = LocalContext.current
+
+    // Add gallery launcher inside the composable
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickMultipleVisualMedia(),
+        onResult = { uris ->
+            if (uris.isNotEmpty()) {
+                val uriStrings = uris.map { it.toString() }
+                viewModel.onAttachmentsSelected(uriStrings)
+            }
+        }
+    )
+
+    // Show error messages
+    LaunchedEffect(errorState) {
+        errorState?.let { error ->
+            val message = error.getUserFriendlyMessage()
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            // Clear error after showing
+            viewModel.clearError()
+        }
+    }
 
     LaunchedEffect(navigationEvent) {
         when (navigationEvent) {
@@ -168,7 +196,13 @@ fun AddTransactionScreen(
                             )
                         },
                         onDescriptionChanged = viewModel::onDescriptionChanged,
-                        viewModel = viewModel
+                        viewModel = viewModel,
+                        onAddAttachment = {
+                            // Launch gallery picker when button is clicked
+                            galleryLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        }
                     )
                 }
                 else -> { // INCOME or EXPENSE
@@ -185,7 +219,13 @@ fun AddTransactionScreen(
                             viewModel.onCategorySelected(categoryId, categoryName)
                         },
                         onDescriptionChanged = viewModel::onDescriptionChanged,
-                        viewModel = viewModel
+                        viewModel = viewModel,
+                        onAddAttachment = {
+                            // Launch gallery picker when button is clicked
+                            galleryLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        }
                     )
                 }
             }
@@ -217,6 +257,7 @@ fun AddTransactionScreen(
 fun TransferContent(
     uiState: AddTransactionState,
     wallets: List<Wallet>,
+    onAddAttachment: () -> Unit,
     onSourceWalletSelected: (Wallet) -> Unit,
     onDestinationWalletSelected: (Wallet) -> Unit,
     onDescriptionChanged: (String) -> Unit,
@@ -258,7 +299,7 @@ fun TransferContent(
         // Attachments
         AttachmentsSection(
             attachments = uiState.attachments,
-            onAddAttachment = { /* Will handle this next */ },
+            onAddAttachment = onAddAttachment,
             onRemoveAttachment = { uri ->
                 viewModel.removeAttachment(uri)
             }
@@ -270,6 +311,7 @@ fun TransferContent(
 fun IncomeExpenseContent(
     uiState: AddTransactionState,
     wallets: List<Wallet>,
+    onAddAttachment: () -> Unit,
     onWalletSelected: (Wallet) -> Unit,
     onCategorySelected: (Int, String) -> Unit,
     onDescriptionChanged: (String) -> Unit,
@@ -309,7 +351,7 @@ fun IncomeExpenseContent(
         // Attachments
         AttachmentsSection(
             attachments = uiState.attachments,
-            onAddAttachment = { /* Will handle this next */ },
+            onAddAttachment = onAddAttachment,
             onRemoveAttachment = { uri ->
                 viewModel.removeAttachment(uri)
             }

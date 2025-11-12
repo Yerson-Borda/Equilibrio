@@ -8,7 +8,7 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 
 object ErrorHandler {
-    fun mapExceptionToAppError(exception: Exception): AppError {
+    fun mapExceptionToAppError(exception: Throwable): AppError {
         Log.d("ErrorHandler", "Exception type: ${exception.javaClass.simpleName}")
 
         return when (exception) {
@@ -53,9 +53,31 @@ object ErrorHandler {
 
     private fun parseErrorMessage(exception: HttpException): String {
         return try {
-            exception.response()?.errorBody()?.string() ?: ""
+            val errorBody = exception.response()?.errorBody()?.string()
+            Log.d("ErrorHandler", "Raw error body: $errorBody")
+
+            errorBody?.let { body ->
+                // Try different JSON patterns
+                val patterns = listOf(
+                    "\"message\"\\s*:\\s*\"([^\"]+)\"",
+                    "\"error\"\\s*:\\s*\"([^\"]+)\"",
+                    "\"detail\"\\s*:\\s*\"([^\"]+)\"",
+                    "\"description\"\\s*:\\s*\"([^\"]+)\""
+                )
+
+                for (pattern in patterns) {
+                    val regex = pattern.toRegex()
+                    val match = regex.find(body)
+                    if (match != null) {
+                        return@let match.groupValues[1]
+                    }
+                }
+
+                // If no JSON pattern matches, return the raw body (limited to reasonable length)
+                if (body.length > 200) body.substring(0, 200) + "..." else body
+            } ?: exception.message()
         } catch (e: Exception) {
-            ""
+            "Error: ${exception.message()}"
         }
     }
 }

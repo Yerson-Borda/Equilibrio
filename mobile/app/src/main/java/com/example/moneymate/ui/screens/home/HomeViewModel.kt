@@ -2,8 +2,8 @@ package com.example.moneymate.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.domain.home.model.UserDetailedData
-import com.example.domain.home.usecase.GetUserDetailedUseCase
+import com.example.domain.user.model.UserDetailedData
+import com.example.domain.user.usecase.GetUserDetailedUseCase
 import com.example.domain.wallet.model.TotalBalance
 import com.example.domain.wallet.usecase.GetTotalBalanceUseCase
 import kotlinx.coroutines.flow.MutableSharedFlow
