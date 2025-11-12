@@ -10,6 +10,10 @@ import com.example.domain.user.usecase.GetUserDetailedUseCase
 import com.example.domain.transaction.usecase.CreateTransactionUseCase
 import com.example.domain.transaction.usecase.CreateTransferUseCase
 import com.example.domain.transaction.usecase.GetTransactionsUseCase
+import com.example.domain.user.usecase.DeleteAvatarUseCase
+import com.example.domain.user.usecase.GetUserUseCase
+import com.example.domain.user.usecase.UpdateUserUseCase
+import com.example.domain.user.usecase.UploadAvatarUseCase
 import com.example.domain.wallet.usecase.CreateWalletUseCase
 import com.example.domain.wallet.usecase.DeleteWalletUseCase
 import com.example.domain.wallet.usecase.GetTotalBalanceUseCase
@@ -38,4 +42,9 @@ val useCaseModule = module {
     factory { CreateTransferUseCase(get()) }
     factory { CreateTransactionUseCase(get()) }
     factory { GetTransactionsUseCase(get()) }
+    factory { GetUserUseCase(get()) }
+    factory { UpdateUserUseCase(get()) }
+    factory { UploadAvatarUseCase(get()) }
+    factory { DeleteAvatarUseCase(get()) }
+
 }
