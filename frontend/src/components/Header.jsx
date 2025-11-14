@@ -127,27 +127,7 @@ const Header = () => {
                 <div className="flex-1">
                     <div className="flex items-center space-x-4">
                         {/* Main Balance Card */}
-                        <div className="bg-white rounded-lg shadow-sm px-6 py-3 border border-strokes">
-                            <div className="flex items-center space-x-3">
-                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                <div>
-                                    <p className="text-sm text-metallic-gray">Total Balance</p>
-                                    <p className="text-xl font-bold text-text">
-                                        {isLoadingBalance ? (
-                                            <span className="text-metallic-gray">Loading...</span>
-                                        ) : (
-                                            formatCurrency(totalBalance, user?.default_currency || 'USD')
-                                        )}
-                                    </p>
-                                    {user?.default_currency && (
-                                        <p className="text-xs text-metallic-gray">
-                                            in {getCurrencyName(user.default_currency)}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
+                        <h1 className="text-3xl font-bold text-gray-900 mt-6 ml-1">Dashboard</h1>
                         {/* Additional Balance Info */}
                         {!isLoadingBalance && balanceBreakdown.length > 0 && (
                             <div className="flex items-center space-x-4">
