@@ -7,6 +7,7 @@ from app.schemas.schemas import WalletCreate, WalletResponse, WalletUpdate
 from app.auth import get_current_user
 from decimal import Decimal
 from app.services.currency_service import currency_service
+from app.services.financial_summary_service import recalculate_monthly_summary
 
 router = APIRouter()
 
@@ -178,7 +179,15 @@ def update_wallet(
         wallet.balance = new_balance
     
     if wallet_data.currency is not None:
-        wallet.currency = wallet_data.currency
+        if wallet_data.currency != wallet.currency:
+            converted_balance = currency_service.convert_amount(
+                wallet.balance,
+                wallet.currency,
+                wallet_data.currency
+            )
+            wallet.balance = converted_balance
+            wallet.currency = wallet_data.currency
+
     
     if wallet_data.wallet_type is not None:
         wallet.wallet_type = wallet_data.wallet_type
@@ -218,5 +227,7 @@ def delete_wallet(
     # Delete the wallet
     db.delete(wallet)
     db.commit()
+
+    recalculate_monthly_summary(db, current_user.id)
     
     return
