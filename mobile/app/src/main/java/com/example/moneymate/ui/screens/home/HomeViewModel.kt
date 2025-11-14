@@ -43,8 +43,12 @@ class HomeViewModel(
             _isLoading.value = true
             try {
                 val data = getUserDetailedUseCase()
+                println("DEBUG: HomeViewModel - Loaded user data: $data")
+                println("DEBUG: HomeViewModel - User fullName: ${data.user.fullName}")
+                println("DEBUG: HomeViewModel - Stats: ${data.stats}")
                 _userData.value = data
             } catch (e: Exception) {
+                println("DEBUG: HomeViewModel - Error loading user data: ${e.message}")
                 _error.emit("Failed to load user data: ${e.message}")
             } finally {
                 _isLoading.value = false

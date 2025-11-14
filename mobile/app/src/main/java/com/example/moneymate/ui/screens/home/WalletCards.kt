@@ -8,8 +8,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,15 +16,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.moneymate.R
-import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun WalletBalanceCard(
-    viewModel: HomeViewModel = koinViewModel()
+    totalBalance: Double?,
+    isLoading: Boolean = false
 ) {
-    val totalBalance by viewModel.totalBalance.collectAsState()
-    val isLoading by viewModel.isTotalBalanceLoading.collectAsState()
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -58,7 +53,7 @@ fun WalletBalanceCard(
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "$${"%.2f".format(totalBalance?.totalBalance ?: 0.0)}",
+                    text = "$${"%.2f".format(totalBalance ?: 0.0)}",
                     color = Color.White,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold
@@ -173,17 +168,3 @@ fun FinancialOverviewCard(
         }
     }
 }
-//@Preview(showBackground = true, backgroundColor = 0xFF121212)
-//@Composable
-//fun WalletBalanceCardRegularPreview() {
-//    MaterialTheme {
-//        WalletBalanceCard()
-//    }
-//}
-//@Preview(showBackground = true, backgroundColor = 0xFF121212)
-//@Composable
-//fun FinancialOverviewCardRegularPreview() {
-//    MaterialTheme {
-//        FinancialOverviewCard()
-//    }
-//}

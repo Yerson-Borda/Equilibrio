@@ -3,7 +3,6 @@ package com.example.data.network.user
 
 import com.example.data.network.user.model.UpdateUserRequest
 import com.example.data.network.user.model.UserDetailedResponse
-import com.example.data.network.user.model.UserInfoResponse
 import com.example.data.network.user.model.UserResponse
 import okhttp3.MultipartBody
 import retrofit2.Response
@@ -15,17 +14,19 @@ interface UserApi {
     @GET("api/v1/users/me/detailed")
     suspend fun getUserDetailed(): UserDetailedResponse
 
-    // For Edit Profile Screen - returns Response<UserInfoResponse>
-    @GET("/api/v1/users/me")
-    suspend fun getUser(): Response<UserInfoResponse>
+    // For Edit Profile Screen - returns Response<UserResponse> (changed from UserInfoResponse)
+    @GET("api/v1/users/me")
+    suspend fun getUser(): Response<UserResponse>
 
-    @PUT("/api/v1/users/me")
+    @PUT("api/v1/users/me")
     suspend fun updateUser(@Body request: UpdateUserRequest): Response<UserResponse>
 
     @Multipart
-    @POST("/api/v1/users/me/avatar")
-    suspend fun uploadAvatar(@Part avatar: MultipartBody.Part): Response<UserResponse>
+    @POST("api/v1/users/me/avatar")
+    suspend fun uploadAvatar(@Part file: MultipartBody.Part): Response<UserResponse>
 
-    @DELETE("/api/v1/users/me/avatar")
+    @DELETE("api/v1/users/me/avatar")
     suspend fun deleteAvatar(): Response<UserResponse>
+    @POST("api/v1/users/logout")
+    suspend fun logout(): Response<Unit>
 }

@@ -9,11 +9,14 @@ object UserResponseMapper {
     fun toDomain(userResponse: UserResponse): User {
         return User(
             id = userResponse.id.toString(),
-            fullName = userResponse.fullName ?: "",
             email = userResponse.email,
+            fullName = userResponse.fullName,
             phoneNumber = userResponse.phoneNumber,
-            birthDate = userResponse.dateOfBirth,
-            avatarUrl = userResponse.avatarUrl
+            dateOfBirth = userResponse.dateOfBirth,
+            avatarUrl = userResponse.avatarUrl,
+            defaultCurrency = userResponse.defaultCurrency,
+            isActive = userResponse.isActive ?: true,
+            createdAt = userResponse.createdAt
         )
     }
 }

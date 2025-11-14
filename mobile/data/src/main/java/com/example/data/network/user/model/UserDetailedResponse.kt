@@ -19,6 +19,7 @@ data class UserResponse(
     @SerialName("date_of_birth") val dateOfBirth: String?,
     @SerialName("avatar_url") val avatarUrl: String?,
     @SerialName("default_currency") val defaultCurrency: String,
+    @SerialName("is_active") val isActive: Boolean? = null,
     @SerialName("created_at") val createdAt: String
 )
 

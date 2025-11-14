@@ -10,4 +10,5 @@ interface UserRepository {
     suspend fun updateUser(user: User): Result<User>
     suspend fun uploadAvatar(avatarUri: String): Result<User>
     suspend fun deleteAvatar(): Result<User>
+    suspend fun logout(): Result<Unit>
 }

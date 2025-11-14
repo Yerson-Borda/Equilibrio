@@ -23,6 +23,7 @@ fun CustomEditTextField(
     placeholder: String,
     isPassword: Boolean = false,
     leadingIcon: Int? = null,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
@@ -37,21 +38,25 @@ fun CustomEditTextField(
             placeholder = {
                 Text(
                     text = placeholder,
-                    color = Color(0xFF666666),
+                    color = if (enabled) Color(0xFF666666) else Color(0xFFAAAAAA),
                     fontSize = 16.sp
                 )
             },
             colors = TextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
+                focusedTextColor = if (enabled) Color.Black else Color(0xFF888888),
+                unfocusedTextColor = if (enabled) Color.Black else Color(0xFF888888),
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent,
-                cursorColor = Color(0xFF4361EE),
-                focusedPlaceholderColor = Color(0xFF666666),
-                unfocusedPlaceholderColor = Color(0xFF666666)
+                cursorColor = if (enabled) Color(0xFF4361EE) else Color.Transparent,
+                focusedPlaceholderColor = if (enabled) Color(0xFF666666) else Color(0xFFAAAAAA),
+                unfocusedPlaceholderColor = if (enabled) Color(0xFF666666) else Color(0xFFAAAAAA),
+                disabledTextColor = Color(0xFF888888),
+                disabledPlaceholderColor = Color(0xFFAAAAAA),
+                disabledLeadingIconColor = Color(0xFFAAAAAA),
+                disabledTrailingIconColor = Color(0xFFAAAAAA)
             ),
             shape = RoundedCornerShape(0.dp),
             singleLine = true,
@@ -60,9 +65,8 @@ fun CustomEditTextField(
                     Icon(
                         painter = painterResource(id = leadingIcon),
                         contentDescription = null,
-                        tint = Color(0xFF666666),
-                        modifier = Modifier
-                            .size(23.dp)
+                        tint = if (enabled) Color(0xFF666666) else Color(0xFFAAAAAA),
+                        modifier = Modifier.size(23.dp)
                     )
                 }
             },
@@ -70,26 +74,30 @@ fun CustomEditTextField(
             trailingIcon = {
                 if (isPassword) {
                     IconButton(
-                        onClick = { passwordVisible = !passwordVisible }
+                        onClick = { passwordVisible = !passwordVisible },
+                        enabled = enabled
                     ) {
                         Icon(
                             painter = painterResource(id = if (passwordVisible) R.drawable.ic_visibility_off else R.drawable.ic_visibility_on),
                             contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                            tint = Color(0xFF666666)
+                            tint = if (enabled) Color(0xFF666666) else Color(0xFFAAAAAA)
                         )
                     }
                 }
             },
             textStyle = TextStyle(
                 fontSize = 16.sp,
-                color = Color.Black
-            )
+                color = if (enabled) Color.Black else Color(0xFF888888)
+            ),
+            enabled = enabled
         )
 
         Spacer(modifier = Modifier
             .fillMaxWidth()
             .height(1.dp)
-            .background(Color(0xFFF4F4F4))
+            .background(
+                if (enabled) Color(0xFFF4F4F4) else Color(0xFFE0E0E0)
+            )
         )
     }
 }

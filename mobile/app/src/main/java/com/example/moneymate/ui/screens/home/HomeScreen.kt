@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -22,6 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.moneymate.R
 import com.example.moneymate.ui.navigation.BottomNavigationBar
+import com.example.moneymate.utils.Config
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -36,7 +38,9 @@ fun HomeScreen(
     onNavigationItemSelected: (String) -> Unit = {}
 ) {
     val userData by viewModel.userData.collectAsState()
+    val totalBalance by viewModel.totalBalance.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val isTotalBalanceLoading by viewModel.isTotalBalanceLoading.collectAsState()
     val scrollState = rememberScrollState()
 
     // Handle errors
@@ -64,10 +68,14 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
+                .statusBarsPadding()
         ) {
             TopAppBarSection(
                 userName = userData?.user?.fullName ?: "User",
-                profileImage = userData?.user?.avatarUrl,
+                profileImage = userData?.user?.avatarUrl?.let { avatarUrl ->
+                    // Build the full URL using your Config
+                    Config.buildImageUrl(avatarUrl)
+                },
                 onProfileClick = onProfileClick
             )
 
@@ -75,7 +83,10 @@ fun HomeScreen(
 
             userData?.let { data ->
                 // ALWAYS show these cards, even when walletCount is 0
-                WalletBalanceCard()
+                WalletBalanceCard(
+                    totalBalance = totalBalance?.totalBalance,
+                    isLoading = isTotalBalanceLoading
+                )
                 Spacer(modifier = Modifier.height(16.dp))
                 FinancialOverviewCard(
                     expenseCount = data.stats.expenseCount,

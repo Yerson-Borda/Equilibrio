@@ -1,28 +1,33 @@
 package com.example.moneymate.ui.navigation
 
-import SettingsScreen
 import StartScreen
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.example.langswap.ui.navigation.NavigationItem
 import com.example.moneymate.ui.screens.auth.singIn.SignInScreen
 import com.example.moneymate.ui.screens.auth.signUp.SignUpScreen
 import com.example.moneymate.ui.screens.home.HomeScreen
 import com.example.moneymate.ui.screens.profile.editprofile.EditProfileScreen
 import com.example.moneymate.ui.screens.profile.profileoptions.ProfileOptionsScreen
+import com.example.moneymate.ui.screens.profile.settings.SettingsNavigationEvent
+import com.example.moneymate.ui.screens.profile.settings.SettingsScreenViewModel
+import com.example.moneymate.ui.screens.profile.settings.SettingsScreen
 import com.example.moneymate.ui.screens.splash.SplashScreen
 import com.example.moneymate.ui.screens.transaction.AddTransactionScreen
 import com.example.moneymate.ui.screens.wallet.CreateWalletScreen
 import com.example.moneymate.ui.screens.wallet.EditWalletScreen
 import com.example.moneymate.ui.screens.wallet.WalletDetailScreen
 import com.example.moneymate.ui.screens.wallet.WalletScreen
+import org.koin.androidx.compose.koinViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -57,7 +62,9 @@ fun AppNavHost(
         composable(NavigationItem.SignUp.route) {
             SignUpScreen(
                 onSignUpSuccess = {
-                    navController.navigate(NavigationItem.Home.route)
+                    navController.navigate(NavigationItem.Home.route) {
+                        popUpTo(NavigationItem.SignIn.route) { inclusive = true }
+                    }
                 },
                 onNavigateToLogin = {
                     navController.navigate(NavigationItem.SignIn.route) {
@@ -65,14 +72,16 @@ fun AppNavHost(
                     }
                 },
                 onLoginClick = {
-                    navController.navigate((NavigationItem.SignIn.route))
+                    navController.navigate(NavigationItem.SignIn.route)
                 }
             )
         }
         composable(NavigationItem.SignIn.route) {
             SignInScreen(
                 onSignInSuccess = {
-                    navController.navigate(NavigationItem.Home.route)
+                    navController.navigate(NavigationItem.Home.route) {
+                        popUpTo(NavigationItem.SignIn.route) { inclusive = true }
+                    }
                 },
                 onSignUpClick = {
                     navController.navigate(NavigationItem.SignUp.route)
@@ -82,7 +91,7 @@ fun AppNavHost(
 
         composable(NavigationItem.Home.route) {
             HomeScreen(
-                currentScreen = "home", // Pass current screen for bottom nav
+                currentScreen = "home",
                 onNavigationItemSelected = { route ->
                     when (route) {
                         "transactions" -> navController.navigate(NavigationItem.Transactions.route)
@@ -94,13 +103,13 @@ fun AppNavHost(
                     navController.navigate(NavigationItem.AddTransaction.route)
                 },
                 onAddWallet = {
-                    // Handle add wallet action
+                    navController.navigate(NavigationItem.CreateWallet.route)
                 },
                 onSeeAllBudget = {
                     // Handle see all budget action
                 },
                 onSeeAllTransactions = {
-                    // Handle see all transactions action
+                    navController.navigate(NavigationItem.Transactions.route)
                 },
                 onProfileClick = {
                     navController.navigate(NavigationItem.Profile.route)
@@ -108,10 +117,9 @@ fun AppNavHost(
             )
         }
 
-        // Add other screen destinations
         composable(NavigationItem.Transactions.route) {
             HomeScreen(
-                currentScreen = "transactions", // Mark transactions as active
+                currentScreen = "transactions",
                 onNavigationItemSelected = { route ->
                     when (route) {
                         "home" -> navController.navigate(NavigationItem.Home.route)
@@ -121,6 +129,18 @@ fun AppNavHost(
                 },
                 onAddRecord = {
                     navController.navigate(NavigationItem.AddTransaction.route)
+                },
+                onAddWallet = {
+                    navController.navigate(NavigationItem.CreateWallet.route)
+                },
+                onSeeAllBudget = {
+                    // Handle see all budget action
+                },
+                onSeeAllTransactions = {
+                    // Already on transactions screen
+                },
+                onProfileClick = {
+                    navController.navigate(NavigationItem.Profile.route)
                 }
             )
         }
@@ -132,7 +152,6 @@ fun AppNavHost(
                     navController.navigate(NavigationItem.CreateWallet.route)
                 },
                 onNavigateToWalletDetail = { walletId ->
-                    // Pass the walletId when navigating
                     navController.navigate(NavigationItem.WalletDetail.createRoute(walletId))
                 },
                 onNavigationItemSelected = { route ->
@@ -143,7 +162,7 @@ fun AppNavHost(
                     }
                 },
                 onBackClick = {
-                    navController.navigate(NavigationItem.Transactions.route)
+                    navController.popBackStack()
                 },
                 onAddRecord = {
                     navController.navigate(NavigationItem.AddTransaction.route)
@@ -182,15 +201,9 @@ fun AppNavHost(
             )
         }
 
-        composable(NavigationItem.CreateWallet.route) {
-            CreateWalletScreen(
-                onBackClick = { navController.popBackStack() }
-            )
-        }
-
         composable(NavigationItem.Goals.route) {
             HomeScreen(
-                currentScreen = "goals", // Mark goals as active
+                currentScreen = "goals",
                 onNavigationItemSelected = { route ->
                     when (route) {
                         "home" -> navController.navigate(NavigationItem.Home.route)
@@ -198,56 +211,109 @@ fun AppNavHost(
                         "wallets" -> navController.navigate(NavigationItem.Wallets.route)
                     }
                 },
-                // ... other parameters
+                onAddRecord = {
+                    navController.navigate(NavigationItem.AddTransaction.route)
+                },
+                onAddWallet = {
+                    navController.navigate(NavigationItem.CreateWallet.route)
+                },
+                onSeeAllBudget = {
+                    // Handle see all budget action
+                },
+                onSeeAllTransactions = {
+                    navController.navigate(NavigationItem.Transactions.route)
+                },
+                onProfileClick = {
+                    navController.navigate(NavigationItem.Profile.route)
+                }
             )
         }
 
         composable(NavigationItem.AddTransaction.route) {
             AddTransactionScreen(
-                onBackClick = { navController.navigate(NavigationItem.Home.route) },
-                onAddTransaction = {navController.navigate(NavigationItem.Home.route)}
+                onBackClick = { navController.popBackStack() },
+                onAddTransaction = { navController.popBackStack() }
             )
         }
 
-        composable(NavigationItem.Profile.route){
+        composable(NavigationItem.Profile.route) {
             ProfileOptionsScreen(
                 onBackClick = {
-                    navController.navigate(NavigationItem.Home.route)
+                    navController.popBackStack()
                 },
                 onEditProfileClick = {
                     navController.navigate(NavigationItem.EditProfile.route)
                 },
-                onBanksAndCardsClick = {},
-                onPaymentPreferencesClick = {},
-                onExportTransactionsClick = {},
+                onBanksAndCardsClick = {
+                    // Handle banks and cards
+                },
+                onPaymentPreferencesClick = {
+                    // Handle payment preferences
+                },
+                onExportTransactionsClick = {
+                    // Handle export transactions
+                },
                 onSettingsClick = {
                     navController.navigate(NavigationItem.Settings.route)
+                },
+                onMessageCenterClick = {
+                    // Handle message center
                 }
             )
         }
 
-        composable(NavigationItem.EditProfile.route){
+        composable(NavigationItem.EditProfile.route) {
             EditProfileScreen(
                 onBackClick = {
-                    navController.navigate(NavigationItem.Profile.route)
+                    navController.popBackStack()
                 },
                 onUpdateClick = {
-                    navController.navigate(NavigationItem.Profile.route)
+                    navController.popBackStack()
                 }
             )
         }
 
-        composable(NavigationItem.Settings.route){
+        composable(NavigationItem.Settings.route) {
+            val viewModel = koinViewModel<SettingsScreenViewModel>()
+            val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
+
+            // Handle logout navigation
+            LaunchedEffect(navigationEvent) {
+                when (navigationEvent) {
+                    is SettingsNavigationEvent.LogoutSuccess -> {
+                        // Navigate to sign in and clear back stack
+                        navController.navigate(NavigationItem.SignIn.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                        viewModel.clearNavigationEvent()
+                    }
+                    else -> {}
+                }
+            }
+
             SettingsScreen(
                 onBackClick = {
-                    navController.navigate(NavigationItem.Profile.route)
+                    navController.popBackStack()
                 },
-                onLogoutClick = {
-                    navController.navigate(NavigationItem.SignIn.route)
+                onLogout = {
+                    // This is handled by the ViewModel now
                 },
-                onLanguageClick = {},
-                onNotificationsClick = {},
-                onContactUsClick = {},
+                onLanguageClick = {
+                    // Handle language selection
+                },
+                onNotificationsClick = {
+                    // Handle notifications
+                },
+                onContactUsClick = {
+                    // Handle contact us
+                },
+                onPrivacyPolicyClick = {
+                    // Handle privacy policy
+                },
+                onDataSharingClick = {
+                    // Handle data sharing
+                },
+                viewModel = viewModel
             )
         }
     }

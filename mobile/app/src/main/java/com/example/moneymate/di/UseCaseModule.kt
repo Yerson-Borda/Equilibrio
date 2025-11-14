@@ -12,6 +12,7 @@ import com.example.domain.transaction.usecase.CreateTransferUseCase
 import com.example.domain.transaction.usecase.GetTransactionsUseCase
 import com.example.domain.user.usecase.DeleteAvatarUseCase
 import com.example.domain.user.usecase.GetUserUseCase
+import com.example.domain.user.usecase.LogoutUseCase
 import com.example.domain.user.usecase.UpdateUserUseCase
 import com.example.domain.user.usecase.UploadAvatarUseCase
 import com.example.domain.wallet.usecase.CreateWalletUseCase
@@ -46,5 +47,6 @@ val useCaseModule = module {
     factory { UpdateUserUseCase(get()) }
     factory { UploadAvatarUseCase(get()) }
     factory { DeleteAvatarUseCase(get()) }
+    factory { LogoutUseCase(get()) }
 
 }

@@ -9,9 +9,9 @@ object UpdateUserRequestMapper {
     fun toRequest(user: User): UpdateUserRequest {
         return UpdateUserRequest(
             email = user.email,
-            fullName = user.fullName.ifEmpty { null },
+            fullName = user.fullName,
             phoneNumber = user.phoneNumber,
-            dateOfBirth = user.birthDate
+            dateOfBirth = user.dateOfBirth
         )
     }
 }

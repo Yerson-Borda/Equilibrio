@@ -1,39 +1,77 @@
-import android.widget.Space
+package com.example.moneymate.ui.screens.profile.settings
+
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.moneymate.R
+import com.example.moneymate.utils.AppError
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun SettingsScreen(
     onBackClick: () -> Unit = {},
-    onLogoutClick: () -> Unit = {},
+    onLogout: () -> Unit = {},
     onLanguageClick: () -> Unit = {},
     onNotificationsClick: () -> Unit = {},
     onContactUsClick: () -> Unit = {},
     onSecurityClick: () -> Unit = {},
     onPrivacyPolicyClick: () -> Unit = {},
-    onDataSharingClick: () -> Unit = {}
+    onDataSharingClick: () -> Unit = {},
+    viewModel: SettingsScreenViewModel = koinViewModel()
 ) {
-    var biometricEnabled by remember { mutableStateOf(false) }
-    var darkModeEnabled by remember { mutableStateOf(false) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val errorState by viewModel.errorState.collectAsStateWithLifecycle()
+    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
+    // Handle errors
+    LaunchedEffect(errorState) {
+        errorState?.let { error ->
+            val message = when (error) {
+                is AppError.ValidationError -> error.message
+                is AppError.HttpError -> "Server error: ${error.message}"
+                is AppError.NetworkError -> "Network error: ${error.message}"
+                else -> "Error: ${error.getUserFriendlyMessage()}"
+            }
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            viewModel.clearError()
+        }
+    }
+
+    // Handle navigation events
+    LaunchedEffect(navigationEvent) {
+        when (navigationEvent) {
+            is SettingsNavigationEvent.LogoutSuccess -> {
+                onLogout()
+                viewModel.clearNavigationEvent()
+            }
+            else -> {}
+        }
+    }
+
+    // Add system bars padding
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .statusBarsPadding() // Add this line
     ) {
         // Header with Back button and Logout
         Row(
@@ -44,12 +82,13 @@ fun SettingsScreen(
         ) {
             IconButton(
                 onClick = onBackClick,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(24.dp),
+                enabled = !uiState.isLoading
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_back_arrow),
                     contentDescription = "Back",
-                    tint = Color.Black,
+                    tint = if (uiState.isLoading) Color.Gray else Color.Black,
                     modifier = Modifier.size(21.dp)
                 )
             }
@@ -62,16 +101,24 @@ fun SettingsScreen(
             )
             Spacer(modifier = Modifier.weight(1f))
             IconButton(
-                onClick = onLogoutClick,
-                modifier = Modifier.size(24.dp)
+                onClick = { viewModel.logout() },
+                modifier = Modifier.size(24.dp),
+                enabled = !uiState.isLoading
             ) {
+                if (uiState.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.Black
+                    )
+                } else {
                     Icon(
                         painter = painterResource(R.drawable.ic_logout),
-                        contentDescription = "Logout part ",
+                        contentDescription = "Logout",
                         tint = Color.Black,
-                        modifier = Modifier
-                            .size(16.dp)
+                        modifier = Modifier.size(16.dp)
                     )
+                }
             }
         }
 
@@ -96,7 +143,8 @@ fun SettingsScreen(
             SettingsMenuItem(
                 title = "Language",
                 subtitle = "English",
-                onClick = onLanguageClick
+                onClick = onLanguageClick,
+                enabled = !uiState.isLoading
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -104,7 +152,8 @@ fun SettingsScreen(
             // Notifications
             SettingsMenuItem(
                 title = "Notifications",
-                onClick = onNotificationsClick
+                onClick = onNotificationsClick,
+                enabled = !uiState.isLoading
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -112,7 +161,8 @@ fun SettingsScreen(
             // Contact Us
             SettingsMenuItem(
                 title = "Contact Us",
-                onClick = onContactUsClick
+                onClick = onContactUsClick,
+                enabled = !uiState.isLoading
             )
         }
 
@@ -136,14 +186,17 @@ fun SettingsScreen(
             // Privacy Policy
             SettingsMenuItem(
                 title = "Privacy Policy",
-                onClick = onPrivacyPolicyClick
+                onClick = onPrivacyPolicyClick,
+                enabled = !uiState.isLoading
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Text(
-                text = "Choose what data you share with us",
-                color = Color(0xFFA2A2A7)
+            // Data Sharing
+            SettingsMenuItem(
+                title = "Data Sharing",
+                onClick = onDataSharingClick,
+                enabled = !uiState.isLoading
             )
         }
 
@@ -158,8 +211,9 @@ fun SettingsScreen(
             // Biometric Toggle
             SettingsToggleItem(
                 title = "Biometric",
-                isEnabled = biometricEnabled,
-                onToggleChange = { biometricEnabled = it }
+                isEnabled = uiState.biometricEnabled,
+                onToggleChange = viewModel::updateBiometricSetting,
+                enabled = !uiState.isLoading
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -167,8 +221,9 @@ fun SettingsScreen(
             // Dark Mode Toggle
             SettingsToggleItem(
                 title = "Dark Mode",
-                isEnabled = darkModeEnabled,
-                onToggleChange = { darkModeEnabled = it }
+                isEnabled = uiState.darkModeEnabled,
+                onToggleChange = viewModel::updateDarkModeSetting,
+                enabled = !uiState.isLoading
             )
         }
 
@@ -180,12 +235,16 @@ fun SettingsScreen(
 fun SettingsMenuItem(
     title: String,
     subtitle: String? = null,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    enabled: Boolean = true
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
+            .clickable(
+                enabled = enabled,
+                onClick = onClick
+            )
     ) {
         Row(
             modifier = Modifier
@@ -194,14 +253,13 @@ fun SettingsMenuItem(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row {
+            Column {
                 Text(
                     text = title,
-                    color = Color.Black,
+                    color = if (enabled) Color.Black else Color.Gray,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Normal
                 )
-                Spacer(modifier = Modifier.width(180.dp))
                 if (subtitle != null) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -215,14 +273,15 @@ fun SettingsMenuItem(
             Icon(
                 painter = painterResource(R.drawable.arrow),
                 contentDescription = "Navigate",
-                tint = Color(0xFFAAAAAA),
+                tint = if (enabled) Color(0xFFAAAAAA) else Color.Gray,
                 modifier = Modifier.size(25.dp)
             )
         }
-        Spacer(modifier = Modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(Color(0xFFF4F4F4).copy(alpha = 0.3f))
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(Color(0xFFF4F4F4).copy(alpha = 0.3f))
         )
     }
 }
@@ -231,7 +290,8 @@ fun SettingsMenuItem(
 fun SettingsToggleItem(
     title: String,
     isEnabled: Boolean,
-    onToggleChange: (Boolean) -> Unit
+    onToggleChange: (Boolean) -> Unit,
+    enabled: Boolean = true
 ) {
     Column(
         modifier = Modifier
@@ -246,14 +306,15 @@ fun SettingsToggleItem(
         ) {
             Text(
                 text = title,
-                color = Color.Black,
+                color = if (enabled) Color.Black else Color.Gray,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Normal
             )
 
             Switch(
                 checked = isEnabled,
-                onCheckedChange = onToggleChange,
+                onCheckedChange = { if (enabled) onToggleChange(it) },
+                enabled = enabled,
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color(0xFF4361EE),
                     checkedTrackColor = Color(0xFF4361EE).copy(alpha = 0.5f),

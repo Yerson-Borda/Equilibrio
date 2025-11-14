@@ -30,6 +30,8 @@ class EditProfileViewModel(
     private val _errorState = MutableStateFlow<AppError?>(null)
     val errorState: StateFlow<AppError?> = _errorState.asStateFlow()
 
+    private var originalAvatarUrl: String? = null
+
     init {
         loadUser()
     }
@@ -41,15 +43,17 @@ class EditProfileViewModel(
                 val result = getUserUseCase()
                 if (result.isSuccess) {
                     val user = result.getOrThrow()
+                    originalAvatarUrl = user.avatarUrl
                     _uiState.value = _uiState.value.copy(
                         user = user,
-                        fullName = user.fullName,
+                        fullName = user.fullName ?: "",
                         email = user.email,
                         phoneNumber = user.phoneNumber ?: "",
-                        birthDate = user.birthDate ?: "",
+                        birthDate = user.dateOfBirth ?: "",
                         isLoading = false,
                         originalUser = user
                     )
+                    checkForChanges()
                 } else {
                     _errorState.value = ErrorHandler.mapExceptionToAppError(
                         result.exceptionOrNull() ?: Exception("Failed to load user")
@@ -107,10 +111,10 @@ class EditProfileViewModel(
                 val currentUser = _uiState.value.user
                 if (currentUser != null) {
                     val updatedUser = currentUser.copy(
-                        fullName = _uiState.value.fullName,
+                        fullName = _uiState.value.fullName.ifEmpty { null },
                         email = _uiState.value.email,
                         phoneNumber = _uiState.value.phoneNumber.ifEmpty { null },
-                        birthDate = _uiState.value.birthDate.ifEmpty { null }
+                        dateOfBirth = _uiState.value.birthDate.ifEmpty { null }
                     )
 
                     val result = updateUserUseCase(updatedUser)
@@ -140,19 +144,25 @@ class EditProfileViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             try {
+                println("DEBUG: Starting avatar upload with URI: $avatarUri")
                 val result = uploadAvatarUseCase(avatarUri)
                 if (result.isSuccess) {
+                    println("DEBUG: Avatar upload successful")
+                    val updatedUser = result.getOrThrow()
                     _uiState.value = _uiState.value.copy(
-                        user = result.getOrThrow(),
+                        user = updatedUser,
                         isLoading = false
                     )
+                    // Avatar has changed, so enable the update button
+                    _uiState.value = _uiState.value.copy(hasChanges = true)
                 } else {
-                    _errorState.value = ErrorHandler.mapExceptionToAppError(
-                        result.exceptionOrNull() ?: Exception("Failed to upload avatar")
-                    )
+                    val exception = result.exceptionOrNull() ?: Exception("Failed to upload avatar")
+                    println("DEBUG: Avatar upload failed: ${exception.message}")
+                    _errorState.value = ErrorHandler.mapExceptionToAppError(exception)
                     _uiState.value = _uiState.value.copy(isLoading = false)
                 }
             } catch (e: Exception) {
+                println("DEBUG: Exception in uploadAvatar: ${e.message}")
                 _errorState.value = ErrorHandler.mapExceptionToAppError(e)
                 _uiState.value = _uiState.value.copy(isLoading = false)
             }
@@ -169,6 +179,8 @@ class EditProfileViewModel(
                         user = result.getOrThrow(),
                         isLoading = false
                     )
+                    // Avatar has changed, so enable the update button
+                    _uiState.value = _uiState.value.copy(hasChanges = true)
                 } else {
                     _errorState.value = ErrorHandler.mapExceptionToAppError(
                         result.exceptionOrNull() ?: Exception("Failed to delete avatar")
@@ -232,12 +244,14 @@ class EditProfileViewModel(
         val original = state.originalUser
 
         val hasChanges = original?.let { originalUser ->
-            state.fullName != originalUser.fullName ||
+            state.fullName != (originalUser.fullName ?: "") ||
                     state.email != originalUser.email ||
                     state.phoneNumber != (originalUser.phoneNumber ?: "") ||
-                    state.birthDate != (originalUser.birthDate ?: "") ||
+                    state.birthDate != (originalUser.dateOfBirth ?: "") ||
                     state.newPassword.isNotBlank() ||
-                    state.confirmPassword.isNotBlank()
+                    state.confirmPassword.isNotBlank() ||
+                    // Check if avatar has changed
+                    state.user?.avatarUrl != originalAvatarUrl
         } ?: true
 
         _uiState.value = state.copy(hasChanges = hasChanges)
