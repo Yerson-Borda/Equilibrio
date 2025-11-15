@@ -8,6 +8,8 @@ from app.auth import get_current_user
 from datetime import datetime, date
 from decimal import Decimal
 from app.services.currency_service import currency_service
+from app.services import budget_service
+from app.services.financial_summary_service import update_monthly_summary
 
 router = APIRouter()
 
@@ -37,7 +39,6 @@ def create_transaction(
     
     transaction = Transaction(
         amount=transaction_data.amount,
-        description=transaction_data.description,
         note=transaction_data.note,
         type=transaction_data.type,
         transaction_date=transaction_data.transaction_date,
@@ -55,10 +56,18 @@ def create_transaction(
                 detail="Insufficient balance in wallet"
             )
         wallet.balance -= transaction_data.amount
+
+        budget_service.record_expense(
+            db=db,
+            user_id=current_user.id,
+            amount=float(transaction_data.amount)
+        )
     
     db.add(transaction)
     db.commit()
     db.refresh(transaction)
+
+    update_monthly_summary(db, current_user.id, transaction)
     
     return transaction
 
@@ -134,6 +143,12 @@ def delete_transaction(
             wallet.balance = 0  # Prevent negative balance
     else:
         wallet.balance += transaction.amount
+
+
+        budget = budget_service.get_or_create_current_budget(db, current_user.id)
+        budget.daily_spent = max(Decimal('0.00'), budget.daily_spent - transaction.amount)
+        budget.monthly_spent = max(Decimal('0.00'), budget.monthly_spent - transaction.amount)
+        db.commit()
     
     # Delete the transaction
     db.delete(transaction)
@@ -220,7 +235,6 @@ def transfer_funds(
     # Source transaction (Transfer Out)
     source_transaction = Transaction(
         amount=transfer_data.amount,
-        description=f"Transfer to {destination_wallet.name}",
         note=transfer_data.note,
         type=TransactionType.TRANSFER,
         transaction_date=today,
@@ -232,7 +246,6 @@ def transfer_funds(
     # Destination transaction (Transfer In)
     destination_transaction = Transaction(
         amount=converted_amount,
-        description=f"Transfer from {source_wallet.name}",
         note=transfer_data.note,
         type=TransactionType.TRANSFER,
         transaction_date=today,

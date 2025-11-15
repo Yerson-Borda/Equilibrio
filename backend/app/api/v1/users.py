@@ -164,9 +164,6 @@ def update_user_info(
         if user_data.date_of_birth is not None:
             current_user.date_of_birth = user_data.date_of_birth
         
-        if user_data.avatar_url is not None:
-            current_user.avatar_url = user_data.avatar_url
-        
         if user_data.default_currency is not None:
             current_user.default_currency = user_data.default_currency.upper()
         
