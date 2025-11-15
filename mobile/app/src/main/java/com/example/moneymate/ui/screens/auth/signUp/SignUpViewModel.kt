@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.domain.auth.usecase.SignUpUseCase
 import com.example.domain.auth.usecase.model.SignUpInfo
+import com.example.moneymate.utils.AppError
+import com.example.moneymate.utils.ErrorHandler
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -29,17 +31,7 @@ class SignUpViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                if (fullName.isBlank() || email.isBlank() || password.isBlank()) {
-                    throw IllegalArgumentException("Please fill all fields")
-                }
-
-                if (!isValidEmail(email)) {
-                    throw IllegalArgumentException("Please enter a valid email address")
-                }
-
-                if (password.length < 6) {
-                    throw IllegalArgumentException("Password should be at least 6 characters")
-                }
+                validateInput(fullName, email, password)
 
                 signUpUseCase(
                     SignUpInfo(
@@ -51,28 +43,33 @@ class SignUpViewModel(
                     _navigateToProfile.emit(Unit)
                 }
             } catch (e: Exception) {
-                if (isEmailExistsError(e)) {
-                    _showEmailExistsDialog.emit(Unit)
-                } else {
-                    _showError.emit(e.message ?: "Registration failed")
-                }
+                handleError(e)
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    private fun isEmailExistsError(e: Exception): Boolean {
-        return when {
-            e.message?.contains("email", ignoreCase = true) == true -> true
-            e.message?.contains("exists", ignoreCase = true) == true -> true
-            e.message?.contains("already", ignoreCase = true) == true -> true
-            e.message?.contains("duplicate", ignoreCase = true) == true -> true
-            e.message?.contains("500", ignoreCase = true) == true -> true
-            e.message?.contains("internal server error", ignoreCase = true) == true -> true
-            // For now, assume ALL 500 errors are email exists errors (temporary solution)
-            e.message?.contains("registration", ignoreCase = true) == true -> true
-            else -> false
+    private fun validateInput(fullName: String, email: String, password: String) {
+        if (fullName.isBlank() || email.isBlank() || password.isBlank()) {
+            throw IllegalArgumentException("Please fill in all fields")
+        }
+
+        if (!isValidEmail(email)) {
+            throw IllegalArgumentException("Please enter a valid email address")
+        }
+
+        if (password.length < 6) {
+            throw IllegalArgumentException("Password should be at least 6 characters")
+        }
+    }
+
+    private suspend fun handleError(exception: Exception) {
+        val appError = ErrorHandler.mapExceptionToAppError(exception)
+
+        when (appError) {
+            is AppError.EmailExistsError -> _showEmailExistsDialog.emit(Unit)
+            else -> _showError.emit(appError.getUserFriendlyMessage())
         }
     }
 

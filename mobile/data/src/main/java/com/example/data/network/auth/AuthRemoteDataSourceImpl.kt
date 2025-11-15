@@ -35,6 +35,6 @@ class AuthRemoteDataSourceImpl(
     override suspend fun signIn(email: String, password: String): AccessToken {
         // Directly pass email and password as query parameters
         val response = authApi.signIn(email = email, password = password)
-        return AccessToken(response.accessToken, response.refreshToken, response.userId)
+        return AccessToken(response.accessToken , response.tokenType)
     }
 }

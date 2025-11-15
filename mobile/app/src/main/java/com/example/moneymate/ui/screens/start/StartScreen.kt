@@ -88,7 +88,7 @@ fun StartScreen(
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 lineHeight = 38.sp,
-                color = Color(0xFF4361EE)
+                color = Color(0xFF4D6BFA)
             )
 
             Spacer(modifier = Modifier.height(26.dp))
@@ -96,7 +96,7 @@ fun StartScreen(
             CustomButton(
                 text = stringResource(R.string.get_started),
                 onClick = onSignUpClick,
-                backgroundColor = Color(0xFF4361EE)
+                backgroundColor = Color(0xFF4D6BFA)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -114,7 +114,7 @@ fun StartScreen(
                     text = stringResource(R.string.log_in),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF4361EE),
+                    color = Color(0xFF4D6BFA),
                     modifier = Modifier
                         .padding(vertical = 8.dp)
                         .clickable(onClick = onLoginClick)

@@ -26,4 +26,5 @@
     <string name="right_coin">Right coin</string>
     <string name="spend_smarter_save_more">Spend Smarter\nSave More</string>
     <string name="get_started">Get Started</string>
+    <string name="notification_icon">notification icon</string>
 </resources>
