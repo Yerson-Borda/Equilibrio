@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -112,7 +114,7 @@ fun SignUpContent(
     val passwordValidation = Validation.isValidPassword(password.value)
     val passwordError = if (showErrors) passwordValidation.errorMessage else null
     val passwordSupportText = if (!showErrors && password.value.isNotEmpty()) passwordValidation.errorMessage else null
-
+    val scrollState = rememberScrollState()
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -122,10 +124,12 @@ fun SignUpContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(scrollState)
                 .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top
         ) {
+            Spacer(modifier = Modifier.height(130.dp))
             Image(
                 painter = painterResource(R.drawable.logo),
                 contentDescription = stringResource(R.string.logo)
@@ -198,7 +202,7 @@ fun SignUpContent(
                     }
                 },
                 isLoading = isLoading,
-                backgroundColor = Color(0xFF4361EE)
+                backgroundColor = Color(0xFF4D6BFA)
             )
 
             Spacer(modifier = Modifier.height(139.dp))
@@ -215,7 +219,7 @@ fun SignUpContent(
                     text = stringResource(R.string.log_in),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF4361EE),
+                    color = Color(0xFF4D6BFA),
                     modifier = Modifier
                         .padding(vertical = 8.dp)
                         .clickable(onClick = onLoginClick)

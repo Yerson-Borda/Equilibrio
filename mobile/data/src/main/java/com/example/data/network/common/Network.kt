@@ -2,7 +2,6 @@ package com.example.data.network.common
 
 import com.example.data.network.common.interceptors.HeadersInterceptor
 import com.example.data.network.common.interceptors.RefreshTokenAuthenticator
-import com.example.data.network.common.interceptors.StatusCodeInterceptor
 import com.example.domain.accessToken.AccessTokenRepository
 import kotlinx.serialization.json.Json
 import okhttp3.Cache
@@ -53,19 +52,9 @@ object Network {
         serializer = serializer,
         accessTokenRepository = accessTokenRepository,
     )
-
-    fun getStatusCodeInterceptor(
-        accessTokenRepository: AccessTokenRepository,
-        serializer: Json,
-    ): StatusCodeInterceptor = StatusCodeInterceptor(
-        accessTokenRepository = accessTokenRepository,
-        deserializer = serializer,
-    )
-
     fun getHttpClient(
         cache: Cache,
         headersInterceptor: HeadersInterceptor,
-        statusCodeInterceptor: StatusCodeInterceptor,
         loggingInterceptor: HttpLoggingInterceptor,
         authenticator: RefreshTokenAuthenticator,
     ): OkHttpClient = OkHttpClient.Builder().apply {
@@ -76,7 +65,6 @@ object Network {
         cache(cache)
 
         addInterceptor(headersInterceptor)
-        addInterceptor(statusCodeInterceptor)
         addInterceptor(loggingInterceptor)
 
         authenticator(authenticator)

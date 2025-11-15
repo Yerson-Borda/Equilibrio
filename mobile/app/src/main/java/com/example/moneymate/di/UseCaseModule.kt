@@ -6,6 +6,23 @@ import com.example.domain.auth.usecase.SignUpUseCase
 import com.example.domain.auth.usecase.SignUpUseCaseImpl
 import com.example.domain.auth.usecase.SignInUseCase
 import com.example.domain.auth.usecase.SignInUseCaseImpl
+import com.example.domain.user.usecase.GetUserDetailedUseCase
+import com.example.domain.transaction.usecase.CreateTransactionUseCase
+import com.example.domain.transaction.usecase.CreateTransferUseCase
+import com.example.domain.transaction.usecase.GetTransactionsUseCase
+import com.example.domain.user.usecase.DeleteAvatarUseCase
+import com.example.domain.user.usecase.GetUserUseCase
+import com.example.domain.user.usecase.LogoutUseCase
+import com.example.domain.user.usecase.UpdateUserUseCase
+import com.example.domain.user.usecase.UploadAvatarUseCase
+import com.example.domain.wallet.usecase.CreateWalletUseCase
+import com.example.domain.wallet.usecase.DeleteWalletUseCase
+import com.example.domain.wallet.usecase.GetTotalBalanceUseCase
+import com.example.domain.wallet.usecase.GetWalletDetailUseCase
+import com.example.domain.wallet.usecase.GetWalletTransactionsUseCase
+import com.example.domain.wallet.usecase.GetWalletUseCase
+import com.example.domain.wallet.usecase.GetWalletsUseCase
+import com.example.domain.wallet.usecase.UpdateWalletUseCase
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.factoryOf
 import org.koin.dsl.module
@@ -14,5 +31,22 @@ val useCaseModule = module {
     factoryOf(::IsUserSignedInUseCaseImpl) { bind<IsUserSignedInUseCase>() }
     factoryOf(::SignUpUseCaseImpl) { bind<SignUpUseCase>() }
     factoryOf(::SignInUseCaseImpl) { bind<SignInUseCase>() }
+    factory { GetUserDetailedUseCase(get()) }
+    factory { GetWalletUseCase(get()) }
+    factory { GetWalletsUseCase(get())}
+    factory { CreateWalletUseCase(get()) }
+    factory { GetWalletTransactionsUseCase(get()) }
+    factory { GetTotalBalanceUseCase(get()) }
+    factory { GetWalletDetailUseCase(get()) }
+    factory { DeleteWalletUseCase(get()) }
+    factory { UpdateWalletUseCase(get()) }
+    factory { CreateTransferUseCase(get()) }
+    factory { CreateTransactionUseCase(get()) }
+    factory { GetTransactionsUseCase(get()) }
+    factory { GetUserUseCase(get()) }
+    factory { UpdateUserUseCase(get()) }
+    factory { UploadAvatarUseCase(get()) }
+    factory { DeleteAvatarUseCase(get()) }
+    factory { LogoutUseCase(get()) }
 
 }
