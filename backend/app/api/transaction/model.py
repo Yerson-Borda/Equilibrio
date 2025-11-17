@@ -1,0 +1,37 @@
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime, date
+from decimal import Decimal
+from app.dto.enums.transaction_type import TransactionType
+
+class TransactionBase(BaseModel):
+    amount: Decimal
+    note: Optional[str] = None
+    type: TransactionType
+    transaction_date: date
+    wallet_id: int
+    category_id: int
+
+class TransactionCreate(TransactionBase):
+    pass
+
+class TransactionResponse(TransactionBase):
+    id: int
+    user_id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class TransferCreate(BaseModel):
+    source_wallet_id: int
+    destination_wallet_id: int
+    amount: Decimal
+    note: Optional[str] = None
+
+class TransferResponse(BaseModel):
+    message: str
+    source_transaction: TransactionResponse
+    destination_transaction: TransactionResponse
+    exchange_rate: float
+    converted_amount: float

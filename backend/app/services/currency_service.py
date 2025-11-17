@@ -1,7 +1,6 @@
 import requests
 from decimal import Decimal
-import os
-from typing import Dict, Optional
+from typing import Optional
 import logging
 
 logger = logging.getLogger(__name__)
