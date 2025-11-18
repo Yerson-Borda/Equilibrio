@@ -1,5 +1,6 @@
 package com.example.moneymate.ui.screens.wallet
 
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -86,7 +87,12 @@ private fun EditWalletFormContent(
     modifier: Modifier = Modifier
 ) {
     var walletName by remember { mutableStateOf(walletDetail.name) }
-    var initialBalance by remember { mutableStateOf(walletDetail.initialBalance) }
+    var balance by remember {
+        mutableStateOf(
+            // Use current balance if available, otherwise use initial balance
+            walletDetail.balance ?: walletDetail.initialBalance
+        )
+    }
     var selectedWalletType by remember { mutableStateOf(walletDetail.walletType) }
     var cardNumber by remember { mutableStateOf(walletDetail.cardNumber ?: "") }
     var selectedCurrency by remember { mutableStateOf(walletDetail.currency) }
@@ -95,11 +101,11 @@ private fun EditWalletFormContent(
     WalletForm(
         walletName = walletName,
         onWalletNameChange = { walletName = it },
-        initialBalance = initialBalance,
+        initialBalance = balance,
         onInitialBalanceChange = {
             // Allow only numbers and decimal point
             if (it.matches(Regex("^\\d*\\.?\\d*$"))) {
-                initialBalance = it
+                balance = it
             }
         },
         selectedWalletType = selectedWalletType,
@@ -116,11 +122,11 @@ private fun EditWalletFormContent(
         onColorSelected = { selectedColor = it },
         onSubmit = {
             val request = WalletUpdateRequest(
-                name = walletName.ifEmpty { "My Wallet" },
+                name = walletName,
                 currency = selectedCurrency,
                 walletType = selectedWalletType,
-                initialBalance = initialBalance.toDoubleOrNull() ?: 0.0,
-                cardNumber = cardNumber.ifEmpty { null },
+                initialBalance = if (balance.isBlank()) "0.00" else balance,
+                cardNumber = if (cardNumber.isBlank()) null else cardNumber,
                 color = selectedColor
             )
             onUpdateWallet(walletDetail.id, request)

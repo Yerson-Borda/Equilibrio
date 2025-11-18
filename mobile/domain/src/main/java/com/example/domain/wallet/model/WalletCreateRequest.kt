@@ -2,9 +2,9 @@ package com.example.domain.wallet.model
 
 data class WalletCreateRequest(
     val name: String,
-    val currency: String = "USD",
+    val currency: String,
     val walletType: String,
-    val initialBalance: Double = 0.0,
-    val cardNumber: String? = null,
-    val color: String = "#3B82F6"
+    val initialBalance: String, // Change from Double to String
+    val cardNumber: String?,
+    val color: String
 )

@@ -10,23 +10,22 @@ data class WalletResponse(
     val name: String,
     val currency: String = "USD",
     val wallet_type: String,
-    val initial_balance: String = "0.00",
+    val balance: String, // This is the current balance
     val card_number: String? = null,
     val color: String = "#3B82F6",
-    val balance: String? = null,
     val user_id: Int? = null,
     val created_at: String? = null
 ) {
     fun toDomain(): Wallet {
         return Wallet(
-            id = id ?: throw IllegalArgumentException("Wallet ID cannot be null"), // This will throw if ID is null
+            id = id ?: throw IllegalArgumentException("Wallet ID cannot be null"),
             name = name,
             currency = currency,
             walletType = wallet_type,
-            initialBalance = initial_balance,
+            initialBalance = balance, // Use balance as initial balance
             cardNumber = card_number,
             color = color,
-            balance = balance,
+            balance = balance, // Also set current balance
             userId = user_id,
             createdAt = created_at
         )

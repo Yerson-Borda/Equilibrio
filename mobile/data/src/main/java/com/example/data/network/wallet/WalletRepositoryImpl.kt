@@ -115,7 +115,7 @@ class WalletRepositoryImpl(
             println("🔄 [Repository] Domain request: name=${walletRequest.name}, type=${walletRequest.walletType}, balance=${walletRequest.initialBalance}")
 
             val dataRequest = DataWalletUpdateRequest.fromDomain(walletRequest)
-            println("🔄 [Repository] Data request: name=${dataRequest.name}, wallet_type=${dataRequest.walletType}, initial_balance=${dataRequest.initialBalance}")
+            println("🔄 [Repository] Data request: name=${dataRequest.name}, wallet_type=${dataRequest.walletType}, initial_balance=${dataRequest.balance}")
 
             val response = walletApi.updateWallet(walletId, dataRequest)
 

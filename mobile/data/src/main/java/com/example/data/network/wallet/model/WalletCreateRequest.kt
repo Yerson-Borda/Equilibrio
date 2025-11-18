@@ -9,7 +9,7 @@ data class WalletCreateRequest(
     val name: String,
     val currency: String = "USD",
     val wallet_type: String,
-    val initial_balance: Double = 0.0,
+    val balance: String, // Change from initial_balance to balance and make it String
     val card_number: String? = null,
     val color: String = "#3B82F6"
 ) {
@@ -19,7 +19,7 @@ data class WalletCreateRequest(
                 name = domain.name,
                 currency = domain.currency,
                 wallet_type = domain.walletType,
-                initial_balance = domain.initialBalance,
+                balance = domain.initialBalance.toString(), // Convert to String
                 card_number = domain.cardNumber,
                 color = domain.color
             )

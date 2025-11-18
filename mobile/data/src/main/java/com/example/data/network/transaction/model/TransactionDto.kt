@@ -8,7 +8,6 @@ import kotlinx.serialization.Serializable
 data class TransactionDto(
     @SerialName( "id") val id: Int,
     @SerialName("amount") val amount: String,
-    @SerialName("description") val description: String?,
     @SerialName("note") val note: String?,
     @SerialName("type") val type: String,
     @SerialName("transaction_date") val transactionDate: String,
@@ -21,7 +20,6 @@ data class TransactionDto(
         return TransactionEntity(
             id = id,
             amount = amount,
-            description = description,
             note = note,
             type = type,
             transactionDate = transactionDate,

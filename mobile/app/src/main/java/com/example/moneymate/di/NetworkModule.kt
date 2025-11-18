@@ -1,6 +1,7 @@
 package com.example.moneymate.di
 
 import com.example.data.network.auth.AuthApi
+import com.example.data.network.category.CategoryApi
 import com.example.data.network.common.Network
 import com.example.data.network.user.UserApi
 import com.example.data.network.transaction.TransactionApi
@@ -23,5 +24,6 @@ val networkModule = module {
     single<UserApi> { Network.getApi(get()) }
     single<WalletApi> { Network.getApi(get()) }
     single<TransactionApi> {Network.getApi(get())}
+    single<CategoryApi> {Network.getApi(get())}
 
 }

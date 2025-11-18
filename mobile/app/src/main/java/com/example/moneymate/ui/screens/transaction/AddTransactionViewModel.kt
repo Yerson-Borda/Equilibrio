@@ -4,6 +4,9 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.domain.category.model.Category
+import com.example.domain.category.usecase.GetExpenseCategoriesUseCase
+import com.example.domain.category.usecase.GetIncomeCategoriesUseCase
 import com.example.domain.transaction.usecase.CreateTransactionUseCase
 import com.example.domain.transaction.usecase.CreateTransferUseCase
 import com.example.domain.wallet.usecase.GetWalletsUseCase
@@ -19,7 +22,9 @@ import java.time.LocalDate
 class AddTransactionViewModel(
     private val createTransactionUseCase: CreateTransactionUseCase,
     private val createTransferUseCase: CreateTransferUseCase,
-    private val getWalletsUseCase: GetWalletsUseCase
+    private val getWalletsUseCase: GetWalletsUseCase,
+    private val getIncomeCategoriesUseCase: GetIncomeCategoriesUseCase,
+    private val getExpenseCategoriesUseCase: GetExpenseCategoriesUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddTransactionState())
@@ -30,6 +35,12 @@ class AddTransactionViewModel(
 
     private val _wallets = MutableStateFlow<List<Wallet>>(emptyList())
     val wallets: StateFlow<List<Wallet>> = _wallets.asStateFlow()
+
+    private val _incomeCategories = MutableStateFlow<List<Category>>(emptyList())
+    val incomeCategories: StateFlow<List<Category>> = _incomeCategories.asStateFlow()
+
+    private val _expenseCategories = MutableStateFlow<List<Category>>(emptyList())
+    val expenseCategories: StateFlow<List<Category>> = _expenseCategories.asStateFlow()
 
     private val _errorState = MutableStateFlow<AppError?>(null)
     val errorState: StateFlow<AppError?> = _errorState.asStateFlow()
@@ -44,6 +55,7 @@ class AddTransactionViewModel(
 
     init {
         loadWallets()
+        loadCategories()
     }
 
     private fun loadWallets() {
@@ -72,6 +84,32 @@ class AddTransactionViewModel(
             } finally {
                 _uiState.value = _uiState.value.copy(isLoading = false)
             }
+        }
+    }
+
+    private fun loadCategories() {
+        viewModelScope.launch {
+            // Load income categories
+            getIncomeCategoriesUseCase().onSuccess { categories ->
+                _incomeCategories.value = categories
+            }.onFailure {
+                // Handle error
+            }
+
+            // Load expense categories
+            getExpenseCategoriesUseCase().onSuccess { categories ->
+                _expenseCategories.value = categories
+            }.onFailure {
+                // Handle error
+            }
+        }
+    }
+
+    fun getCategoriesForType(type: TransactionType): List<Category> {
+        return when (type) {
+            TransactionType.INCOME -> incomeCategories.value
+            TransactionType.EXPENSE -> expenseCategories.value
+            TransactionType.TRANSFER -> emptyList() // Or handle transfer categories if needed
         }
     }
 

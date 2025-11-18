@@ -134,7 +134,6 @@ private fun TransactionDto.toEntity(): TransactionEntity {
     return TransactionEntity(
         id = id,
         amount = amount,
-        description = description,
         note = note,
         type = type,
         transactionDate = transactionDate,

@@ -6,6 +6,11 @@ import com.example.domain.auth.usecase.SignUpUseCase
 import com.example.domain.auth.usecase.SignUpUseCaseImpl
 import com.example.domain.auth.usecase.SignInUseCase
 import com.example.domain.auth.usecase.SignInUseCaseImpl
+import com.example.domain.category.usecase.CreateCategoryUseCase
+import com.example.domain.category.usecase.DeleteCategoryUseCase
+import com.example.domain.category.usecase.GetCategoriesUseCase
+import com.example.domain.category.usecase.GetExpenseCategoriesUseCase
+import com.example.domain.category.usecase.GetIncomeCategoriesUseCase
 import com.example.domain.user.usecase.GetUserDetailedUseCase
 import com.example.domain.transaction.usecase.CreateTransactionUseCase
 import com.example.domain.transaction.usecase.CreateTransferUseCase
@@ -48,5 +53,10 @@ val useCaseModule = module {
     factory { UploadAvatarUseCase(get()) }
     factory { DeleteAvatarUseCase(get()) }
     factory { LogoutUseCase(get()) }
+    factory { GetCategoriesUseCase(get()) }
+    factory { GetIncomeCategoriesUseCase(get()) }
+    factory { GetExpenseCategoriesUseCase(get()) }
+    factory { CreateCategoryUseCase(get()) }
+    factory { DeleteCategoryUseCase(get()) }
 
 }

@@ -57,6 +57,7 @@ import org.koin.androidx.compose.koinViewModel
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
+import com.example.domain.category.model.Category
 import com.example.domain.wallet.model.Wallet
 
 
@@ -72,6 +73,13 @@ fun AddTransactionScreen(
     val navigationEvent by viewModel.navigationEvent.collectAsState()
     val errorState by viewModel.errorState.collectAsState()
     val context = LocalContext.current
+    val incomeCategories by viewModel.incomeCategories.collectAsState()
+    val expenseCategories by viewModel.expenseCategories.collectAsState()
+    val currentCategories = when (uiState.selectedType) {
+        TransactionType.INCOME -> incomeCategories
+        TransactionType.EXPENSE -> expenseCategories
+        TransactionType.TRANSFER -> emptyList()
+    }
 
     // Add gallery launcher inside the composable
     val galleryLauncher = rememberLauncherForActivityResult(
@@ -211,6 +219,7 @@ fun AddTransactionScreen(
                     IncomeExpenseContent(
                         uiState = uiState,
                         wallets = wallets,
+                        categories = currentCategories, // Pass the categories
                         onWalletSelected = { wallet ->
                             viewModel.onWalletSelected(
                                 walletId = wallet.id ?: 0,
@@ -223,7 +232,6 @@ fun AddTransactionScreen(
                         onDescriptionChanged = viewModel::onDescriptionChanged,
                         viewModel = viewModel,
                         onAddAttachment = {
-                            // Launch gallery picker when button is clicked
                             galleryLauncher.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
@@ -313,6 +321,7 @@ fun TransferContent(
 fun IncomeExpenseContent(
     uiState: AddTransactionState,
     wallets: List<Wallet>,
+    categories: List<Category>, // Add this parameter
     onAddAttachment: () -> Unit,
     onWalletSelected: (Wallet) -> Unit,
     onCategorySelected: (Int, String) -> Unit,
@@ -334,9 +343,11 @@ fun IncomeExpenseContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Category
+        // Category - Updated to use API categories
         CategoryDropdown(
             selectedCategoryName = uiState.selectedCategoryName,
+            transactionType = uiState.selectedType,
+            categories = categories,
             onCategorySelected = onCategorySelected
         )
 
@@ -427,19 +438,11 @@ fun WalletDropdown(
 @Composable
 fun CategoryDropdown(
     selectedCategoryName: String,
+    transactionType: TransactionType,
+    categories: List<Category>,
     onCategorySelected: (Int, String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val categories = listOf(
-        1 to "Food",
-        2 to "Shopping",
-        3 to "Transport",
-        4 to "Entertainment",
-        5 to "Bills & Utilities",
-        6 to "Healthcare",
-        7 to "Education",
-        8 to "Travel"
-    )
 
     Column(
         modifier = Modifier
@@ -473,14 +476,31 @@ fun CategoryDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            categories.forEach { (id, name) ->
+            if (categories.isEmpty()) {
                 DropdownMenuItem(
-                    text = { Text(name) },
-                    onClick = {
-                        onCategorySelected(id, name)
-                        expanded = false
-                    }
+                    text = { Text("No categories available") },
+                    onClick = { expanded = false }
                 )
+            } else {
+                categories.forEach { category ->
+                    DropdownMenuItem(
+                        text = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // You can add icon and color here later
+                                Text(
+                                    text = category.name,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+                        },
+                        onClick = {
+                            onCategorySelected(category.id, category.name)
+                            expanded = false
+                        }
+                    )
+                }
             }
         }
     }

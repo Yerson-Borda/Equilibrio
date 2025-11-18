@@ -1,3 +1,4 @@
+// data/network/wallet/model/WalletUpdateRequest.kt
 package com.example.data.network.wallet.model
 
 import com.example.domain.wallet.model.WalletUpdateRequest as DomainWalletUpdateRequest
@@ -6,12 +7,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class WalletUpdateRequest(
-    @SerialName("name") val name: String,
-    @SerialName("currency") val currency: String = "USD",
-    @SerialName("wallet_type") val walletType: String,
-    @SerialName("initial_balance") val initialBalance: Double = 0.0,
+    @SerialName("name") val name: String? = null,
+    @SerialName("currency") val currency: String? = null,
+    @SerialName("wallet_type") val walletType: String? = null,
+    @SerialName("balance") val balance: String? = null, // Changed to 'balance' and String
     @SerialName("card_number") val cardNumber: String? = null,
-    @SerialName("color") val color: String = "#3B82F6"
+    @SerialName("color") val color: String? = null
 ) {
     companion object {
         fun fromDomain(domain: DomainWalletUpdateRequest): WalletUpdateRequest {
@@ -19,7 +20,7 @@ data class WalletUpdateRequest(
                 name = domain.name,
                 currency = domain.currency,
                 walletType = domain.walletType,
-                initialBalance = domain.initialBalance,
+                balance = domain.initialBalance, // Use the string directly
                 cardNumber = domain.cardNumber,
                 color = domain.color
             )
