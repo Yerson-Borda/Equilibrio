@@ -1,12 +1,14 @@
 from datetime import datetime, date, timedelta
 from typing import List, Dict, Any
-
 from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-
 from app.database import get_db  # noqa: F401  (kept if you want DI elsewhere)
-from app.models.models import Transaction, Category, User, TransactionType
+
+from app.entities.transaction import Transaction
+from app.entities.category import Category
+from app.entities.user import User
+
 
 from .model import (
     CategorySummary,
