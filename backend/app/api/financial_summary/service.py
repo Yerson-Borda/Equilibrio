@@ -3,7 +3,11 @@ from datetime import date
 from datetime import date
 from sqlalchemy.orm import Session
 from sqlalchemy import extract
-from app.models.models import FinancialSummary, Transaction, TransactionType, Wallet, WalletType
+from app.entities.financial_summary import FinancialSummary
+from app.entities.transaction import Transaction
+from app.entities.wallet import Wallet
+from app.utils.enums.transaction_type import TransactionType
+from app.utils.enums.wallet_type import WalletType
 
 def update_monthly_summary(db: Session, user_id: int, transaction):
     """Updates or creates the monthly summary based on the transaction."""

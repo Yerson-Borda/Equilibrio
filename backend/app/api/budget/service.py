@@ -1,9 +1,8 @@
 from sqlalchemy.orm import Session
 from datetime import date
-from app.models.models import Budget
-from app.schemas.schemas import BudgetUpdate
+from app.entities.budget import Budget
+from app.api.budget.model import BudgetUpdate
 from decimal import Decimal
-
 
 def get_or_create_current_budget(db: Session, user_id: int) -> Budget:
     today = date.today()

@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models.models import FinancialSummary, User
-from app.schemas.schemas import FinancialSummaryResponse
-from app.auth import get_current_user
+from app.entities.financial_summary import FinancialSummary
+from app.entities.user import User
+from app.api.financial_summary.model import FinancialSummaryResponse
+from app.core.auth import get_current_user
 from datetime import date
 
 router = APIRouter()

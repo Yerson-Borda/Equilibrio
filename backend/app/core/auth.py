@@ -3,10 +3,9 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.core.security import verify_token, token_blacklist
 from app.database import get_db
-from app.models.models import User
+from app.entities.user import User
 
 security = HTTPBearer()
-
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
