@@ -2,7 +2,7 @@ from sqlalchemy import Column, ForeignKey, Integer, DateTime, Text, DECIMAL, Dat
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
-from app.dto.enums.transaction_type import TransactionType
+from app.utils.enums.transaction_type import TransactionType
 
 class Transaction(Base):
     __tablename__ = "transactions"

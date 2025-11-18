@@ -1,7 +1,7 @@
 from sqlalchemy import Column, ForeignKey, Integer, String, Enum
 from sqlalchemy.orm import relationship
 from app.database import Base
-from app.dto.enums.transaction_type import TransactionType
+from app.utils.enums.transaction_type import TransactionType
 
 class Category(Base):
     __tablename__ = "categories"

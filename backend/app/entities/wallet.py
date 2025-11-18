@@ -1,7 +1,7 @@
 from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, DECIMAL, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from app.dto.enums.wallet_type import WalletType
+from app.utils.enums.wallet_type import WalletType
 from app.database import Base
 
 class Wallet(Base):

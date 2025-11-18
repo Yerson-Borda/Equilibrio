@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
-from app.auth import get_current_user
+from app.core.auth import get_current_user
 from app.api.category.model import CategoryCreate, CategoryResponse
-from app.dto.enums.transaction_type import TransactionType
+from app.utils.enums.transaction_type import TransactionType
 from app.api.category.service import CategoryService
 
 router = APIRouter()

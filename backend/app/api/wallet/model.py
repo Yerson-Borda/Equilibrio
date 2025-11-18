@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 from decimal import Decimal
-from app.dto.enums.wallet_type import WalletType
+from app.utils.enums.wallet_type import WalletType
 
 class WalletBase(BaseModel):
     name: str

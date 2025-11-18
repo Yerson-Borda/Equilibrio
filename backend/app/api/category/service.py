@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app.entities.category import Category
-from app.dto.enums.transaction_type import TransactionType
+from app.utils.enums.transaction_type import TransactionType
 from app.api.category.model import CategoryCreate
 
 class CategoryService:

@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, date
 from decimal import Decimal
-from app.dto.enums.transaction_type import TransactionType
+from app.utils.enums.transaction_type import TransactionType
 
 class TransactionBase(BaseModel):
     amount: Decimal

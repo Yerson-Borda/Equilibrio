@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from app.dto.enums.transaction_type import TransactionType
+from app.utils.enums.transaction_type import TransactionType
 
 class CategoryBase(BaseModel):
     name: str

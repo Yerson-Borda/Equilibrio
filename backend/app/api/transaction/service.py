@@ -5,7 +5,7 @@ from decimal import Decimal
 from app.entities.transaction import Transaction
 from app.entities.wallet import Wallet
 from app.entities.category import Category
-from app.dto.enums.transaction_type import TransactionType
+from app.utils.enums.transaction_type import TransactionType
 from app.api.budget import service as budget_service
 from app.api.financial_summary.service import update_monthly_summary
 from app.services.currency_service import currency_service
