@@ -9,15 +9,13 @@ import com.example.domain.transaction.model.TransactionEntity
 import com.example.domain.transaction.model.TransferEntity
 import retrofit2.Response
 
-class TransactionRepositoryImpl (
-    private val apiService: TransactionApi,
-    // Remove preferencesManager if not used, or add import if needed
+class TransactionRepositoryImpl(
+    private val apiService: TransactionApi
 ) : TransactionRepository {
 
     override suspend fun createTransaction(
         amount: Any,
-        description: String?,
-        note: String?,
+        note: String?, // Changed parameter from description to note
         type: String,
         transactionDate: String,
         walletId: Int,
@@ -26,8 +24,7 @@ class TransactionRepositoryImpl (
         return try {
             val request = TransactionCreateRequest.create(
                 amount = amount,
-                description = description,
-                note = note,
+                note = note, // Now passing note instead of description
                 type = type,
                 transactionDate = transactionDate,
                 walletId = walletId,
@@ -80,10 +77,19 @@ class TransactionRepositoryImpl (
         }
     }
 
-    override suspend fun getTransactionById(id: Int): Result<TransactionEntity> {
+    override suspend fun getTransactionsByWalletId(walletId: Int): Result<List<TransactionEntity>> {
         return try {
-            val response = apiService.getTransactionById(id)
-            handleTransactionResponse(response)
+            val response = apiService.getTransactionsByWalletId(walletId)
+            if (response.isSuccessful) {
+                val transactionDtos = response.body()
+                if (transactionDtos != null) {
+                    Result.success(transactionDtos.map { it.toEntity() })
+                } else {
+                    Result.success(emptyList())
+                }
+            } else {
+                Result.failure(Exception("API error: ${response.code()}"))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -127,30 +133,4 @@ class TransactionRepositoryImpl (
             Result.failure(Exception("API error: ${response.code()} - ${response.errorBody()?.string()}"))
         }
     }
-}
-
-// Extension functions to convert DTO to Entity
-private fun TransactionDto.toEntity(): TransactionEntity {
-    return TransactionEntity(
-        id = id,
-        amount = amount,
-        description = description,
-        note = note,
-        type = type,
-        transactionDate = transactionDate,
-        walletId = walletId,
-        categoryId = categoryId,
-        userId = userId,
-        createdAt = createdAt
-    )
-}
-
-private fun TransferDto.toEntity(): TransferEntity {
-    return TransferEntity(
-        message = message,
-        sourceTransaction = sourceTransaction.toEntity(),
-        destinationTransaction = destinationTransaction.toEntity(),
-        exchangeRate = exchangeRate,
-        convertedAmount = convertedAmount
-    )
 }

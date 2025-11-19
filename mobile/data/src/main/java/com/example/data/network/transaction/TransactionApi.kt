@@ -12,18 +12,18 @@ import retrofit2.http.Path
 
 interface TransactionApi {
 
-    @POST("api/v1/transactions/")
+    @POST("api/transactions/")
     suspend fun createTransaction(@Body request: TransactionCreateRequest): Response<TransactionDto>
 
-    @POST("api/v1/transactions/transfer")
+    @POST("api/transactions/transfer")
     suspend fun createTransfer(@Body request: TransferCreateRequest): Response<TransferDto>
 
-    @GET("transactions")
+    @GET("api/transactions/")
     suspend fun getTransactions(): Response<List<TransactionDto>>
 
-    @GET("transactions/{id}")
-    suspend fun getTransactionById(@Path("id") id: Int): Response<TransactionDto>
+    @GET("api/transactions/wallet/{wallet_id}")
+    suspend fun getTransactionsByWalletId(@Path("wallet_id") walletId: Int): Response<List<TransactionDto>>
 
-    @DELETE("transactions/{id}")
+    @DELETE("api/transactions/{transaction_id}")
     suspend fun deleteTransaction(@Path("id") id: Int): Response<Unit>
 }

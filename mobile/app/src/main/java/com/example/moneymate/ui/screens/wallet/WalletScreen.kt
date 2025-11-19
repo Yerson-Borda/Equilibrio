@@ -39,7 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.domain.wallet.model.Transaction
+import com.example.domain.transaction.model.TransactionEntity
 import com.example.domain.wallet.model.Wallet
 import com.example.moneymate.R
 import com.example.moneymate.ui.navigation.BottomNavigationBar
@@ -304,7 +304,7 @@ private fun WalletCardItem(
 
 @Composable
 private fun TransactionsSection(
-    transactions: List<Transaction>,
+    transactions: List<TransactionEntity>,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -332,7 +332,7 @@ private fun TransactionsSection(
 }
 
 @Composable
-private fun TransactionItem(transaction: Transaction) {
+private fun TransactionItem(transaction: TransactionEntity) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
@@ -348,13 +348,13 @@ private fun TransactionItem(transaction: Transaction) {
         ) {
             Column {
                 Text(
-                    text = transaction.title,
+                    text = transaction.note ?: "Transaction", // Use note instead of title
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color(0xFF1A1A1A),
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = transaction.category,
+                    text = "Category ID: ${transaction.categoryId}", // You might want to map this to category name
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFF666666)
                 )

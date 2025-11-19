@@ -4,6 +4,9 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.domain.category.model.Category
+import com.example.domain.category.usecase.GetExpenseCategoriesUseCase
+import com.example.domain.category.usecase.GetIncomeCategoriesUseCase
 import com.example.domain.transaction.usecase.CreateTransactionUseCase
 import com.example.domain.transaction.usecase.CreateTransferUseCase
 import com.example.domain.wallet.usecase.GetWalletsUseCase
@@ -19,7 +22,9 @@ import java.time.LocalDate
 class AddTransactionViewModel(
     private val createTransactionUseCase: CreateTransactionUseCase,
     private val createTransferUseCase: CreateTransferUseCase,
-    private val getWalletsUseCase: GetWalletsUseCase
+    private val getWalletsUseCase: GetWalletsUseCase,
+    private val getIncomeCategoriesUseCase: GetIncomeCategoriesUseCase,
+    private val getExpenseCategoriesUseCase: GetExpenseCategoriesUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddTransactionState())
@@ -30,6 +35,9 @@ class AddTransactionViewModel(
 
     private val _wallets = MutableStateFlow<List<Wallet>>(emptyList())
     val wallets: StateFlow<List<Wallet>> = _wallets.asStateFlow()
+
+    private val _categories = MutableStateFlow<List<Category>>(emptyList())
+    val categories: StateFlow<List<Category>> = _categories.asStateFlow()
 
     private val _errorState = MutableStateFlow<AppError?>(null)
     val errorState: StateFlow<AppError?> = _errorState.asStateFlow()
@@ -44,6 +52,7 @@ class AddTransactionViewModel(
 
     init {
         loadWallets()
+        loadCategories() // Load categories based on initial transaction type
     }
 
     private fun loadWallets() {
@@ -75,14 +84,44 @@ class AddTransactionViewModel(
         }
     }
 
-    fun onTransactionTypeSelected(type: TransactionType) {
-        _uiState.value = _uiState.value.copy(selectedType = type)
-        clearError() // Clear error when user changes type
+    // Add this function to load categories based on transaction type
+    private fun loadCategories() {
+        viewModelScope.launch {
+            try {
+                val result = when (_uiState.value.selectedType) {
+                    TransactionType.INCOME -> getIncomeCategoriesUseCase()
+                    TransactionType.EXPENSE -> getExpenseCategoriesUseCase()
+                    TransactionType.TRANSFER -> getExpenseCategoriesUseCase() // or handle differently
+                }
+
+                if (result.isSuccess) {
+                    _categories.value = result.getOrThrow()
+                    // Set the first category as default selection if available
+                    val firstCategory = _categories.value.firstOrNull()
+                    if (firstCategory != null) {
+                        _uiState.value = _uiState.value.copy(
+                            selectedCategoryId = firstCategory.id,
+                            selectedCategoryName = firstCategory.name
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                // Handle error silently or log it
+                println("Error loading categories: ${e.message}")
+            }
+        }
     }
 
+    fun onTransactionTypeSelected(type: TransactionType) {
+        _uiState.value = _uiState.value.copy(selectedType = type)
+        clearError()
+        loadCategories() // Reload categories when type changes
+    }
+
+    // ... rest of your existing functions remain the same
     fun onAmountChanged(amount: String) {
         _uiState.value = _uiState.value.copy(amount = amount)
-        clearError() // Clear error when user changes amount
+        clearError()
     }
 
     fun onWalletSelected(walletId: Int, walletName: String) {
@@ -90,7 +129,7 @@ class AddTransactionViewModel(
             selectedWalletId = walletId,
             selectedWalletName = walletName
         )
-        clearError() // Clear error when user changes wallet
+        clearError()
     }
 
     fun onDestinationWalletSelected(walletId: Int, walletName: String) {
@@ -98,7 +137,7 @@ class AddTransactionViewModel(
             destinationWalletId = walletId,
             destinationWalletName = walletName
         )
-        clearError() // Clear error when user changes destination wallet
+        clearError()
     }
 
     fun onCategorySelected(categoryId: Int, categoryName: String) {
@@ -126,7 +165,7 @@ class AddTransactionViewModel(
         val currentAmount = _uiState.value.amount
         val newAmount = if (currentAmount == "0") number else currentAmount + number
         _uiState.value = _uiState.value.copy(amount = newAmount)
-        clearError() // Clear error when user inputs amount
+        clearError()
     }
 
     fun onBackspacePressed() {
@@ -136,7 +175,7 @@ class AddTransactionViewModel(
             _uiState.value = _uiState.value.copy(
                 amount = if (newAmount.isEmpty()) "0" else newAmount
             )
-            clearError() // Clear error when user modifies amount
+            clearError()
         }
     }
 
@@ -149,12 +188,10 @@ class AddTransactionViewModel(
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun createTransaction() {
-        // Validate inputs before making the API call
         if (!validateInputs()) {
             return
         }
 
-        // Check if wallet has sufficient balance for expenses
         if (!validateWalletBalance()) {
             return
         }
@@ -238,14 +275,12 @@ class AddTransactionViewModel(
     }
 
     private fun validateInputs(): Boolean {
-        // Check if amount is valid
         val amount = _uiState.value.amount
         if (amount == "0" || amount == "0." || amount.isEmpty()) {
             _errorState.value = AppError.ValidationError("Please enter a valid amount")
             return false
         }
 
-        // Check if wallet is selected
         if (_uiState.value.selectedWalletId == 0) {
             _errorState.value = AppError.ValidationError("Please select a wallet")
             return false
@@ -276,7 +311,6 @@ class AddTransactionViewModel(
         _navigationEvent.value = null
     }
 }
-
 sealed class NavigationEvent {
     object NavigateHome : NavigationEvent()
 }

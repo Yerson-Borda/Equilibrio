@@ -2,14 +2,14 @@ package com.example.moneymate.ui.screens.wallet
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.domain.wallet.model.Transaction
+import com.example.domain.transaction.model.TransactionEntity
+import com.example.domain.transaction.usecase.GetWalletTransactionsUseCase
 import com.example.domain.wallet.model.Wallet
 import com.example.domain.wallet.model.WalletCreateRequest
 import com.example.domain.wallet.model.WalletUpdateRequest
 import com.example.domain.wallet.usecase.CreateWalletUseCase
 import com.example.domain.wallet.usecase.DeleteWalletUseCase
 import com.example.domain.wallet.usecase.GetWalletDetailUseCase
-import com.example.domain.wallet.usecase.GetWalletTransactionsUseCase
 import com.example.domain.wallet.usecase.GetWalletsUseCase
 import com.example.domain.wallet.usecase.UpdateWalletUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,16 +20,16 @@ import kotlinx.coroutines.launch
 class WalletViewModel(
     private val getWalletsUseCase: GetWalletsUseCase,
     private val createWalletUseCase: CreateWalletUseCase,
-    private val getWalletTransactionsUseCase: GetWalletTransactionsUseCase,
     private val getWalletDetailUseCase: GetWalletDetailUseCase,
     private val deleteWalletUseCase: DeleteWalletUseCase,
-    private val updateWalletUseCase: UpdateWalletUseCase // This is already injected
+    private val updateWalletUseCase: UpdateWalletUseCase,
+    private val getWalletTransactionsUseCase: GetWalletTransactionsUseCase // Add this use case
 ) : ViewModel() {
     private val _wallets = MutableStateFlow<List<Wallet>>(emptyList())
     val wallets: StateFlow<List<Wallet>> = _wallets.asStateFlow()
 
-    private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
-    val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
+    private val _transactions = MutableStateFlow<List<TransactionEntity>>(emptyList())
+    val transactions: StateFlow<List<TransactionEntity>> = _transactions.asStateFlow()
 
     private val _selectedWallet = MutableStateFlow<Wallet?>(null)
     val selectedWallet: StateFlow<Wallet?> = _selectedWallet.asStateFlow()
@@ -104,7 +104,7 @@ class WalletViewModel(
 
     fun loadTransactions(walletId: Int) {
         viewModelScope.launch {
-            val result = getWalletTransactionsUseCase(walletId)
+            val result = getWalletTransactionsUseCase(walletId) // Use the new use case
             if (result.isSuccess) {
                 _transactions.value = result.getOrNull() ?: emptyList()
             } else {
@@ -148,7 +148,6 @@ class WalletViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            // FIX: Use the injected updateWalletUseCase, don't create a new instance
             val result = updateWalletUseCase(walletId, walletRequest)
             if (result.isSuccess) {
                 _walletUpdated.value = true

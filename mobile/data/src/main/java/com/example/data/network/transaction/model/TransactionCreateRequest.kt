@@ -5,18 +5,17 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class TransactionCreateRequest(
-    @SerialName("amount") val amount: String, // Always send as string to avoid issues
-    @SerialName("description") val description: String? = null,
-    @SerialName("note") val note: String? = null,
-    @SerialName("type") val type: String,
-    @SerialName("transaction_date") val transactionDate: String,
+    @SerialName("amount") val amount: String, // number | string in swagger
+    @SerialName("note") val note: String? = null, // Comes before type in swagger
+    @SerialName("type") val type: String, // "income", "expense", "transfer"
+    @SerialName("transaction_date") val transactionDate: String, // date format
     @SerialName("wallet_id") val walletId: Int,
     @SerialName("category_id") val categoryId: Int
+    // Removed description field as it's not in swagger TransactionCreate
 ) {
     companion object {
         fun create(
-            amount: Any, // Accept Any but convert to String
-            description: String? = null,
+            amount: Any,
             note: String? = null,
             type: String,
             transactionDate: String,
@@ -32,7 +31,6 @@ data class TransactionCreateRequest(
 
             return TransactionCreateRequest(
                 amount = amountString,
-                description = description,
                 note = note,
                 type = type,
                 transactionDate = transactionDate,

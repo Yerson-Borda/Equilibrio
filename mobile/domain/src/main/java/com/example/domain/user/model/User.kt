@@ -8,6 +8,5 @@ data class User(
     val dateOfBirth: String?,
     val avatarUrl: String?,
     val defaultCurrency: String,
-    val isActive: Boolean,
     val createdAt: String
 )

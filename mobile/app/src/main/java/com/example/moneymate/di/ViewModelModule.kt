@@ -17,7 +17,7 @@ val viewModelModule  = module {
     viewModel{SignInViewModel(get())}
     viewModel{ HomeViewModel(get(), get()) }
     viewModel{ WalletViewModel(get(), get(), get(), get(),get(), get()) }
-    viewModel{ AddTransactionViewModel(get(), get(), get()) }
+    viewModel{ AddTransactionViewModel(get(), get(), get(), get() , get()) }
     viewModel { EditProfileViewModel(get(), get(), get(), get()) }
     viewModel { ProfileOptionsScreenViewModel(get()) }
     viewModel { SettingsScreenViewModel(get(), get()) }

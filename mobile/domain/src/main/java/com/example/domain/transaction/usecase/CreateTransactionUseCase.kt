@@ -17,7 +17,6 @@ class CreateTransactionUseCase(
     ): Result<TransactionEntity> {
         return repository.createTransaction(
             amount = amount,
-            description = description,
             note = note,
             type = type,
             transactionDate = transactionDate,

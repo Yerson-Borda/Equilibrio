@@ -6,10 +6,16 @@ import com.example.domain.auth.usecase.SignUpUseCase
 import com.example.domain.auth.usecase.SignUpUseCaseImpl
 import com.example.domain.auth.usecase.SignInUseCase
 import com.example.domain.auth.usecase.SignInUseCaseImpl
+import com.example.domain.category.usecase.CreateCategoryUseCase
+import com.example.domain.category.usecase.DeleteCategoryUseCase
+import com.example.domain.category.usecase.GetCategoriesUseCase
+import com.example.domain.category.usecase.GetExpenseCategoriesUseCase
+import com.example.domain.category.usecase.GetIncomeCategoriesUseCase
 import com.example.domain.user.usecase.GetUserDetailedUseCase
 import com.example.domain.transaction.usecase.CreateTransactionUseCase
 import com.example.domain.transaction.usecase.CreateTransferUseCase
 import com.example.domain.transaction.usecase.GetTransactionsUseCase
+import com.example.domain.transaction.usecase.GetWalletTransactionsUseCase
 import com.example.domain.user.usecase.DeleteAvatarUseCase
 import com.example.domain.user.usecase.GetUserUseCase
 import com.example.domain.user.usecase.LogoutUseCase
@@ -19,7 +25,6 @@ import com.example.domain.wallet.usecase.CreateWalletUseCase
 import com.example.domain.wallet.usecase.DeleteWalletUseCase
 import com.example.domain.wallet.usecase.GetTotalBalanceUseCase
 import com.example.domain.wallet.usecase.GetWalletDetailUseCase
-import com.example.domain.wallet.usecase.GetWalletTransactionsUseCase
 import com.example.domain.wallet.usecase.GetWalletUseCase
 import com.example.domain.wallet.usecase.GetWalletsUseCase
 import com.example.domain.wallet.usecase.UpdateWalletUseCase
@@ -35,7 +40,6 @@ val useCaseModule = module {
     factory { GetWalletUseCase(get()) }
     factory { GetWalletsUseCase(get())}
     factory { CreateWalletUseCase(get()) }
-    factory { GetWalletTransactionsUseCase(get()) }
     factory { GetTotalBalanceUseCase(get()) }
     factory { GetWalletDetailUseCase(get()) }
     factory { DeleteWalletUseCase(get()) }
@@ -48,5 +52,10 @@ val useCaseModule = module {
     factory { UploadAvatarUseCase(get()) }
     factory { DeleteAvatarUseCase(get()) }
     factory { LogoutUseCase(get()) }
-
+    single { GetWalletTransactionsUseCase(get()) }
+    factory { GetCategoriesUseCase(get()) }
+    factory { CreateCategoryUseCase(get()) }
+    factory { GetIncomeCategoriesUseCase(get()) }
+    factory { GetExpenseCategoriesUseCase(get()) }
+    factory { DeleteCategoryUseCase(get()) }
 }

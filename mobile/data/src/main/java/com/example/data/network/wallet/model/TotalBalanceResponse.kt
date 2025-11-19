@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 data class TotalBalanceResponse(
     val total_balance: Double,
     val currency: String,
-    val breakdown: List<BalanceBreakdown>
+    val breakdown: List<BalanceBreakdown> = emptyList() // Make default empty list
 )
 
 @Serializable

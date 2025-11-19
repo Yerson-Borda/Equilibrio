@@ -23,19 +23,24 @@ class AuthRepositoryImpl(
     override fun isUserSignedIn() = dataStoreDataSource.accessToken.map { token->
         token != null
     }
+
     override suspend fun signUp(signUpInfo: SignUpInfo): UserData {
         return remoteDataSource.signUp(
             fullName = signUpInfo.fullName,
             email = signUpInfo.email,
-            password = signUpInfo.password
+            password = signUpInfo.password,
+            phoneNumber = signUpInfo.phoneNumber,
+            dateOfBirth = signUpInfo.dateOfBirth,
+            avatarUrl = signUpInfo.avatarUrl,
+            defaultCurrency = signUpInfo.defaultCurrency
         )
     }
 
     override suspend fun signIn(signInInfo: SignInInfo): AccessToken {
         return remoteDataSource.signIn(signInInfo.email, signInInfo.password)
     }
+
     override suspend fun getCurrentUserId(): String? {
         return dataStoreDataSource.getUserId() ?: throw Exception("User not authenticated")
     }
-
 }

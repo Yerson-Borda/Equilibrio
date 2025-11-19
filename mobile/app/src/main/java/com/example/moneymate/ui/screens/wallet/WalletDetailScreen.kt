@@ -58,16 +58,18 @@ fun WalletDetailScreen(
     val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
     val walletDeleted by viewModel.walletDeleted.collectAsState()
     val transactions by viewModel.transactions.collectAsState()
+
+    // Update to use TransactionEntity
     val (income, expense) = remember(transactions, walletId) {
-        calculateIncomeExpense(transactions.filter { it.walletId == walletId })
+        val walletTransactions = transactions.filter { it.walletId == walletId }
+        calculateIncomeExpense(walletTransactions)
     }
-    // Add debug logging
+
     LaunchedEffect(walletId) {
         println("DEBUG: Loading wallet detail for ID: $walletId")
         viewModel.loadWalletDetail(walletId)
-        viewModel.loadTransactions(walletId)
+        viewModel.loadTransactions(walletId) // This now uses the transaction use case
     }
-
     LaunchedEffect(walletDetail) {
         println("DEBUG: Wallet detail updated: $walletDetail")
     }

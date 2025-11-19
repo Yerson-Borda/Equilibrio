@@ -57,6 +57,7 @@ import org.koin.androidx.compose.koinViewModel
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
+import com.example.domain.category.model.Category
 import com.example.domain.wallet.model.Wallet
 
 
@@ -69,6 +70,7 @@ fun AddTransactionScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val wallets by viewModel.wallets.collectAsState()
+    val categories by viewModel.categories.collectAsState()
     val navigationEvent by viewModel.navigationEvent.collectAsState()
     val errorState by viewModel.errorState.collectAsState()
     val context = LocalContext.current
@@ -227,7 +229,8 @@ fun AddTransactionScreen(
                             galleryLauncher.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
-                        }
+                        },
+                        categories = categories
                     )
                 }
             }
@@ -313,6 +316,7 @@ fun TransferContent(
 fun IncomeExpenseContent(
     uiState: AddTransactionState,
     wallets: List<Wallet>,
+    categories: List<Category>,
     onAddAttachment: () -> Unit,
     onWalletSelected: (Wallet) -> Unit,
     onCategorySelected: (Int, String) -> Unit,
@@ -334,9 +338,10 @@ fun IncomeExpenseContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Category
+        // Category - Updated to use real categories
         CategoryDropdown(
             selectedCategoryName = uiState.selectedCategoryName,
+            categories = categories, // Pass the real categories
             onCategorySelected = onCategorySelected
         )
 
@@ -360,7 +365,6 @@ fun IncomeExpenseContent(
         )
     }
 }
-
 @Composable
 fun WalletDropdown(
     selectedWalletName: String,
@@ -427,19 +431,10 @@ fun WalletDropdown(
 @Composable
 fun CategoryDropdown(
     selectedCategoryName: String,
+    categories: List<Category>,
     onCategorySelected: (Int, String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val categories = listOf(
-        1 to "Food",
-        2 to "Shopping",
-        3 to "Transport",
-        4 to "Entertainment",
-        5 to "Bills & Utilities",
-        6 to "Healthcare",
-        7 to "Education",
-        8 to "Travel"
-    )
 
     Column(
         modifier = Modifier
@@ -473,14 +468,23 @@ fun CategoryDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            categories.forEach { (id, name) ->
+            if (categories.isEmpty()) {
                 DropdownMenuItem(
-                    text = { Text(name) },
-                    onClick = {
-                        onCategorySelected(id, name)
-                        expanded = false
-                    }
+                    text = { Text("No categories available") },
+                    onClick = { expanded = false }
                 )
+            } else {
+                categories.forEach { category ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(category.name)
+                        },
+                        onClick = {
+                            onCategorySelected(category.id, category.name)
+                            expanded = false
+                        }
+                    )
+                }
             }
         }
     }

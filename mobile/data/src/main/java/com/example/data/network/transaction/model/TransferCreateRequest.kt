@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 data class TransferCreateRequest(
     @SerialName("source_wallet_id") val sourceWalletId: Int,
     @SerialName("destination_wallet_id") val destinationWalletId: Int,
-    @SerialName("amount") val amount: String,
+    @SerialName("amount") val amount: String, // number | string in swagger
     @SerialName("note") val note: String? = null
 ) {
     companion object {
