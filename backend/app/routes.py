@@ -6,6 +6,7 @@ from app.api.financial_summary.controller import router as financial_summary
 from app.api.transaction.controller import router as transactions
 from app.api.wallet.controller import router as wallets
 from app.api.user.controller import router as users
+from app.api.analytics.controller import router as analytics
 
 def register_routers(app: FastAPI):
     app.include_router(auth, prefix="/api/auth", tags=["auth"])
@@ -15,3 +16,4 @@ def register_routers(app: FastAPI):
     app.include_router(categories, prefix="/api/categories", tags=["categories"])
     app.include_router(budget, prefix="/api/budget", tags=["budget"])
     app.include_router(financial_summary, prefix="/api/financial_summary", tags=["financial_summary"])
+    app.include_router(analytics, prefix="/api/analytics", tags=["analytics"])
