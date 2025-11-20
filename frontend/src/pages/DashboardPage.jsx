@@ -9,7 +9,8 @@ const DashboardPage = () => {
     const [userStats, setUserStats] = useState({
         totalBalance: 0,
         totalSpending: 0,
-        totalSaved: 0
+        totalSaved: 0,
+        defaultCurrency: 'USD'
     });
 
     useEffect(() => {
@@ -19,26 +20,40 @@ const DashboardPage = () => {
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
+            console.log('🔄 Fetching dashboard data...');
 
             // Fetch wallets
             const walletsData = await apiService.getWallets();
+            console.log('📋 Wallets loaded:', walletsData);
             setWallets(walletsData || []);
 
             // Fetch user total balance
             const balanceData = await apiService.getUserTotalBalance();
+            console.log('💰 Balance data:', balanceData);
 
-            // Calculate spending and savings (you might need to adjust this based on your backend)
+            // Calculate spending and savings
             const totalSpending = await calculateTotalSpending();
             const totalSaved = await calculateTotalSaved();
 
+            // Get user's default currency
+            const userData = await apiService.getCurrentUser();
+
+            console.log('📊 Final user stats:', {
+                totalBalance: balanceData.total_balance || 0,
+                totalSpending,
+                totalSaved,
+                defaultCurrency: userData.default_currency || 'USD'
+            });
+
             setUserStats({
                 totalBalance: balanceData.total_balance || 0,
-                totalSpending: totalSpending,
-                totalSaved: totalSaved
+                totalSpending,
+                totalSaved,
+                defaultCurrency: userData.default_currency || 'USD'
             });
 
         } catch (error) {
-            console.error('Error fetching dashboard data:', error);
+            console.error('❌ Error fetching dashboard data:', error);
             if (error.status === 401) {
                 window.location.href = '/login';
             } else {
@@ -49,19 +64,19 @@ const DashboardPage = () => {
         }
     };
 
-    // Helper function to calculate total spending
     const calculateTotalSpending = async () => {
         try {
             const transactions = await apiService.getTransactions();
             const expenses = transactions.filter(t => t.type === 'expense');
-            return expenses.reduce((sum, transaction) => sum + parseFloat(transaction.amount), 0);
+            const total = expenses.reduce((sum, transaction) => sum + parseFloat(transaction.amount), 0);
+            console.log('💸 Total spending calculated:', total);
+            return total;
         } catch (error) {
             console.error('Error calculating spending:', error);
             return 0;
         }
     };
 
-    // Helper function to calculate total saved
     const calculateTotalSaved = async () => {
         try {
             const transactions = await apiService.getTransactions();
@@ -69,7 +84,9 @@ const DashboardPage = () => {
             const expenses = transactions.filter(t => t.type === 'expense');
             const totalIncome = income.reduce((sum, transaction) => sum + parseFloat(transaction.amount), 0);
             const totalExpenses = expenses.reduce((sum, transaction) => sum + parseFloat(transaction.amount), 0);
-            return Math.max(0, totalIncome - totalExpenses);
+            const saved = Math.max(0, totalIncome - totalExpenses);
+            console.log('🏦 Total saved calculated:', saved);
+            return saved;
         } catch (error) {
             console.error('Error calculating savings:', error);
             return 0;
@@ -77,9 +94,9 @@ const DashboardPage = () => {
     };
 
     const handleWalletCreated = (newWallet) => {
-        setWallets(prev => [...prev, newWallet]);
-        // Refresh stats after wallet creation
-        fetchDashboardData();
+        console.log('🆕 Wallet created callback:', newWallet);
+        // The Dashboard component now handles real-time updates internally
+        // We don't need to update state here as WebSocket will handle it
     };
 
     if (loading) {
@@ -87,7 +104,23 @@ const DashboardPage = () => {
             <div className="min-h-screen bg-background flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue mx-auto"></div>
-                    <p className="mt-4 text-text">Loading...</p>
+                    <p className="mt-4 text-text">Loading dashboard...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="text-center">
+                    <p className="text-red-500 text-lg">{error}</p>
+                    <button
+                        onClick={fetchDashboardData}
+                        className="mt-4 bg-blue text-white px-4 py-2 rounded-lg"
+                    >
+                        Retry
+                    </button>
                 </div>
             </div>
         );

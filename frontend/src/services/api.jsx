@@ -44,6 +44,7 @@ class ApiService {
 
             if (response.status === 401) {
                 this.setToken(null);
+                window.location.href = '/login';
             }
 
             throw error;
@@ -68,6 +69,8 @@ class ApiService {
         const data = await this.handleResponse(response);
         if (data.access_token) {
             this.setToken(data.access_token);
+            // Trigger sync initialization
+            window.dispatchEvent(new CustomEvent('user_logged_in'));
         }
         return data;
     }
@@ -166,6 +169,22 @@ class ApiService {
         return this.handleResponse(response);
     }
 
+    async getWalletBalance(walletId) {
+        const response = await fetch(`${API_BASE_URL}/wallets/${walletId}/balance`, {
+            method: 'GET',
+            headers: this.getAuthHeaders(),
+        });
+        return this.handleResponse(response);
+    }
+
+    async getUserTotalBalance() {
+        const response = await fetch(`${API_BASE_URL}/wallets/user/total`, {
+            method: 'GET',
+            headers: this.getAuthHeaders(),
+        });
+        return this.handleResponse(response);
+    }
+
     async updateWallet(walletId, walletData) {
         const response = await fetch(`${API_BASE_URL}/wallets/${walletId}`, {
             method: 'PUT',
@@ -178,22 +197,6 @@ class ApiService {
     async deleteWallet(walletId) {
         const response = await fetch(`${API_BASE_URL}/wallets/${walletId}`, {
             method: 'DELETE',
-            headers: this.getAuthHeaders(),
-        });
-        return this.handleResponse(response);
-    }
-
-    async getWalletBalance(walletId) {
-        const response = await fetch(`${API_BASE_URL}/wallets/${walletId}/balance`, {
-            method: 'GET',
-            headers: this.getAuthHeaders(),
-        });
-        return this.handleResponse(response);
-    }
-
-    async getUserTotalBalance() {
-        const response = await fetch(`${API_BASE_URL}/wallets/user/total`, {
-            method: 'GET',
             headers: this.getAuthHeaders(),
         });
         return this.handleResponse(response);
@@ -217,6 +220,14 @@ class ApiService {
         return this.handleResponse(response);
     }
 
+    async getWalletTransactions(walletId) {
+        const response = await fetch(`${API_BASE_URL}/transactions/wallet/${walletId}`, {
+            method: 'GET',
+            headers: this.getAuthHeaders(),
+        });
+        return this.handleResponse(response);
+    }
+
     async updateTransaction(transactionId, transactionData) {
         const response = await fetch(`${API_BASE_URL}/transactions/${transactionId}`, {
             method: 'PUT',
@@ -234,15 +245,8 @@ class ApiService {
         return this.handleResponse(response);
     }
 
-    async getWalletTransactions(walletId) {
-        const response = await fetch(`${API_BASE_URL}/transactions/wallet/${walletId}`, {
-            method: 'GET',
-            headers: this.getAuthHeaders(),
-        });
-        return this.handleResponse(response);
-    }
-
-    async transferFunds(transferData) {
+    // TRANSFER ENDPOINT
+    async createTransfer(transferData) {
         const response = await fetch(`${API_BASE_URL}/transactions/transfer`, {
             method: 'POST',
             headers: this.getAuthHeaders(),
@@ -254,22 +258,6 @@ class ApiService {
     // CATEGORY ENDPOINTS
     async getCategories() {
         const response = await fetch(`${API_BASE_URL}/categories/`, {
-            method: 'GET',
-            headers: this.getAuthHeaders(),
-        });
-        return this.handleResponse(response);
-    }
-
-    async getIncomeCategories() {
-        const response = await fetch(`${API_BASE_URL}/categories/income`, {
-            method: 'GET',
-            headers: this.getAuthHeaders(),
-        });
-        return this.handleResponse(response);
-    }
-
-    async getExpenseCategories() {
-        const response = await fetch(`${API_BASE_URL}/categories/expense`, {
             method: 'GET',
             headers: this.getAuthHeaders(),
         });
@@ -302,38 +290,41 @@ class ApiService {
         return this.handleResponse(response);
     }
 
-    // SYNC ENDPOINTS
-    async syncPull(lastSyncAt = null) {
-        const body = lastSyncAt ? { last_sync_at: lastSyncAt } : {};
-
-        const response = await fetch(`${API_BASE_URL}/sync/pull`, {
-            method: 'POST',
+    // ANALYTICS ENDPOINTS
+    async getCategorySummary(startDate, endDate) {
+        const response = await fetch(`${API_BASE_URL}/analytics/category-summary?start_date=${startDate}&end_date=${endDate}`, {
+            method: 'GET',
             headers: this.getAuthHeaders(),
-            body: JSON.stringify(body),
         });
         return this.handleResponse(response);
     }
 
-    async syncPush(changes) {
-        const response = await fetch(`${API_BASE_URL}/sync/push`, {
-            method: 'POST',
+    async getMonthlyComparison(currentMonth) {
+        const response = await fetch(`${API_BASE_URL}/analytics/monthly-comparison?current_month=${currentMonth}`, {
+            method: 'GET',
             headers: this.getAuthHeaders(),
-            body: JSON.stringify(changes),
         });
         return this.handleResponse(response);
     }
 
-    async resolveConflicts(resolutions) {
-        const response = await fetch(`${API_BASE_URL}/sync/resolve-conflicts`, {
-            method: 'POST',
+    async getMonthlyComparisonSummary(currentMonth) {
+        const response = await fetch(`${API_BASE_URL}/analytics/monthly-comparison-summary?current_month=${currentMonth}`, {
+            method: 'GET',
             headers: this.getAuthHeaders(),
-            body: JSON.stringify(resolutions),
         });
         return this.handleResponse(response);
     }
 
-    async getSyncStatus() {
-        const response = await fetch(`${API_BASE_URL}/sync/status`, {
+    async getAvailableMonths() {
+        const response = await fetch(`${API_BASE_URL}/analytics/available-months`, {
+            method: 'GET',
+            headers: this.getAuthHeaders(),
+        });
+        return this.handleResponse(response);
+    }
+
+    async getSpendingTrends(months = 6) {
+        const response = await fetch(`${API_BASE_URL}/analytics/spending-trends?months=${months}`, {
             method: 'GET',
             headers: this.getAuthHeaders(),
         });

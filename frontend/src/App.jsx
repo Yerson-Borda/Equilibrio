@@ -1,33 +1,46 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
-import SignUpPage from './pages/SignUpPage';
-import DashboardPage from './pages/DashboardPage';
-import MyWalletsPage from './pages/MyWalletsPage';
-import SettingsPage from './pages/SettingsPage';
+import { BrowserRouter as Router } from 'react-router-dom';
+
+import AppRoutes from './routes/AppRoutes';
 import { syncService } from './services/syncService';
+import { apiService } from './services/api';
 
 function App() {
     useEffect(() => {
-        // Initialize sync service when app starts
-        const initSync = async () => {
-            await syncService.init();
+        const token = localStorage.getItem('token');
+        if (token) {
+            initializeApp();
+        }
+
+        const handleLogin = () => {
+            initializeApp();
         };
 
-        initSync();
+        window.addEventListener('user_logged_in', handleLogin);
+
+        return () => {
+            window.removeEventListener('user_logged_in', handleLogin);
+            syncService.stopSync();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const initializeApp = async () => {
+        try {
+            const userData = await apiService.getCurrentUser();
+            if (userData && userData.id) {
+                console.log('Initializing sync for user:', userData.id);
+                syncService.initialize(userData.id);
+            }
+        } catch (error) {
+            console.error('Failed to initialize app:', error);
+        }
+    };
 
     return (
         <Router>
             <div className="App">
-                <Routes>
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/signup" element={<SignUpPage />} />
-                    <Route path="/dashboard" element={<DashboardPage />} />
-                    <Route path="/wallets" element={<MyWalletsPage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="/" element={<LoginPage />} />
-                </Routes>
+                <AppRoutes />
             </div>
         </Router>
     );

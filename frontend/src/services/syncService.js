@@ -1,307 +1,233 @@
 import { apiService } from '././api.jsx';
-import { localDB } from '././localDB.js';
+import { webSocketService } from '././websocketService.js';
 
 class SyncService {
     constructor() {
         this.isSyncing = false;
-        this.syncInterval = 5 * 60 * 1000; // 5 minutes
+        this.lastSyncTime = null;
+        this.syncInterval = 30000; // 30 seconds
         this.syncTimer = null;
-        this.offlineQueue = [];
-        this.isOnline = navigator.onLine;
-
-        // Listen for online/offline events
-        window.addEventListener('online', this.handleOnline.bind(this));
-        window.addEventListener('offline', this.handleOffline.bind(this));
     }
 
-    async init() {
-        try {
-            await localDB.init();
-            console.log('Local database initialized');
-        } catch (error) {
-            console.error('Failed to initialize local database:', error);
-        }
+    // Initialize sync after login
+    initialize(userId) {
+        console.log('Initializing sync service for user:', userId);
+
+        // Connect to WebSocket for real-time updates
+        webSocketService.connect(userId);
+
+        // Set up event listeners for real-time updates
+        this.setupWebSocketListeners();
+
+        // Perform initial sync
+        this.performFullSync();
+
+        // Start periodic sync
+        this.startPeriodicSync();
     }
 
-    startPeriodicSync() {
-        if (this.syncTimer) {
-            clearInterval(this.syncTimer);
-        }
-
-        this.syncTimer = setInterval(() => {
-            if (this.isOnline) {
-                this.sync().catch(error => {
-                    console.error('Periodic sync failed:', error);
-                });
-            }
-        }, this.syncInterval);
-
-        console.log('Periodic sync started (5 minutes interval)');
-    }
-
-    stopPeriodicSync() {
-        if (this.syncTimer) {
-            clearInterval(this.syncTimer);
-            this.syncTimer = null;
-        }
-        console.log('Periodic sync stopped');
-    }
-
-    handleOnline() {
-        this.isOnline = true;
-        console.log('App is online, triggering background sync...');
-        this.sync().catch(error => {
-            console.error('Online sync failed:', error);
+    setupWebSocketListeners() {
+        // Listen for real-time updates
+        webSocketService.addEventListener('transaction_created', (data) => {
+            console.log('Real-time: Transaction created', data);
+            this.handleTransactionUpdate(data);
         });
-        this.processOfflineQueue();
+
+        webSocketService.addEventListener('transaction_updated', (data) => {
+            console.log('Real-time: Transaction updated', data);
+            this.handleTransactionUpdate(data);
+        });
+
+        webSocketService.addEventListener('transaction_deleted', (data) => {
+            console.log('Real-time: Transaction deleted', data);
+            this.handleTransactionDelete(data);
+        });
+
+        webSocketService.addEventListener('wallet_created', (data) => {
+            console.log('Real-time: Wallet created', data);
+            this.handleWalletUpdate(data);
+        });
+
+        webSocketService.addEventListener('wallet_updated', (data) => {
+            console.log('Real-time: Wallet updated', data);
+            this.handleWalletUpdate(data);
+        });
+
+        webSocketService.addEventListener('wallet_deleted', (data) => {
+            console.log('Real-time: Wallet deleted', data);
+            this.handleWalletDelete(data);
+        });
+
+        webSocketService.addEventListener('connected', () => {
+            console.log('WebSocket connected - sync service ready');
+        });
+
+        webSocketService.addEventListener('disconnected', () => {
+            console.log('WebSocket disconnected - falling back to periodic sync');
+        });
     }
 
-    handleOffline() {
-        this.isOnline = false;
-        console.log('App is offline, queuing operations...');
-    }
-
-    // Main sync method
-    async sync() {
-        if (this.isSyncing || !this.isOnline) {
-            return false;
-        }
+    async performFullSync() {
+        if (this.isSyncing) return;
 
         this.isSyncing = true;
+        console.log('Performing full sync...');
 
         try {
-            console.log('Starting synchronization...');
+            // Sync all data
+            await Promise.all([
+                this.syncWallets(),
+                this.syncTransactions(),
+                this.syncCategories(),
+                this.syncUserData()
+            ]);
 
-            // Get last sync metadata
-            const metadata = await localDB.getSyncMetadata();
-            const lastSyncAt = metadata.lastSyncAt;
+            this.lastSyncTime = new Date();
+            console.log('Full sync completed at:', this.lastSyncTime);
 
-            // Step 1: Push local changes to server
-            await this.pushChanges();
-
-            // Step 2: Pull changes from server
-            await this.pullChanges(lastSyncAt);
-
-            // Update last sync time
-            await localDB.setSyncMetadata({
-                ...metadata,
-                lastSyncAt: new Date().toISOString()
+            // Dispatch sync complete event
+            this.dispatchSyncEvent('sync_complete', {
+                lastSyncTime: this.lastSyncTime
             });
 
-            console.log('Synchronization completed successfully');
-            return true;
         } catch (error) {
-            console.error('Synchronization failed:', error);
-            return false;
+            console.error('Full sync failed:', error);
+            this.dispatchSyncEvent('sync_error', { error });
         } finally {
             this.isSyncing = false;
         }
     }
 
-    // Push local changes to server
-    async pushChanges() {
+    async syncWallets() {
         try {
-            const pendingChanges = await localDB.getPendingChanges();
-
-            if (pendingChanges.length === 0) {
-                return;
-            }
-
-            console.log(`Pushing ${pendingChanges.length} changes to server...`);
-
-            const changes = {
-                wallets: [],
-                categories: [],
-                transactions: []
-            };
-
-            // Group changes by entity type
-            for (const change of pendingChanges) {
-                if (changes[change.entityType]) {
-                    changes[change.entityType].push(change.data);
-                }
-            }
-
-            // Send changes to server
-            const syncRequest = {
-                last_sync_at: await this.getLastSyncTime(),
-                changes: changes
-            };
-
-            const response = await apiService.syncPush(syncRequest);
-
-            // Handle conflicts if any
-            if (response.conflicts && response.conflicts.length > 0) {
-                await this.resolveConflicts(response.conflicts);
-            }
-
-            // Clear pending changes after successful push
-            await localDB.clearPendingChanges();
-
-            console.log('Changes pushed successfully');
+            const wallets = await apiService.getWallets();
+            this.cacheData('wallets', wallets);
+            return wallets;
         } catch (error) {
-            console.error('Failed to push changes:', error);
+            console.error('Failed to sync wallets:', error);
             throw error;
         }
     }
 
-    // Pull changes from server
-    async pullChanges(lastSyncAt = null) {
+    async syncTransactions() {
         try {
-            console.log('Pulling changes from server...');
-
-            const syncData = await apiService.syncPull(lastSyncAt);
-
-            // Apply server changes to local database
-            await this.applyServerChanges(syncData.changes);
-
-            // Update user sync version
-            const user = await localDB.getUser();
-            if (user) {
-                user.sync_version = syncData.user_sync_version;
-                user.last_sync_at = syncData.current_server_time;
-                await localDB.saveUser(user);
-            }
-
-            console.log('Changes pulled successfully');
+            const transactions = await apiService.getTransactions();
+            this.cacheData('transactions', transactions);
+            return transactions;
         } catch (error) {
-            console.error('Failed to pull changes:', error);
+            console.error('Failed to sync transactions:', error);
             throw error;
         }
     }
 
-    // Apply server changes to local database
-    async applyServerChanges(changes) {
-        for (const [entityType, entities] of Object.entries(changes)) {
-            for (const entity of entities) {
-                if (entity.is_deleted) {
-                    // Mark as deleted locally
-                    await localDB.put(entityType, {
-                        ...entity,
-                        is_deleted: true
-                    });
-                } else {
-                    // Update or create entity
-                    await localDB.put(entityType, entity.data);
-                }
-            }
-        }
-    }
-
-    // Resolve conflicts (basic implementation - server wins)
-    async resolveConflicts(conflicts) {
-        console.log(`Resolving ${conflicts.length} conflicts...`);
-
-        for (const conflict of conflicts) {
-            // For now, we'll use server version
-            // In a real app, you might show a UI to let users choose
-            await localDB.put(conflict.entity_type, conflict.server_data);
-        }
-    }
-
-    // Queue operation for offline mode
-    async queueOperation(operation) {
-        if (this.isOnline) {
-            return await this.executeOperation(operation);
-        } else {
-            this.offlineQueue.push(operation);
-            await localDB.addPendingChange({
-                entityType: operation.entityType,
-                operation: operation.type,
-                data: operation.data
-            });
-            return operation.data; // Return optimistic response
-        }
-    }
-
-    // Execute operation (online)
-    async executeOperation(operation) {
-        switch (operation.type) {
-            case 'CREATE_WALLET':
-                return await apiService.createWallet(operation.data);
-            case 'UPDATE_WALLET':
-                return await apiService.updateWallet(operation.data.id, operation.data);
-            case 'DELETE_WALLET':
-                return await apiService.deleteWallet(operation.data.id);
-            case 'CREATE_TRANSACTION':
-                return await apiService.createTransaction(operation.data);
-            case 'UPDATE_TRANSACTION':
-                return await apiService.updateTransaction(operation.data.id, operation.data);
-            case 'DELETE_TRANSACTION':
-                return await apiService.deleteTransaction(operation.data.id);
-            case 'CREATE_CATEGORY':
-                return await apiService.createCategory(operation.data);
-            case 'UPDATE_CATEGORY':
-                return await apiService.updateCategory(operation.data.id, operation.data);
-            case 'DELETE_CATEGORY':
-                return await apiService.deleteCategory(operation.data.id);
-            default:
-                throw new Error(`Unknown operation type: ${operation.type}`);
-        }
-    }
-
-    // Process queued operations when coming online
-    async processOfflineQueue() {
-        while (this.offlineQueue.length > 0 && this.isOnline) {
-            const operation = this.offlineQueue.shift();
-            try {
-                await this.executeOperation(operation);
-            } catch (error) {
-                console.error('Failed to process queued operation:', error);
-                // Re-queue failed operation
-                this.offlineQueue.unshift(operation);
-                break;
-            }
-        }
-    }
-
-    // Get last sync time
-    async getLastSyncTime() {
+    async syncCategories() {
         try {
-            const metadata = await localDB.getSyncMetadata();
-            return metadata.lastSyncAt;
+            const categories = await apiService.getCategories();
+            this.cacheData('categories', categories);
+            return categories;
         } catch (error) {
-            console.error('Error getting last sync time:', error);
+            console.error('Failed to sync categories:', error);
+            throw error;
+        }
+    }
+
+    async syncUserData() {
+        try {
+            const userData = await apiService.getDetailedUserInfo();
+            this.cacheData('user', userData);
+            return userData;
+        } catch (error) {
+            console.error('Failed to sync user data:', error);
+            throw error;
+        }
+    }
+
+    startPeriodicSync() {
+        // Clear existing timer
+        if (this.syncTimer) {
+            clearInterval(this.syncTimer);
+        }
+
+        // Start new periodic sync
+        this.syncTimer = setInterval(() => {
+            if (!this.isSyncing && webSocketService.isConnected()) {
+                this.performFullSync();
+            }
+        }, this.syncInterval);
+    }
+
+    stopSync() {
+        if (this.syncTimer) {
+            clearInterval(this.syncTimer);
+            this.syncTimer = null;
+        }
+        webSocketService.disconnect();
+    }
+
+    // Cache data in localStorage with timestamp
+    cacheData(key, data) {
+        const cacheItem = {
+            data: data,
+            timestamp: new Date().toISOString(),
+            version: '1.0'
+        };
+        localStorage.setItem(`cache_${key}`, JSON.stringify(cacheItem));
+    }
+
+    // Get cached data if not expired
+    getCachedData(key, maxAgeMinutes = 5) {
+        const cached = localStorage.getItem(`cache_${key}`);
+        if (!cached) return null;
+
+        try {
+            const cacheItem = JSON.parse(cached);
+            const cacheTime = new Date(cacheItem.timestamp);
+            const now = new Date();
+            const diffMinutes = (now - cacheTime) / (1000 * 60);
+
+            if (diffMinutes < maxAgeMinutes) {
+                return cacheItem.data;
+            } else {
+                // Cache expired, remove it
+                localStorage.removeItem(`cache_${key}`);
+                return null;
+            }
+        } catch (error) {
+            console.error('Error reading cached data:', error);
+            localStorage.removeItem(`cache_${key}`);
             return null;
         }
     }
 
-    // Check if data is fresh (less than 5 minutes old)
-    async isDataFresh() {
-        const lastSync = await this.getLastSyncTime();
-        if (!lastSync) return false;
-
-        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-        return new Date(lastSync) > fiveMinutesAgo;
+    // Event dispatching for UI updates
+    dispatchSyncEvent(event, data) {
+        window.dispatchEvent(new CustomEvent(`sync_${event}`, { detail: data }));
     }
 
-    // Get data with fallback to local cache
-    async getDataWithFallback(apiCall, localKey, forceRefresh = false) {
-        if (!forceRefresh && await this.isDataFresh()) {
-            const localData = await localDB.getAll(localKey);
-            if (localData.length > 0) {
-                console.log('Using cached data for:', localKey);
-                return localData;
-            }
-        }
-
-        // Fetch from API and cache
-        try {
-            const data = await apiCall();
-            await this.cacheData(localKey, data);
-            return data;
-        } catch (error) {
-            console.error('API call failed, using cached data:', error);
-            const localData = await localDB.getAll(localKey);
-            return localData;
-        }
+    // Real-time update handlers
+    handleTransactionUpdate(data) {
+        this.dispatchSyncEvent('transaction_updated', data);
     }
 
-    // Cache data locally
-    async cacheData(storeName, data) {
-        for (const item of data) {
-            await localDB.put(storeName, item);
-        }
+    handleTransactionDelete(data) {
+        this.dispatchSyncEvent('transaction_deleted', data);
+    }
+
+    handleWalletUpdate(data) {
+        this.dispatchSyncEvent('wallet_updated', data);
+    }
+
+    handleWalletDelete(data) {
+        this.dispatchSyncEvent('wallet_deleted', data);
+    }
+
+    // Get sync status
+    getSyncStatus() {
+        return {
+            isSyncing: this.isSyncing,
+            lastSyncTime: this.lastSyncTime,
+            isWebSocketConnected: webSocketService.isConnected()
+        };
     }
 }
 
