@@ -1,59 +1,72 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AppLayout from '../components/layout/AppLayout';
+import Card from '../components/ui/Card';
 import BudgetProgress from '../components/budget/BudgetProgress';
 import BudgetSetup from '../components/budget/BudgetSetup';
 
 const GoalsPage = () => {
-    // Later you can fetch real data here
-    const dummyBudget = {
-        budget: 3000,
-        spent: 1730,
+    const [budgetState, setBudgetState] = useState({
+        budget: 0,
+        spent: 0,
         month: new Date().toISOString().slice(0, 7),
-    };
+    });
 
-    const dummyLimits = [
-        { category: 'Food', spent: 1800, limit: 2000 },
-        { category: 'Entertainment', spent: 550, limit: 800 },
-        { category: 'Transport', spent: 300, limit: 400 },
-        { category: 'Shopping', spent: 900, limit: 1200 },
-    ];
+    const handleBudgetUpdate = ({ budget, spent, month }) => {
+        setBudgetState({
+            budget: Number(budget) || 0,
+            spent: Number(spent) || 0,
+            month,
+        });
+    };
 
     return (
         <AppLayout activeItem="goals">
-            <div className="max-w-7xl mx-auto pt-8 pb-10 px-6">
-                <h1 className="text-2xl font-bold text-text mb-6">Goals</h1>
+            <div className="max-w-7xl mx-auto space-y-8">
+                <h1 className="text-2xl font-bold text-text mb-2">Goals</h1>
+                <p className="text-sm text-metallic-gray mb-4">
+                    Track your monthly budget and long-term savings goals here.
+                </p>
 
-                {/* Top row: Saving goal & summary placeholder */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <div className="bg-white rounded-xl shadow-sm border border-strokes p-6">
-                        <h2 className="text-lg font-semibold text-text mb-4">
-                            Saving Goal
-                        </h2>
+                {/* Top row: savings placeholders */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card title="Saving Goal">
                         <p className="text-metallic-gray text-sm">
-                            You can connect this block to a real &quot;savings goal&quot;
-                            API later. For now it’s just a visual placeholder.
+                            You can connect this block to a real savings goal system later
+                            (e.g. &quot;New Laptop&quot;, &quot;Vacation Fund&quot;).
                         </p>
-                    </div>
-                    <div className="bg-white rounded-xl shadow-sm border border-strokes p-6">
-                        <h2 className="text-lg font-semibold text-text mb-4">
-                            Saving Summary
-                        </h2>
+                    </Card>
+
+                    <Card title="Saving Summary">
                         <p className="text-metallic-gray text-sm">
-                            This can show a line chart similar to your design using the
-                            analytics endpoints once they’re ready.
+                            This can later display charts of your monthly savings trend,
+                            goal completion percentage, and projected timelines.
                         </p>
-                    </div>
+                    </Card>
                 </div>
 
-                {/* Budget Progress */}
-                <div className="mb-8">
-                    <BudgetProgress budget={dummyBudget} limits={dummyLimits} />
+                {/* Budget section */}
+                <div className="grid grid-cols-1 xl:grid-cols-[1.2fr,1.4fr] gap-6">
+                    <Card title="Budget Progress">
+                        <BudgetProgress
+                            budget={budgetState.budget}
+                            spent={budgetState.spent}
+                            month={budgetState.month}
+                        />
+                    </Card>
+
+                    <Card title="Budget Setup">
+                        <BudgetSetup onBudgetUpdate={handleBudgetUpdate} />
+                    </Card>
                 </div>
 
-                {/* Budget Setup */}
-                <div>
-                    <BudgetSetup />
-                </div>
+                {/* Future goals area */}
+                <Card title="Long-term Goals">
+                    <p className="text-metallic-gray text-sm">
+                        Here you can later show cards for individual goals (e.g.
+                        &quot;Trip to Iceland&quot;, &quot;Emergency Fund&quot;) using your
+                        backend once those endpoints exist.
+                    </p>
+                </Card>
             </div>
         </AppLayout>
     );

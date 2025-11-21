@@ -1,137 +1,157 @@
 import React from 'react';
+import Card from '../ui/Card';
 import Button from '../ui/Button';
+import { formatCurrency } from '../../config/currencies';
 
-const WalletOverview = ({ wallets, totalBalance, totalSaved, onCreateWallet }) => {
+const WalletOverview = ({
+                            wallets = [],
+                            totalBalance = 0,
+                            totalSaved = 0,
+                            defaultCurrency = 'USD',
+                            onCreateWallet,
+                        }) => {
     const formatCardNumber = (number) => {
-        if (!number) return '5495 7381 3759 2321';
-        return number.replace(/(\d{4})/g, '$1 ').trim();
+        if (!number) return '•••• •••• •••• ••••';
+        const digits = number.replace(/\D/g, '').slice(0, 16);
+        return digits.replace(/(\d{4})/g, '$1 ').trim();
     };
 
-    const getCardType = (type) => {
-        const typeMap = {
-            'debit': 'VISA',
-            'credit': 'VISA',
-            'cash': 'CASH',
-            'savings': 'SAVINGS',
-            'investment': 'INVESTMENT',
-            'loan': 'LOAN'
-        };
-        return typeMap[type] || 'VISA';
-    };
+    const topWallet = wallets[0];
 
     return (
-        <div className="max-w-6xl mx-auto pt-8">
-            {/* Total Balance Section */}
-            <div className="mb-8">
-                <h2 className="text-lg font-semibold text-metallic-gray mb-2">Total Balance</h2>
-                <p className="text-3xl font-bold text-gray-900">${totalBalance.toFixed(2)}</p>
-            </div>
-
-            {/* Wallets List */}
-            <div className="space-y-6 mb-8">
-                {wallets.map((wallet) => (
-                    <div key={wallet.id} className="bg-white rounded-xl shadow-sm p-6 border border-strokes">
-                        {/* Wallet Header */}
-                        <div className="flex justify-between items-start mb-6">
-                            <div>
-                                <h3 className="text-lg font-semibold text-text mb-1">{wallet.name}</h3>
-                                <p className="text-sm text-metallic-gray mb-2">Total Balance</p>
-                                <p className="text-2xl font-bold text-text">${wallet.balance || '0.00'}</p>
-                            </div>
-                        </div>
-
-                        {/* Card Preview */}
+        <div className="grid grid-cols-1 xl:grid-cols-[2fr,1.3fr] gap-6">
+            {/* Left: Primary wallet card + quick stats */}
+            <Card
+                title="Wallet Overview"
+                headerRight={
+                    <Button
+                        variant="outline"
+                        className="text-xs"
+                        onClick={onCreateWallet}
+                    >
+                        + New wallet
+                    </Button>
+                }
+            >
+                {wallets.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10">
+                        <p className="text-sm text-metallic-gray mb-4 text-center">
+                            You don&apos;t have any wallets yet. Create one to get an
+                            overview of your finances.
+                        </p>
+                        <Button variant="primary" onClick={onCreateWallet}>
+                            Create your first wallet
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="space-y-6">
+                        {/* Card preview */}
                         <div
-                            className="bg-gradient-to-r from-[#2260FF] to-[#2260FF] rounded-2xl p-6 text-white shadow-lg"
+                            className="rounded-2xl text-white shadow-lg relative overflow-hidden"
                             style={{
-                                background: wallet.color ? `linear-gradient(to right, ${wallet.color}, ${wallet.color})` : undefined
+                                background: `linear-gradient(to right, ${
+                                    topWallet.color || '#4361ee'
+                                }, ${topWallet.color || '#4361ee'})`,
                             }}
                         >
-                            <div className="flex justify-between items-center mb-6">
-                                <span className="text-sm opacity-90">Saved</span>
-                                <span className="text-lg font-bold">{wallet.saved_amount || '00'}</span>
-                            </div>
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="tracking-wider font-mono text-xl">
-                                    {formatCardNumber(wallet.card_number)}
-                                </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm opacity-90">{wallet.expiry_date || '09/30'}</span>
-                                <span className="text-sm font-semibold">{getCardType(wallet.type)}</span>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
+                            <div className="p-5 h-full flex flex-col justify-between">
+                                <div className="mb-4">
+                                    <p className="text-xs uppercase opacity-80 mb-1">
+                                        {topWallet.wallet_type?.replace('_', ' ') ||
+                                            'Wallet'}
+                                    </p>
+                                    <p className="text-xl font-semibold">
+                                        {topWallet.name || 'Wallet Name'}
+                                    </p>
+                                </div>
 
-            {/* Add Wallet Card */}
-            <div className="bg-white rounded-xl shadow-sm p-8 border border-strokes border-dashed">
-                <div className="text-center">
-                    <h3 className="text-xl font-bold text-text mb-6">Add New Wallet</h3>
+                                <div className="mb-4">
+                                    <p className="text-xs uppercase opacity-80 mb-1">
+                                        Card Number
+                                    </p>
+                                    <p className="text-lg tracking-[0.2em] font-mono">
+                                        {formatCardNumber(topWallet.card_number)}
+                                    </p>
+                                </div>
 
-                    <div className="bg-gray-50 rounded-xl p-6 mb-6">
-                        <div className="space-y-4 text-left">
-                            {/* Initial Value */}
-                            <div>
-                                <label className="block text-sm font-medium text-metallic-gray mb-2">
-                                    Initial value
-                                </label>
-                                <div className="text-text font-semibold">$0.00</div>
-                            </div>
-
-                            {/* Currency */}
-                            <div>
-                                <label className="block text-sm font-medium text-metallic-gray mb-2">
-                                    Currency
-                                </label>
-                                <div className="text-text font-semibold">USD - US Dollar</div>
-                            </div>
-
-                            {/* Card Number */}
-                            <div>
-                                <label className="block text-sm font-medium text-metallic-gray mb-2">
-                                    Card number
-                                </label>
-                                <div className="text-text">Enter card number</div>
-                            </div>
-
-                            {/* Wallet Name */}
-                            <div>
-                                <label className="block text-sm font-medium text-metallic-gray mb-2">
-                                    Wallet name
-                                </label>
-                                <div className="text-text">Enter wallet name</div>
-                            </div>
-
-                            {/* Type */}
-                            <div>
-                                <label className="block text-sm font-medium text-metallic-gray mb-2">
-                                    Type
-                                </label>
-                                <div className="text-text font-semibold">Debit Card</div>
-                            </div>
-
-                            {/* Color */}
-                            <div>
-                                <label className="block text-sm font-medium text-metallic-gray mb-2">
-                                    Color
-                                </label>
-                                <div className="flex space-x-2">
-                                    <div className="w-6 h-6 bg-blue rounded-full"></div>
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <p className="text-xs uppercase opacity-80 mb-1">
+                                            Balance
+                                        </p>
+                                        <p className="text-lg font-bold">
+                                            {Number(topWallet.balance || 0).toFixed(2)}{' '}
+                                            {topWallet.currency}
+                                        </p>
+                                    </div>
+                                    <div className="text-right text-xs opacity-80">
+                                        <p>
+                                            Total wallets:{' '}
+                                            <span className="font-semibold">
+                                                {wallets.length}
+                                            </span>
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <Button
-                        variant="primary"
-                        onClick={onCreateWallet}
-                        className="w-full py-4 text-lg font-semibold rounded-xl"
-                    >
-                        Add Wallet
-                    </Button>
-                </div>
+                        {/* Wallet list mini-summary */}
+                        <div className="space-y-2">
+                            <p className="text-xs font-medium text-metallic-gray mb-1">
+                                Other wallets
+                            </p>
+                            <div className="space-y-1 max-h-32 overflow-y-auto">
+                                {wallets.slice(1).map((w) => (
+                                    <div
+                                        key={w.id}
+                                        className="flex items-center justify-between text-xs text-metallic-gray"
+                                    >
+                                        <span className="truncate mr-2">
+                                            {w.name} ({w.currency})
+                                        </span>
+                                        <span className="font-medium text-text">
+                                            {Number(w.balance || 0).toFixed(2)}
+                                        </span>
+                                    </div>
+                                ))}
+                                {wallets.length === 1 && (
+                                    <p className="text-xs text-metallic-gray">
+                                        No more wallets yet.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </Card>
+
+            {/* Right: totals */}
+            <div className="space-y-4">
+                <Card title="Totals">
+                    <div className="space-y-3 text-sm">
+                        <div className="flex items-center justify-between">
+                            <span className="text-metallic-gray">
+                                Total balance (all wallets)
+                            </span>
+                            <span className="font-semibold text-text">
+                                {formatCurrency(totalBalance, defaultCurrency)}
+                            </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <span className="text-metallic-gray">Total saved</span>
+                            <span className="font-semibold text-text">
+                                {formatCurrency(totalSaved, defaultCurrency)}
+                            </span>
+                        </div>
+
+                        <p className="text-xs text-metallic-gray mt-2">
+                            These totals are converted to your default currency when
+                            possible. For detailed analytics, check the main dashboard.
+                        </p>
+                    </div>
+                </Card>
             </div>
         </div>
     );

@@ -1,4 +1,3 @@
-// src/pages/UnauthorizedPage.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import errorImage from '../assets/images/something-went-wrong.png'; // rename your PNG into this path

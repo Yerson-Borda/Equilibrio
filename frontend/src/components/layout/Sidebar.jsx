@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import logo from '../assets/images/logo.png';
-// Import your custom icons
-import dashboardIcon from '../assets/icons/dashboard-icon.png';
-import transactionsIcon from '../assets/icons/transactions-icon.png';
-import walletsIcon from '../assets/icons/wallets-icon.png';
-import goalsIcon from '../assets/icons/goals-icon.png';
-import settingsIcon from '../assets/icons/settings-icon.png';
-import helpIcon from '../assets/icons/help-icon.png';
-import logoutIcon from '../assets/icons/logout-icon.png';
+
+// logo & icons now from ../../assets/...
+import logo from '../../assets/images/logo.png';
+import dashboardIcon from '../../assets/icons/dashboard-icon.png';
+import transactionsIcon from '../../assets/icons/transactions-icon.png';
+import walletsIcon from '../../assets/icons/wallets-icon.png';
+import goalsIcon from '../../assets/icons/goals-icon.png';
+import settingsIcon from '../../assets/icons/settings-icon.png';
+import helpIcon from '../../assets/icons/help-icon.png';
+import logoutIcon from '../../assets/icons/logout-icon.png';
 
 const Sidebar = ({ activeItem }) => {
     const location = useLocation();
@@ -69,7 +70,10 @@ const Sidebar = ({ activeItem }) => {
     };
 
     const isActive = (itemPath) => {
-        return location.pathname === itemPath;
+        // prefer URL match, fallback to activeItem prop if you want:
+        if (location.pathname === itemPath) return true;
+        if (activeItem && itemPath === `/${activeItem}`) return true;
+        return false;
     };
 
     return (
@@ -97,43 +101,54 @@ const Sidebar = ({ activeItem }) => {
                                     <img
                                         src={item.icon}
                                         alt={item.label}
-                                        className={`w-5 h-5 mr-3 ${isActive(item.path) ? 'filter brightness-0 invert' : ''}`}
+                                        className={`w-5 h-5 mr-3 ${
+                                            isActive(item.path)
+                                                ? 'filter brightness-0 invert'
+                                                : ''
+                                        }`}
                                     />
-                                    {item.label}
+                                    <span className="text-sm font-medium">
+                                        {item.label}
+                                    </span>
                                 </Link>
                             </li>
                         ))}
                     </ul>
                 </nav>
 
-                {/* Bottom Navigation - Help & Logout */}
+                {/* Bottom Navigation */}
                 <div className="p-4 border-t border-strokes">
                     <ul className="space-y-2">
                         {bottomMenuItems.map((item) => (
                             <li key={item.id}>
-                                {item.action ? (
+                                {item.id === 'logout' ? (
                                     <button
+                                        type="button"
                                         onClick={item.action}
-                                        className="flex items-center w-full px-4 py-3 rounded-lg text-text hover:bg-gray-50 transition-colors"
+                                        className="w-full flex items-center px-4 py-3 rounded-lg transition-colors text-text hover:bg-gray-50"
                                     >
                                         <img
                                             src={item.icon}
                                             alt={item.label}
                                             className="w-5 h-5 mr-3"
                                         />
-                                        {item.label}
+                                        <span className="text-sm font-medium">
+                                            {item.label}
+                                        </span>
                                     </button>
                                 ) : (
                                     <Link
                                         to={item.path}
-                                        className="flex items-center px-4 py-3 rounded-lg text-text hover:bg-gray-50 transition-colors"
+                                        className="flex items-center px-4 py-3 rounded-lg transition-colors text-text hover:bg-gray-50"
                                     >
                                         <img
                                             src={item.icon}
                                             alt={item.label}
                                             className="w-5 h-5 mr-3"
                                         />
-                                        {item.label}
+                                        <span className="text-sm font-medium">
+                                            {item.label}
+                                        </span>
                                     </Link>
                                 )}
                             </li>
@@ -142,41 +157,29 @@ const Sidebar = ({ activeItem }) => {
                 </div>
             </div>
 
-            {/* Logout Confirmation Modal - Same as in Header */}
+            {/* Logout Confirmation Modal */}
             {isLogoutConfirmOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full mx-4">
-                        {/* Modal Header */}
-                        <div className="p-8 text-center">
-                            {/* Main Question */}
-                            <h2 className="text-2xl font-bold text-text mb-4">
-                                Are you sure you want to log out?
-                            </h2>
-
-                            {/* Sub Text */}
-                            <p className="text-metallic-gray text-lg mb-8">
-                                You will be redirect to log in page
-                            </p>
-
-                            {/* Buttons */}
-                            <div className="flex space-x-4">
-                                {/* Cancel Button - Left side, white */}
-                                <button
-                                    onClick={() => setIsLogoutConfirmOpen(false)}
-                                    className="flex-1 py-4 px-6 bg-white text-gray-700 rounded-lg font-semibold border-2 border-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
-                                >
-                                    Cancel
-                                </button>
-
-                                {/* Logout Button - Right side, #D06978 color */}
-                                <button
-                                    onClick={handleLogout}
-                                    className="flex-1 py-4 px-6 text-white rounded-lg font-semibold hover:opacity-90 transition-opacity shadow-sm"
-                                    style={{ backgroundColor: '#D06978' }}
-                                >
-                                    Log out
-                                </button>
-                            </div>
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+                        <h2 className="text-lg font-semibold text-text mb-4">
+                            Logout
+                        </h2>
+                        <p className="text-sm text-metallic-gray mb-6">
+                            Are you sure you want to log out?
+                        </p>
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                className="px-4 py-2 text-sm rounded-lg border border-strokes text-text hover:bg-gray-50"
+                                onClick={() => setIsLogoutConfirmOpen(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="px-4 py-2 text-sm rounded-lg bg-blue text-white hover:bg-blue/90"
+                                onClick={handleLogout}
+                            >
+                                Logout
+                            </button>
                         </div>
                     </div>
                 </div>

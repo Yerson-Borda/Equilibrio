@@ -12,8 +12,8 @@ const formatDateLabel = (dateStr) => {
 const TransactionsPage = () => {
     const [transactions, setTransactions] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [filterType, setFilterType] = useState('all'); // all | income | expense
-    const [range, setRange] = useState('7d'); // 7d | 30d | 90d
+    const [filterType, setFilterType] = useState('all');
+    const [range, setRange] = useState('7d');
     const [error, setError] = useState(null);
 
     useEffect(() => {
@@ -96,116 +96,103 @@ const TransactionsPage = () => {
         return result;
     }, [filteredTransactions, range]);
 
-    if (isLoading) {
-        return (
-            <AppLayout activeItem="transactions">
+    return (
+        <AppLayout activeItem="transactions">
+            {isLoading ? (
                 <div className="flex items-center justify-center h-full">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue mx-auto"></div>
                         <p className="mt-4 text-text">Loading transactions...</p>
                     </div>
                 </div>
-            </AppLayout>
-        );
-    }
-
-    if (error) {
-        return (
-            <AppLayout activeItem="transactions">
+            ) : error ? (
                 <div className="flex items-center justify-center h-full">
                     <p className="text-red-500">{error}</p>
                 </div>
-            </AppLayout>
-        );
-    }
+            ) : (
+                <div className="max-w-7xl mx-auto space-y-8">
+                    <div className="flex items-center justify-between">
+                        <h1 className="text-2xl font-bold text-text">Transactions</h1>
 
-    return (
-        <AppLayout activeItem="transactions">
-            <div className="max-w-7xl mx-auto pt-8 pb-10 px-6 space-y-8">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold text-text">Transactions</h1>
+                        <div className="flex items-center space-x-4">
+                            <select
+                                className="border border-strokes rounded-md px-3 py-2 text-sm"
+                                value={filterType}
+                                onChange={(e) => setFilterType(e.target.value)}
+                            >
+                                <option value="all">All</option>
+                                <option value="income">Income</option>
+                                <option value="expense">Expense</option>
+                            </select>
 
-                    {/* Filters */}
-                    <div className="flex items-center space-x-4">
-                        <select
-                            className="border border-strokes rounded-md px-3 py-2 text-sm"
-                            value={filterType}
-                            onChange={(e) => setFilterType(e.target.value)}
-                        >
-                            <option value="all">All</option>
-                            <option value="income">Income</option>
-                            <option value="expense">Expense</option>
-                        </select>
+                            <select
+                                className="border border-strokes rounded-md px-3 py-2 text-sm"
+                                value={range}
+                                onChange={(e) => setRange(e.target.value)}
+                            >
+                                <option value="7d">Last 7 days</option>
+                                <option value="30d">Last 30 days</option>
+                                <option value="90d">Last 90 days</option>
+                            </select>
+                        </div>
+                    </div>
 
-                        <select
-                            className="border border-strokes rounded-md px-3 py-2 text-sm"
-                            value={range}
-                            onChange={(e) => setRange(e.target.value)}
-                        >
-                            <option value="7d">Last 7 days</option>
-                            <option value="30d">Last 30 days</option>
-                            <option value="90d">Last 90 days</option>
-                        </select>
+                    <div className="bg-white rounded-xl shadow-sm border border-strokes p-6">
+                        <h2 className="text-lg font-semibold text-text mb-4">
+                            Income vs Expense
+                        </h2>
+                        <DualLineChart data={chartData} />
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-sm border border-strokes p-6">
+                        <h2 className="text-lg font-semibold text-text mb-4">
+                            Recent Transactions
+                        </h2>
+
+                        {filteredTransactions.length === 0 ? (
+                            <p className="text-metallic-gray text-sm">
+                                No transactions found for the selected filters.
+                            </p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full text-sm">
+                                    <thead>
+                                    <tr className="text-left text-metallic-gray border-b border-strokes">
+                                        <th className="py-2 pr-4">Date</th>
+                                        <th className="py-2 pr-4">Description</th>
+                                        <th className="py-2 pr-4">Type</th>
+                                        <th className="py-2 pr-4 text-right">Amount</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {filteredTransactions.map((t) => (
+                                        <tr
+                                            key={t.id}
+                                            className="border-b border-strokes last:border-b-0"
+                                        >
+                                            <td className="py-2 pr-4">
+                                                {formatDateLabel(
+                                                    t.transaction_date || t.created_at
+                                                )}
+                                            </td>
+                                            <td className="py-2 pr-4">
+                                                {t.description || '-'}
+                                            </td>
+                                            <td className="py-2 pr-4 capitalize">
+                                                {t.type}
+                                            </td>
+                                            <td className="py-2 pr-4 text-right">
+                                                {Number(t.amount || 0).toFixed(2)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
                 </div>
-
-                {/* Chart */}
-                <div className="bg-white rounded-xl shadow-sm border border-strokes p-6">
-                    <h2 className="text-lg font-semibold text-text mb-4">
-                        Income vs Expense
-                    </h2>
-                    <DualLineChart data={chartData} />
-                </div>
-
-                {/* Transactions Table */}
-                <div className="bg-white rounded-xl shadow-sm border border-strokes p-6">
-                    <h2 className="text-lg font-semibold text-text mb-4">
-                        Recent Transactions
-                    </h2>
-
-                    {filteredTransactions.length === 0 ? (
-                        <p className="text-metallic-gray text-sm">
-                            No transactions found for the selected filters.
-                        </p>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full text-sm">
-                                <thead>
-                                <tr className="text-left text-metallic-gray border-b border-strokes">
-                                    <th className="py-2 pr-4">Date</th>
-                                    <th className="py-2 pr-4">Description</th>
-                                    <th className="py-2 pr-4">Type</th>
-                                    <th className="py-2 pr-4 text-right">Amount</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {filteredTransactions.map((t) => (
-                                    <tr
-                                        key={t.id}
-                                        className="border-b border-strokes last:border-b-0"
-                                    >
-                                        <td className="py-2 pr-4">
-                                            {formatDateLabel(
-                                                t.transaction_date || t.created_at
-                                            )}
-                                        </td>
-                                        <td className="py-2 pr-4">
-                                            {t.description || '-'}
-                                        </td>
-                                        <td className="py-2 pr-4 capitalize">
-                                            {t.type}
-                                        </td>
-                                        <td className="py-2 pr-4 text-right">
-                                            {Number(t.amount || 0).toFixed(2)}
-                                        </td>
-                                    </tr>
-                                ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-            </div>
+            )}
         </AppLayout>
     );
 };

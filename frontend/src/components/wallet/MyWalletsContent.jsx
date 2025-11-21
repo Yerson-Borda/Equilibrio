@@ -1,324 +1,188 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import Card from '../ui/Card';
 import Button from '../ui/Button';
-import CreateWalletModal from '../modals/CreateWalletModal.jsx';
-import AddTransactionModal from '../modals/AddTransactionModal.jsx';
+import CreateWalletModal from '../modals/CreateWalletModal';
 import { apiService } from '../../services/api';
 
-const MyWalletsContent = ({ wallets, onWalletCreated }) => {
+const MyWalletsContent = ({ wallets = [], onWalletCreated, onAddTransaction }) => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [selectedWallet, setSelectedWallet] = useState(null);
-    const [transactions, setTransactions] = useState([]);
-    const [upcomingPayments, setUpcomingPayments] = useState([]);
+    const [isCreatingWallet, setIsCreatingWallet] = useState(false);
 
-    useEffect(() => {
-        fetchTransactions();
-        fetchUpcomingPayments();
-    }, []);
-
-    // Listen for external transaction updates (e.g. from MyWalletsPage modal)
-    useEffect(() => {
-        const handleExternalUpdate = () => {
-            fetchTransactions();
-        };
-        window.addEventListener('transaction_updated', handleExternalUpdate);
-        return () => window.removeEventListener('transaction_updated', handleExternalUpdate);
-    }, []);
-
-    const fetchTransactions = async () => {
-        try {
-            const transactionsData = await apiService.getTransactions();
-            setTransactions(transactionsData || []);
-        } catch (error) {
-            console.error('Error fetching transactions:', error);
-        }
+    const handleOpenCreateWallet = () => {
+        setIsCreateModalOpen(true);
     };
 
-    const fetchUpcomingPayments = async () => {
-        // Mock data for upcoming payments
-        const mockUpcomingPayments = [
-            { name: 'Facebook Ads', amount: 400.0, date: 'Next month' },
-            { name: 'LinkedIn Ads', amount: 200.5, date: 'Next month' }
-        ];
-        setUpcomingPayments(mockUpcomingPayments);
+    const handleCloseCreateWallet = () => {
+        setIsCreateModalOpen(false);
     };
 
     const handleCreateWallet = async (walletData) => {
         try {
-            setIsLoading(true);
+            setIsCreatingWallet(true);
+
             const formattedData = {
                 name: walletData.name,
                 currency: walletData.currency,
                 wallet_type: walletData.wallet_type,
                 initial_balance: parseFloat(walletData.initial_balance) || 0,
                 card_number: walletData.card_number || '',
-                color: walletData.color || '#6FBAFC'
+                color: walletData.color || '#6FBAFC',
             };
 
             const newWallet = await apiService.createWallet(formattedData);
-            onWalletCreated(newWallet);
-            setIsCreateModalOpen(false);
-        } catch (error) {
-            console.error('Error creating wallet:', error);
-            alert(`Failed to create wallet: ${error.message || 'Please try again.'}`);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
-    const handleAddTransaction = async (transactionData) => {
-        try {
-            setIsLoading(true);
-
-            if (transactionData.type === 'transfer') {
-                // Transfer between wallets
-                const transferPayload = {
-                    source_wallet_id: parseInt(transactionData.source_wallet_id),
-                    destination_wallet_id: parseInt(transactionData.destination_wallet_id),
-                    amount: parseFloat(transactionData.amount),
-                    note: transactionData.note || ''
-                };
-
-                console.log('Creating transfer:', transferPayload);
-                await apiService.createTransfer(transferPayload);
-            } else {
-                // Regular income/expense transaction
-                const formattedData = {
-                    amount: parseFloat(transactionData.amount),
-                    description: transactionData.note || '',
-                    type: transactionData.type,
-                    transaction_date: new Date().toISOString().split('T')[0],
-                    wallet_id: parseInt(transactionData.wallet_id),
-                    category_id: await getCategoryId(transactionData.category)
-                };
-
-                console.log('Creating transaction:', formattedData);
-                await apiService.createTransaction(formattedData);
+            if (onWalletCreated) {
+                onWalletCreated(newWallet);
             }
 
-            // Refresh transactions
-            await fetchTransactions();
-
-            setIsTransactionModalOpen(false);
-            setSelectedWallet(null);
-
-            // Show success message
-            alert(
-                transactionData.type === 'transfer'
-                    ? 'Transfer completed successfully!'
-                    : 'Transaction added successfully!'
-            );
+            setIsCreateModalOpen(false);
+            alert('Wallet created successfully!');
         } catch (error) {
-            console.error('Error creating transaction/transfer:', error);
-            alert(
-                `Failed to save transaction: ${
-                    error.message || 'Please try again.'
-                }`
-            );
+            console.error('Error creating wallet from MyWalletsContent:', error);
+            alert(error.message || 'Failed to create wallet. Please try again.');
         } finally {
-            setIsLoading(false);
+            setIsCreatingWallet(false);
         }
     };
 
-    // Helper function to get category ID from category name
-    const getCategoryId = async (categoryName) => {
-        try {
-            const categories = await apiService.getCategories();
-            const category = categories.find(cat => cat.name === categoryName);
-            return category ? category.id : 1;
-        } catch (error) {
-            console.error('Error fetching categories:', error);
-            return 1;
+    const handleAddTransactionClick = (wallet) => {
+        if (onAddTransaction) {
+            onAddTransaction(wallet);
         }
     };
 
-    const handleOpenTransactionModal = (wallet = null) => {
-        setSelectedWallet(wallet);
-        setIsTransactionModalOpen(true);
-    };
-
-    const handleCloseTransactionModal = () => {
-        setIsTransactionModalOpen(false);
-        setSelectedWallet(null);
-    };
+    const totalWallets = wallets.length;
+    const totalBalance = wallets.reduce(
+        (sum, w) => sum + (parseFloat(w.balance) || 0),
+        0
+    );
 
     return (
-        <div className="max-w-7xl mx-auto pt-8">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-text">My Wallets</h1>
-                    <p className="text-metallic-gray mt-1">
-                        Manage all your financial accounts and track their performance.
-                    </p>
-                </div>
-                <div className="flex gap-3">
-                    <Button
-                        variant="secondary"
-                        onClick={() => setIsCreateModalOpen(true)}
-                    >
-                        Create New Wallet
-                    </Button>
-                </div>
+        <div className="grid grid-cols-1 xl:grid-cols-[2fr,1.4fr] gap-8">
+            {/* Left: Wallets list */}
+            <div className="space-y-6">
+                <Card
+                    title="My Wallets"
+                    headerRight={
+                        <Button
+                            variant="primary"
+                            onClick={handleOpenCreateWallet}
+                            className="text-sm"
+                        >
+                            + Create Wallet
+                        </Button>
+                    }
+                >
+                    {wallets.length === 0 ? (
+                        <div className="text-center py-10">
+                            <p className="text-metallic-gray mb-3">
+                                You don’t have any wallets yet.
+                            </p>
+                            <Button
+                                variant="primary"
+                                onClick={handleOpenCreateWallet}
+                            >
+                                Create your first wallet
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {wallets.map((wallet) => (
+                                <div
+                                    key={wallet.id}
+                                    className="border border-strokes rounded-xl p-4 flex flex-col justify-between bg-white shadow-sm"
+                                >
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-text">
+                                            {wallet.name}
+                                        </h3>
+                                        <p className="text-metallic-gray text-sm">
+                                            {wallet.wallet_type} · {wallet.currency}
+                                        </p>
+                                        <p className="mt-2 font-bold text-text">
+                                            {Number(wallet.balance || 0).toFixed(2)}{' '}
+                                            {wallet.currency}
+                                        </p>
+                                    </div>
+                                    <div className="mt-4 flex justify-end">
+                                        <Button
+                                            variant="outline"
+                                            className="text-sm"
+                                            onClick={() =>
+                                                handleAddTransactionClick(wallet)
+                                            }
+                                        >
+                                            Add Transaction
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </Card>
             </div>
 
-            {/* Wallets + Right side */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Wallets list */}
-                <div className="lg:col-span-2 space-y-4">
-                    {wallets.length === 0 && (
-                        <div className="bg-white rounded-xl shadow-sm p-6 border border-strokes text-center">
-                            <p className="text-metallic-gray">
-                                You don’t have any wallets yet.
+            {/* Right: Overview / Summary */}
+            <div className="space-y-6">
+                <Card title="Wallets Overview">
+                    {totalWallets === 0 ? (
+                        <p className="text-sm text-metallic-gray">
+                            Once you create wallets, you’ll see an overview of your total
+                            balance and quick stats here.
+                        </p>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-metallic-gray">
+                                    Total wallets
+                                </span>
+                                <span className="text-base font-semibold text-text">
+                                    {totalWallets}
+                                </span>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-metallic-gray">
+                                    Combined balance
+                                </span>
+                                <span className="text-base font-semibold text-text">
+                                    {totalBalance.toFixed(2)}
+                                </span>
+                            </div>
+
+                            <p className="text-xs text-metallic-gray mt-2">
+                                * Balances are shown in each wallet’s own currency. For
+                                unified stats and currency conversion, check the main
+                                dashboard.
                             </p>
                         </div>
                     )}
+                </Card>
 
-                    {wallets.map(wallet => (
-                        <div
-                            key={wallet.id}
-                            className="bg-white rounded-xl shadow-sm p-6 border border-strokes flex items-center justify-between"
-                        >
-                            <div>
-                                <h3 className="text-lg font-semibold text-text">
-                                    {wallet.name}
-                                </h3>
-                                <p className="text-metallic-gray text-sm">
-                                    {wallet.wallet_type} · {wallet.currency}
-                                </p>
-                                <p className="mt-2 font-bold text-text">
-                                    {wallet.balance} {wallet.currency}
-                                </p>
-                            </div>
-                            <div className="flex flex-col gap-2">
-                                <Button
-                                    variant="primary"
-                                    onClick={() => handleOpenTransactionModal(wallet)}
-                                >
-                                    Add Transaction
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Right column: Transactions + Upcoming payments */}
-                <div className="space-y-6">
-                    {/* Transactions */}
-                    <div className="bg-white rounded-xl shadow-sm p-6 border border-strokes">
-                        <h3 className="text-lg font-semibold text-text mb-6">
-                            Transactions
-                        </h3>
-
-                        <div className="flex space-x-4 mb-6">
-                            <button className="text-blue font-medium border-b-2 border-blue pb-1">
-                                All Transactions
-                            </button>
-                            <button className="text-metallic-gray pb-1">
-                                Regular Transactions
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            <h4 className="font-medium text-text">Today</h4>
-                            {transactions.slice(0, 4).map((transaction, index) => (
-                                <div
-                                    key={index}
-                                    className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
-                                >
-                                    <div>
-                                        <p className="font-medium text-text">
-                                            {transaction.description || 'Transaction'}
-                                        </p>
-                                        <p className="text-sm text-metallic-gray capitalize">
-                                            {transaction.type}
-                                        </p>
-                                    </div>
-                                    <p
-                                        className={`font-semibold ${
-                                            transaction.type === 'income'
-                                                ? 'text-green-600'
-                                                : transaction.type === 'expense'
-                                                    ? 'text-red-600'
-                                                    : 'text-blue-600'
-                                        }`}
-                                    >
-                                        {transaction.type === 'income'
-                                            ? '+'
-                                            : transaction.type === 'expense'
-                                                ? '-'
-                                                : '↔'}
-                                        ${transaction.amount}
-                                    </p>
-                                </div>
-                            ))}
-
-                            {transactions.length === 0 && (
-                                <div className="text-center py-4">
-                                    <p className="text-metallic-gray">
-                                        No transactions yet
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Upcoming Payments */}
-                    <div className="bg-white rounded-xl shadow-sm p-6 border border-strokes">
-                        <h3 className="text-lg font-semibold text-text mb-6">
-                            Upcoming Payments
-                        </h3>
-
-                        <div className="space-y-4">
-                            <h4 className="font-medium text-text">Next month</h4>
-                            {upcomingPayments.map((payment, index) => (
-                                <div
-                                    key={index}
-                                    className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
-                                >
-                                    <div>
-                                        <p className="font-medium text-text">
-                                            {payment.name}
-                                        </p>
-                                        <p className="text-sm text-metallic-gray">
-                                            {payment.date}
-                                        </p>
-                                    </div>
-                                    <p className="font-semibold text-red-600">
-                                        -${payment.amount}
-                                    </p>
-                                </div>
-                            ))}
-
-                            {upcomingPayments.length === 0 && (
-                                <div className="text-center py-4">
-                                    <p className="text-metallic-gray">
-                                        No upcoming payments
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                <Card title="Tips">
+                    <ul className="list-disc list-inside text-sm text-metallic-gray space-y-2">
+                        <li>
+                            Use multiple wallets to separate your expenses (e.g., Cash,
+                            Main Card, Savings).
+                        </li>
+                        <li>
+                            Add transactions frequently to keep your analytics and goals
+                            accurate.
+                        </li>
+                        <li>
+                            You can always edit wallets and manage transactions from the
+                            dashboard or the wallets page.
+                        </li>
+                    </ul>
+                </Card>
             </div>
 
             {/* Create Wallet Modal */}
             <CreateWalletModal
                 isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
+                onClose={handleCloseCreateWallet}
                 onSubmit={handleCreateWallet}
-                isLoading={isLoading}
-            />
-
-            {/* Add Transaction Modal */}
-            <AddTransactionModal
-                isOpen={isTransactionModalOpen}
-                onClose={handleCloseTransactionModal}
-                onSubmit={handleAddTransaction}
-                isLoading={isLoading}
-                wallets={wallets}
-                selectedWallet={selectedWallet}
+                isLoading={isCreatingWallet}
             />
         </div>
     );

@@ -21,17 +21,13 @@ const MyWalletsPage = () => {
         fetchWallets();
         loadCurrentUser();
 
-        // Check if we need to open transaction modal from dashboard
         if (location.state?.openTransactionModal) {
             setIsTransactionModalOpen(true);
             setSelectedWallet(location.state.selectedWallet);
-            // Clear the state to prevent reopening on refresh
             window.history.replaceState({}, document.title);
         }
 
-        // Set up WebSocket listeners
         setupWebSocketListeners();
-
         return () => {
             cleanupWebSocketListeners();
         };
@@ -42,7 +38,6 @@ const MyWalletsPage = () => {
             const userData = await apiService.getCurrentUser();
             setCurrentUser(userData);
 
-            // Connect to WebSocket with user ID
             if (userData.id) {
                 webSocketService.connect(userData.id);
             }
@@ -52,19 +47,16 @@ const MyWalletsPage = () => {
     };
 
     const setupWebSocketListeners = () => {
-        // Wallet created event
         webSocketService.addEventListener('wallet_created', (data) => {
             console.log('🔄 Real-time: Wallet created in MyWallets', data);
             handleWalletCreated(data.wallet);
         });
 
-        // Wallet updated event
         webSocketService.addEventListener('wallet_updated', (data) => {
             console.log('🔄 Real-time: Wallet updated in MyWallets', data);
             handleWalletUpdated(data);
         });
 
-        // Wallet deleted event
         webSocketService.addEventListener('wallet_deleted', (data) => {
             console.log('🔄 Real-time: Wallet deleted in MyWallets', data);
             handleWalletDeleted(data.wallet_id);
@@ -153,7 +145,6 @@ const MyWalletsPage = () => {
                 await apiService.createTransaction(payload);
             }
 
-            // Notify other components that a transaction was updated
             window.dispatchEvent(new Event('transaction_updated'));
             setIsTransactionModalOpen(false);
             setSelectedWallet(null);
@@ -177,46 +168,37 @@ const MyWalletsPage = () => {
         setSelectedWallet(null);
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-background flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue mx-auto"></div>
-                    <p className="mt-4 text-text">Loading wallets.</p>
+    return (
+        <AppLayout activeItem="my-wallets">
+            {loading ? (
+                <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue mx-auto"></div>
+                        <p className="mt-4 text-text">Loading wallets...</p>
+                    </div>
                 </div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <AppLayout activeItem="my-wallets">
+            ) : error ? (
                 <div className="flex items-center justify-center h-full">
                     <p className="text-red-500">{error}</p>
                 </div>
-            </AppLayout>
-        );
-    }
+            ) : (
+                <>
+                    <MyWalletsContent
+                        wallets={wallets}
+                        onWalletCreated={handleWalletCreatedCallback}
+                        onAddTransaction={handleOpenTransactionModal}
+                    />
 
-    return (
-        <AppLayout activeItem="my-wallets">
-            <>
-                <MyWalletsContent
-                    wallets={wallets}
-                    onWalletCreated={handleWalletCreatedCallback}
-                    onAddTransaction={handleOpenTransactionModal}
-                />
-
-                {/* Add Transaction Modal */}
-                <AddTransactionModal
-                    isOpen={isTransactionModalOpen}
-                    onClose={handleCloseTransactionModal}
-                    onSubmit={handleAddTransaction}
-                    isLoading={isCreatingTransaction}
-                    wallets={wallets}
-                    selectedWallet={selectedWallet}
-                />
-            </>
+                    <AddTransactionModal
+                        isOpen={isTransactionModalOpen}
+                        onClose={handleCloseTransactionModal}
+                        onSubmit={handleAddTransaction}
+                        isLoading={isCreatingTransaction}
+                        wallets={wallets}
+                        selectedWallet={selectedWallet}
+                    />
+                </>
+            )}
         </AppLayout>
     );
 };

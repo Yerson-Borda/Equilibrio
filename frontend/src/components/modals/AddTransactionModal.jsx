@@ -1,309 +1,270 @@
-import React, { useState, useEffect } from 'react';
-import Button from '../ui/Button.jsx';
-export { default } from '../modals/AddTransactionModal';
+import React, { useEffect, useState } from 'react';
+import Modal from '../ui/Modal';
+import Button from '../ui/Button';
+import Input from '../ui/Input';
+import Select from '../ui/Select';
 
-const AddTransactionModal = ({ isOpen, onClose, onSubmit, isLoading, wallets, selectedWallet }) => {
+const transactionTypes = [
+    { value: 'expense', label: 'Expense' },
+    { value: 'income', label: 'Income' },
+    { value: 'transfer', label: 'Transfer' },
+];
+
+const AddTransactionModal = ({
+                                 isOpen,
+                                 onClose,
+                                 onSubmit,
+                                 isLoading,
+                                 wallets = [],
+                                 selectedWallet,
+                             }) => {
     const [formData, setFormData] = useState({
         type: 'expense',
         amount: '',
         wallet_id: selectedWallet?.id || '',
         source_wallet_id: selectedWallet?.id || '',
         destination_wallet_id: '',
-        category: '',
+        category_id: '',
         note: '',
-        attachments: ''
+        attachments: '',
     });
 
-    const categories = [
-        'Shopping', 'Food & Dining', 'Transportation', 'Entertainment',
-        'Bills & Utilities', 'Healthcare', 'Education', 'Others'
-    ];
+    const [errors, setErrors] = useState({});
 
-    // Keep wallet selection in sync when modal opens with a different wallet
+    // Sync with selectedWallet when it changes
     useEffect(() => {
-        if (isOpen) {
-            setFormData(prev => ({
-                ...prev,
-                wallet_id: selectedWallet?.id || '',
-                source_wallet_id: selectedWallet?.id || ''
-            }));
-        }
-    }, [isOpen, selectedWallet]);
+        setFormData((prev) => ({
+            ...prev,
+            wallet_id: selectedWallet?.id || prev.wallet_id || '',
+            source_wallet_id: selectedWallet?.id || prev.source_wallet_id || '',
+        }));
+    }, [selectedWallet]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
+
+        setFormData((prev) => ({
             ...prev,
-            [name]: value
+            [name]: value,
         }));
+
+        if (errors[name]) {
+            setErrors((prev) => ({ ...prev, [name]: '' }));
+        }
+    };
+
+    const handleTypeChange = (type) => {
+        setFormData((prev) => ({
+            ...prev,
+            type,
+        }));
+        setErrors({});
+    };
+
+    const validate = () => {
+        const newErrors = {};
+
+        if (!formData.type) {
+            newErrors.type = 'Transaction type is required';
+        }
+
+        if (!formData.amount || Number(formData.amount) <= 0) {
+            newErrors.amount = 'Amount must be greater than 0';
+        }
+
+        if (formData.type === 'transfer') {
+            if (!formData.source_wallet_id) {
+                newErrors.source_wallet_id = 'Source wallet is required';
+            }
+            if (!formData.destination_wallet_id) {
+                newErrors.destination_wallet_id = 'Destination wallet is required';
+            }
+            if (
+                formData.source_wallet_id &&
+                formData.destination_wallet_id &&
+                formData.source_wallet_id === formData.destination_wallet_id
+            ) {
+                newErrors.destination_wallet_id =
+                    'Source and destination wallets must be different';
+            }
+        } else {
+            if (!formData.wallet_id) {
+                newErrors.wallet_id = 'Wallet is required';
+            }
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (!validate()) return;
 
-        // Basic validation
-        if (!formData.amount || parseFloat(formData.amount) <= 0) {
-            alert('Please enter a valid amount');
-            return;
-        }
+        const payload = {
+            ...formData,
+            amount: parseFloat(formData.amount),
+        };
 
-        if (formData.type === 'transfer') {
-            if (!formData.source_wallet_id || !formData.destination_wallet_id) {
-                alert('Please select both source and destination wallets');
-                return;
-            }
-            if (formData.source_wallet_id === formData.destination_wallet_id) {
-                alert('Source and destination wallets must be different');
-                return;
-            }
-        } else {
-            if (!formData.wallet_id) {
-                alert('Please select a wallet');
-                return;
-            }
-            if (!formData.category) {
-                alert('Please select a category');
-                return;
-            }
-        }
-
-        onSubmit(formData);
-    };
-
-    const resetForm = () => {
-        setFormData({
-            type: 'expense',
-            amount: '',
-            wallet_id: selectedWallet?.id || '',
-            source_wallet_id: selectedWallet?.id || '',
-            destination_wallet_id: '',
-            category: '',
-            note: '',
-            attachments: ''
-        });
+        onSubmit(payload);
     };
 
     const handleClose = () => {
-        resetForm();
+        setErrors({});
         onClose();
     };
 
-    if (!isOpen) return null;
-
-    const amountPrefix =
-        formData.type === 'income'
-            ? '+$'
-            : formData.type === 'expense'
-                ? '-$'
-                : '↔';
+    const isTransfer = formData.type === 'transfer';
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-                <div className="p-6">
-                    <h2 className="text-xl font-bold text-text mb-6 text-center">Add Transaction</h2>
-
-                    <form onSubmit={handleSubmit}>
-                        {/* Transaction Type */}
-                        <div className="grid grid-cols-3 gap-2 mb-6">
+        <Modal
+            isOpen={isOpen}
+            onClose={handleClose}
+            title="Add Transaction"
+            size="lg"
+        >
+            <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Type Switcher */}
+                <div>
+                    <p className="block text-sm font-medium text-text mb-2">
+                        Transaction Type
+                    </p>
+                    <div className="flex space-x-2">
+                        {transactionTypes.map((t) => (
                             <button
+                                key={t.value}
                                 type="button"
-                                className={`p-3 rounded-lg border-2 text-center ${
-                                    formData.type === 'income'
-                                        ? 'border-green-500 bg-green-50 text-green-700'
-                                        : 'border-strokes text-metallic-gray'
+                                onClick={() => handleTypeChange(t.value)}
+                                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border ${
+                                    formData.type === t.value
+                                        ? 'bg-blue text-white border-blue'
+                                        : 'bg-white text-text border-strokes hover:bg-soft-gray'
                                 }`}
-                                onClick={() =>
-                                    setFormData(prev => ({
-                                        ...prev,
-                                        type: 'income'
-                                    }))
-                                }
                             >
-                                Income
+                                {t.label}
                             </button>
-                            <button
-                                type="button"
-                                className={`p-3 rounded-lg border-2 text-center ${
-                                    formData.type === 'expense'
-                                        ? 'border-red-500 bg-red-50 text-red-700'
-                                        : 'border-strokes text-metallic-gray'
-                                }`}
-                                onClick={() =>
-                                    setFormData(prev => ({
-                                        ...prev,
-                                        type: 'expense'
-                                    }))
-                                }
-                            >
-                                Expense
-                            </button>
-                            <button
-                                type="button"
-                                className={`p-3 rounded-lg border-2 text-center ${
-                                    formData.type === 'transfer'
-                                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                        : 'border-strokes text-metallic-gray'
-                                }`}
-                                onClick={() =>
-                                    setFormData(prev => ({
-                                        ...prev,
-                                        type: 'transfer'
-                                    }))
-                                }
-                            >
-                                Transfer
-                            </button>
-                        </div>
-
-                        {/* Wallet selection ­– different for transfer vs income/expense */}
-                        {formData.type === 'transfer' ? (
-                            <>
-                                {/* From Wallet */}
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-text mb-2">
-                                        From Wallet
-                                    </label>
-                                    <select
-                                        name="source_wallet_id"
-                                        value={formData.source_wallet_id}
-                                        onChange={handleChange}
-                                        className="w-full border border-strokes rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue"
-                                    >
-                                        <option value="">Select wallet</option>
-                                        {wallets.map(wallet => (
-                                            <option key={wallet.id} value={wallet.id}>
-                                                {wallet.name} ({wallet.currency})
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                {/* To Wallet */}
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-text mb-2">
-                                        To Wallet
-                                    </label>
-                                    <select
-                                        name="destination_wallet_id"
-                                        value={formData.destination_wallet_id}
-                                        onChange={handleChange}
-                                        className="w-full border border-strokes rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue"
-                                    >
-                                        <option value="">Select wallet</option>
-                                        {wallets.map(wallet => (
-                                            <option key={wallet.id} value={wallet.id}>
-                                                {wallet.name} ({wallet.currency})
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                {/* Wallet (income/expense) */}
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-text mb-2">
-                                        Wallet
-                                    </label>
-                                    <select
-                                        name="wallet_id"
-                                        value={formData.wallet_id}
-                                        onChange={handleChange}
-                                        className="w-full border border-strokes rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue"
-                                    >
-                                        <option value="">Select wallet</option>
-                                        {wallets.map(wallet => (
-                                            <option key={wallet.id} value={wallet.id}>
-                                                {wallet.name} ({wallet.currency})
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                {/* Category */}
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-text mb-2">
-                                        Category
-                                    </label>
-                                    <select
-                                        name="category"
-                                        value={formData.category}
-                                        onChange={handleChange}
-                                        className="w-full border border-strokes rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue"
-                                    >
-                                        <option value="">Select category</option>
-                                        {categories.map((category, index) => (
-                                            <option key={index} value={category}>
-                                                {category}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </>
-                        )}
-
-                        {/* Amount */}
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-text mb-2">
-                                Amount
-                            </label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                                    {amountPrefix}
-                                </span>
-                                <input
-                                    type="number"
-                                    name="amount"
-                                    value={formData.amount}
-                                    onChange={handleChange}
-                                    placeholder="0.00"
-                                    step="0.01"
-                                    className="w-full border border-strokes rounded-lg pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Note */}
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-text mb-2">
-                                Note (optional)
-                            </label>
-                            <textarea
-                                name="note"
-                                value={formData.note}
-                                onChange={handleChange}
-                                rows="2"
-                                placeholder="Add a short description"
-                                className="w-full border border-strokes rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue resize-none"
-                            />
-                        </div>
-
-                        <div className="flex space-x-3">
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                onClick={handleClose}
-                                className="flex-1 py-3"
-                                disabled={isLoading}
-                                style={{ backgroundColor: '#D06978' }}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="submit"
-                                variant="primary"
-                                className="flex-1 py-3"
-                                disabled={isLoading}
-                                style={{ backgroundColor: '#4361ee' }}
-                            >
-                                {isLoading ? 'Adding...' : 'Confirm Transaction'}
-                            </Button>
-                        </div>
-                    </form>
+                        ))}
+                    </div>
+                    {errors.type && (
+                        <p className="text-xs text-red-500 mt-1">{errors.type}</p>
+                    )}
                 </div>
-            </div>
-        </div>
+
+                {/* Amount */}
+                <Input
+                    label="Amount"
+                    name="amount"
+                    type="number"
+                    value={formData.amount}
+                    onChange={handleChange}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    error={errors.amount}
+                />
+
+                {/* Wallet selection */}
+                {!isTransfer ? (
+                    <Select
+                        label="Wallet"
+                        name="wallet_id"
+                        value={formData.wallet_id}
+                        onChange={handleChange}
+                        error={errors.wallet_id}
+                    >
+                        <option value="">Select wallet</option>
+                        {wallets.map((wallet) => (
+                            <option key={wallet.id} value={wallet.id}>
+                                {wallet.name} ({wallet.currency})
+                            </option>
+                        ))}
+                    </Select>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Select
+                            label="From Wallet"
+                            name="source_wallet_id"
+                            value={formData.source_wallet_id}
+                            onChange={handleChange}
+                            error={errors.source_wallet_id}
+                        >
+                            <option value="">Select source</option>
+                            {wallets.map((wallet) => (
+                                <option key={wallet.id} value={wallet.id}>
+                                    {wallet.name} ({wallet.currency})
+                                </option>
+                            ))}
+                        </Select>
+
+                        <Select
+                            label="To Wallet"
+                            name="destination_wallet_id"
+                            value={formData.destination_wallet_id}
+                            onChange={handleChange}
+                            error={errors.destination_wallet_id}
+                        >
+                            <option value="">Select destination</option>
+                            {wallets.map((wallet) => (
+                                <option key={wallet.id} value={wallet.id}>
+                                    {wallet.name} ({wallet.currency})
+                                </option>
+                            ))}
+                        </Select>
+                    </div>
+                )}
+
+                {/* Category (for income/expense only) */}
+                {!isTransfer && (
+                    <Input
+                        label="Category (optional)"
+                        name="category_id"
+                        value={formData.category_id}
+                        onChange={handleChange}
+                        placeholder="e.g. Food, Salary, Rent..."
+                        error={errors.category_id}
+                    />
+                )}
+
+                {/* Note */}
+                <Input
+                    label="Note (optional)"
+                    name="note"
+                    value={formData.note}
+                    onChange={handleChange}
+                    placeholder="Add a note..."
+                />
+
+                {/* Attachments (placeholder text field) */}
+                <Input
+                    label="Attachments (optional)"
+                    name="attachments"
+                    value={formData.attachments}
+                    onChange={handleChange}
+                    placeholder="Link or description of attachments"
+                />
+
+                {/* Actions */}
+                <div className="flex space-x-3 pt-2">
+                    <Button
+                        type="submit"
+                        variant="primary"
+                        className="flex-1 py-3"
+                        disabled={isLoading}
+                    >
+                        {isLoading ? 'Adding...' : 'Confirm Transaction'}
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        className="flex-1 py-3"
+                        onClick={handleClose}
+                        disabled={isLoading}
+                    >
+                        Cancel
+                    </Button>
+                </div>
+            </form>
+        </Modal>
     );
 };
 
