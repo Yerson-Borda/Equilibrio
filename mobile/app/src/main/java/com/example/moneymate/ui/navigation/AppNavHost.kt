@@ -13,16 +13,17 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.example.moneymate.ui.screens.auth.singIn.SignInScreen
 import com.example.moneymate.ui.screens.auth.signUp.SignUpScreen
+import com.example.moneymate.ui.screens.auth.singIn.SignInScreen
 import com.example.moneymate.ui.screens.home.HomeScreen
 import com.example.moneymate.ui.screens.profile.editprofile.EditProfileScreen
 import com.example.moneymate.ui.screens.profile.profileoptions.ProfileOptionsScreen
 import com.example.moneymate.ui.screens.profile.settings.SettingsNavigationEvent
-import com.example.moneymate.ui.screens.profile.settings.SettingsScreenViewModel
 import com.example.moneymate.ui.screens.profile.settings.SettingsScreen
+import com.example.moneymate.ui.screens.profile.settings.SettingsScreenViewModel
 import com.example.moneymate.ui.screens.splash.SplashScreen
-import com.example.moneymate.ui.screens.transaction.AddTransactionScreen
+import com.example.moneymate.ui.screens.transaction.TransactionScreen
+import com.example.moneymate.ui.screens.transaction.addtransaction.AddTransactionScreen
 import com.example.moneymate.ui.screens.wallet.CreateWalletScreen
 import com.example.moneymate.ui.screens.wallet.EditWalletScreen
 import com.example.moneymate.ui.screens.wallet.WalletDetailScreen
@@ -118,33 +119,29 @@ fun AppNavHost(
         }
 
         composable(NavigationItem.Transactions.route) {
-            HomeScreen(
+            TransactionScreen(
                 currentScreen = "transactions",
-                onNavigationItemSelected = { route ->
-                    when (route) {
-                        "home" -> navController.navigate(NavigationItem.Home.route)
-                        "wallets" -> navController.navigate(NavigationItem.Wallets.route)
-                        "goals" -> navController.navigate(NavigationItem.Goals.route)
+                onBackClick = {
+                    // Navigate to home and clear back stack
+                    navController.navigate(NavigationItem.Home.route) {
+                        popUpTo(NavigationItem.Transactions.route) { inclusive = true }
                     }
                 },
-                onAddRecord = {
-                    navController.navigate(NavigationItem.AddTransaction.route)
-                },
-                onAddWallet = {
-                    navController.navigate(NavigationItem.CreateWallet.route)
-                },
-                onSeeAllBudget = {
-                    // Handle see all budget action
-                },
-                onSeeAllTransactions = {
-                    // Already on transactions screen
-                },
-                onProfileClick = {
-                    navController.navigate(NavigationItem.Profile.route)
+                onNavigationItemSelected = { route ->
+                    when (route) {
+                        "home" -> navController.navigate(NavigationItem.Home.route) {
+                            popUpTo(NavigationItem.Transactions.route) { inclusive = true }
+                        }
+                        "wallets" -> navController.navigate(NavigationItem.Wallets.route) {
+                            launchSingleTop = true
+                        }
+                        "goals" -> navController.navigate(NavigationItem.Goals.route) {
+                            launchSingleTop = true
+                        }
+                    }
                 }
             )
         }
-
         composable(NavigationItem.Wallets.route) {
             WalletScreen(
                 currentScreen = "wallets",

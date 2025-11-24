@@ -1,13 +1,25 @@
 package com.example.data.network.transaction
 
+import com.example.data.network.transaction.model.CategoryResponse
+import com.example.data.network.transaction.model.CategorySummaryResponse
+import com.example.data.network.transaction.model.MonthlyComparisonResponse
+import com.example.data.network.transaction.model.MonthlySummary
 import com.example.data.network.transaction.model.TransactionCreateRequest
-import com.example.data.network.transaction.model.TransferCreateRequest
 import com.example.data.network.transaction.model.TransactionDto
+import com.example.data.network.transaction.model.TransferCreateRequest
 import com.example.data.network.transaction.model.TransferDto
 import com.example.domain.transaction.TransactionRepository
+import com.example.domain.transaction.model.CategoryData
+import com.example.domain.transaction.model.CategorySummaryData
+import com.example.domain.transaction.model.ComparisonCategoryData
+import com.example.domain.transaction.model.DailyData
+import com.example.domain.transaction.model.SpendingTrendData
 import com.example.domain.transaction.model.TransactionEntity
 import com.example.domain.transaction.model.TransferEntity
 import retrofit2.Response
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class TransactionRepositoryImpl(
     private val apiService: TransactionApi
@@ -15,7 +27,7 @@ class TransactionRepositoryImpl(
 
     override suspend fun createTransaction(
         amount: Any,
-        note: String?, // Changed parameter from description to note
+        note: String?,
         type: String,
         transactionDate: String,
         walletId: Int,
@@ -24,7 +36,7 @@ class TransactionRepositoryImpl(
         return try {
             val request = TransactionCreateRequest.create(
                 amount = amount,
-                note = note, // Now passing note instead of description
+                note = note,
                 type = type,
                 transactionDate = transactionDate,
                 walletId = walletId,
@@ -108,6 +120,140 @@ class TransactionRepositoryImpl(
         }
     }
 
+    override suspend fun getSpendingTrends(months: Int): Result<List<SpendingTrendData>> {
+        return try {
+            val response = apiService.getSpendingTrends(months)
+            if (response.isSuccessful) {
+                val spendingTrendsResponse = response.body()
+                if (spendingTrendsResponse != null) {
+                    Result.success(spendingTrendsResponse.monthly_summary.map { it.toDomain() })
+                } else {
+                    Result.success(emptyList())
+                }
+            } else {
+                Result.failure(Exception("API error: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getCategorySummary(
+        startDate: String,
+        endDate: String
+    ): Result<CategorySummaryData> {
+        return try {
+            val response = apiService.getCategorySummary(startDate, endDate)
+            if (response.isSuccessful) {
+                val body = response.body()
+                Result.success(body?.toDomain() ?: getEmptyCategorySummary())
+            } else {
+                Result.failure(Exception("Failed to fetch category summary"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getMonthlyComparison(month: String): Result<List<ComparisonCategoryData>> {
+        return try {
+            val response = apiService.getMonthlyComparison(month)
+            if (response.isSuccessful) {
+                val body = response.body()
+                Result.success(body?.map { it.toDomain() } ?: emptyList())
+            } else {
+                Result.failure(Exception("Failed to fetch monthly comparison"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getDailySpendingData(startDate: String, endDate: String): Result<List<DailyData>> {
+        return try {
+            // For now, return sample data
+            // In real implementation, you would call an API endpoint
+            val sampleData = generateSampleDailyData(startDate, endDate)
+            Result.success(sampleData)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getTransactionsByDateRange(startDate: String, endDate: String): Result<List<TransactionEntity>> {
+        return try {
+            val allTransactions = getTransactions().getOrElse { emptyList() }
+
+            // Filter transactions by date range
+            val filteredTransactions = allTransactions.filter { transaction ->
+                isDateInRange(transaction.transactionDate, startDate, endDate)
+            }
+
+            Result.success(filteredTransactions)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun isDateInRange(date: String, startDate: String, endDate: String): Boolean {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val transactionDate = dateFormat.parse(date)
+        val start = dateFormat.parse(startDate)
+        val end = dateFormat.parse(endDate)
+
+        return transactionDate in start..end
+    }
+
+    private fun generateSampleDailyData(startDate: String, endDate: String): List<DailyData> {
+        // Implementation to generate daily data between startDate and endDate
+        // This would be replaced with actual API call
+        val dailyData = mutableListOf<DailyData>()
+
+        // Parse dates and generate data for each day
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val dayLabelFormat = SimpleDateFormat("dd MMM", Locale.getDefault())
+
+        val start = dateFormat.parse(startDate)
+        val end = dateFormat.parse(endDate)
+
+        val calendar = Calendar.getInstance().apply {
+            time = start
+        }
+
+        while (calendar.time <= end) {
+            val date = calendar.time
+            val dateString = dateFormat.format(date)
+            val dayLabel = dayLabelFormat.format(date)
+
+            // Generate sample data
+            val income = 50000.0 + (Math.random() * 30000)
+            val expense = 30000.0 + (Math.random() * 20000)
+
+            dailyData.add(
+                DailyData(
+                    date = dateString,
+                    dayLabel = dayLabel,
+                    income = income,
+                    expenses = expense
+                )
+            )
+
+            calendar.add(Calendar.DAY_OF_YEAR, 1)
+        }
+
+        return dailyData
+    }
+
+    private fun getEmptyCategorySummary(): CategorySummaryData {
+        return CategorySummaryData(
+            expenses = emptyList(),
+            incomes = emptyList(),
+            totalExpenses = 0.0,
+            totalIncomes = 0.0,
+            netFlow = 0.0
+        )
+    }
+
     private fun handleTransactionResponse(response: Response<TransactionDto>): Result<TransactionEntity> {
         return if (response.isSuccessful) {
             val transactionDto = response.body()
@@ -133,4 +279,47 @@ class TransactionRepositoryImpl(
             Result.failure(Exception("API error: ${response.code()} - ${response.errorBody()?.string()}"))
         }
     }
+}
+
+// Extension functions for mapping - USE THESE CONSISTENTLY
+private fun MonthlySummary.toDomain(): SpendingTrendData {
+    return SpendingTrendData(
+        year = year,
+        month = month,
+        totalSpent = total_spent,
+        totalIncome = total_income,
+        monthName = month_name,
+        displayName = display_name
+    )
+}
+
+private fun CategorySummaryResponse.toDomain(): CategorySummaryData {
+    return CategorySummaryData(
+        expenses = expenses.map { it.toDomain() },
+        incomes = incomes.map { it.toDomain() },
+        totalExpenses = total_expenses,
+        totalIncomes = total_incomes,
+        netFlow = net_flow
+    )
+}
+
+private fun CategoryResponse.toDomain(): CategoryData {
+    return CategoryData(
+        categoryId = category_id,
+        categoryName = category_name,
+        categoryType = category_type,
+        totalAmount = total_amount,
+        transactionCount = transaction_count
+    )
+}
+
+private fun MonthlyComparisonResponse.toDomain(): ComparisonCategoryData {
+    return ComparisonCategoryData(
+        categoryId = category_id,
+        categoryName = category_name,
+        currentMonthAmount = current_month_amount,
+        previousMonthAmount = previous_month_amount,
+        difference = difference,
+        percentageChange = percentage_change
+    )
 }

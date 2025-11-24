@@ -2,21 +2,25 @@ package com.example.moneymate.di
 
 import com.example.domain.auth.usecase.IsUserSignedInUseCase
 import com.example.domain.auth.usecase.IsUserSignedInUseCaseImpl
-import com.example.domain.auth.usecase.SignUpUseCase
-import com.example.domain.auth.usecase.SignUpUseCaseImpl
 import com.example.domain.auth.usecase.SignInUseCase
 import com.example.domain.auth.usecase.SignInUseCaseImpl
+import com.example.domain.auth.usecase.SignUpUseCase
+import com.example.domain.auth.usecase.SignUpUseCaseImpl
 import com.example.domain.category.usecase.CreateCategoryUseCase
 import com.example.domain.category.usecase.DeleteCategoryUseCase
 import com.example.domain.category.usecase.GetCategoriesUseCase
 import com.example.domain.category.usecase.GetExpenseCategoriesUseCase
 import com.example.domain.category.usecase.GetIncomeCategoriesUseCase
-import com.example.domain.user.usecase.GetUserDetailedUseCase
 import com.example.domain.transaction.usecase.CreateTransactionUseCase
 import com.example.domain.transaction.usecase.CreateTransferUseCase
+import com.example.domain.transaction.usecase.GetCategorySummaryUseCase
+import com.example.domain.transaction.usecase.GetMonthlyChartDataUseCase
+import com.example.domain.transaction.usecase.GetMonthlyComparisonUseCase
+import com.example.domain.transaction.usecase.GetRecentTransactionsUseCase
 import com.example.domain.transaction.usecase.GetTransactionsUseCase
 import com.example.domain.transaction.usecase.GetWalletTransactionsUseCase
 import com.example.domain.user.usecase.DeleteAvatarUseCase
+import com.example.domain.user.usecase.GetUserDetailedUseCase
 import com.example.domain.user.usecase.GetUserUseCase
 import com.example.domain.user.usecase.LogoutUseCase
 import com.example.domain.user.usecase.UpdateUserUseCase
@@ -58,4 +62,9 @@ val useCaseModule = module {
     factory { GetIncomeCategoriesUseCase(get()) }
     factory { GetExpenseCategoriesUseCase(get()) }
     factory { DeleteCategoryUseCase(get()) }
+    factory{GetMonthlyChartDataUseCase(get())}
+    factory{GetRecentTransactionsUseCase(get())}
+    factory{GetCategorySummaryUseCase(get())}
+    factory{ GetMonthlyComparisonUseCase(get()) }
+
 }
