@@ -4,6 +4,10 @@ import CreateWalletModal from './CreateWalletModal';
 import EditWalletModal from './EditWalletModal';
 import AddTransactionModal from './AddTransactionModal';
 import { apiService } from '../../services/api';
+import visaIcon from '../../assets/icons/visa-icon.png';
+import chipIcon from '../../assets/icons/chip-icon.png';
+import nfcIcon from '../../assets/icons/nfc-icon.png';
+
 
 const MyWalletsContent = ({ wallets, onWalletCreated, onWalletUpdated, onWalletDeleted }) => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -29,6 +33,9 @@ const MyWalletsContent = ({ wallets, onWalletCreated, onWalletUpdated, onWalletD
             console.error('Error fetching transactions:', error);
         }
     };
+
+    const [showSearch, setShowSearch] = useState(false);
+
 
     const fetchUpcomingPayments = async () => {
         // Mock data for upcoming payments
@@ -174,195 +181,287 @@ const MyWalletsContent = ({ wallets, onWalletCreated, onWalletUpdated, onWalletD
         return currencySymbols[currencyCode] || '$';
     };
 
+
+
+    const currentCurrencySymbol = getCurrencySymbol();
+
     return (
-        <div className="max-w-7xl mx-auto">
-            {/* Header with Add Wallet Button */}
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-2xl font-bold text-text">My Wallets</h1>
-                <button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="bg-white border-2 border-green-500 text-green-500 hover:bg-green-50 px-6 py-3 rounded-lg font-semibold transition-colors duration-200"
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+            {/* LEFT COLUMN */}
+            <div className="space-y-6" style={{ width: "450px" }}>
+
+                {/* Wallet Cards (Stacked UI) */}
+                <div
+                    className="relative mb-20"
+                    style={{
+                        width: "380px",
+                        height: Math.max(260, 200 + (wallets.length - 1) * 70)
+                    }}
                 >
-                    + Add Wallet
-                </button>
-            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column - Wallets */}
-                <div className="lg:col-span-1 space-y-6">
-                    {wallets.map((wallet) => (
-                        <div key={wallet.id} className="bg-white rounded-xl shadow-sm p-6 border border-strokes">
-                            {/* Wallet Header */}
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <h3 className="text-lg font-semibold text-text mb-1">{wallet.name}</h3>
-                                    <p className="text-sm text-metallic-gray">Total Balance</p>
-                                    <p className="text-2xl font-bold text-text">
-                                        {getCurrencySymbol(wallet.currency)}{wallet.balance || '0.00'}
-                                    </p>
-                                </div>
-                                <span className="text-xs px-2 py-1 bg-gray-100 rounded text-metallic-gray capitalize">
-                                    {wallet.wallet_type?.replace('_', ' ') || 'debit card'}
-                                </span>
-                            </div>
 
-                            {/* Card Number */}
-                            <div className="mb-4">
-                                <p className="text-sm text-metallic-gray mb-1">Card Number</p>
-                                <p className="text-text font-mono">{formatCardNumber(wallet.card_number)}</p>
-                            </div>
+                    {wallets.length === 0 && (
+                        <div className="p-6 bg-white rounded-xl shadow-sm border text-center">
+                            <p className="font-medium text-text">No wallets yet</p>
+                        </div>
+                    )}
 
-                            {/* Wallet Details */}
-                            <div className="grid grid-cols-2 gap-4 mb-6">
-                                <div>
-                                    <p className="text-sm text-metallic-gray mb-1">Currency</p>
-                                    <p className="text-text font-medium">{wallet.currency}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm text-metallic-gray mb-1">Status</p>
-                                    <div className="flex items-center">
-                                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                                        <p className="text-text font-medium">Active</p>
+                    {wallets.map((wallet, i) => {
+                        const isSelected = selectedWallet?.id === wallet.id;
+
+                        return (
+                            <div
+                                key={wallet.id}
+                                onClick={() => setSelectedWallet(wallet)}
+                                className="absolute left-0 w-[450px] h-[250px] rounded-xl cursor-pointer transition-all duration-300"
+                                style={{
+                                    top: i * 70,
+                                    zIndex: isSelected ? 40 : 20 - i,
+
+                                    // SELECTED WALLET = BLACK
+                                    backgroundColor: isSelected ? "#6FBAFC" : "transparent",
+
+                                    // UNSELECTED = blur + slight border
+                                    backdropFilter: isSelected ? "none" : "blur(8px)",
+                                    border: isSelected ? "none" : "1px solid hsla(0, 0%, 100%, 0.30)",
+
+                                    // Scaling
+                                    transform: isSelected ? "scale(1)" : "scale(0.97)",
+
+                                    // Shadows
+                                    boxShadow: isSelected
+                                        ? "0 12px 30px rgba(0,0,0,0.35)"
+                                        : "0 4px 10px rgba(0,0,0,0.08)",
+                                }}
+                            >
+                                <div className="p-6 flex flex-col justify-between h-full">
+
+                                    {/* Wallet Name */}
+                                    <h3 className={`text-base font-semibold ${isSelected ? "text-white" : "text-text"}`}>
+                                        {wallet.name}
+                                    </h3>
+
+                                    {/* Chip + Balance + NFC */}
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div className="flex items-start space-x-3">
+                                            <img
+                                                src={chipIcon}
+                                                alt="Chip"
+                                                className="w-10 h-8 object-contain mt-4"
+                                            />
+                                            <div>
+                                                <p className="text-xs opacity-75 font-bold leading-none ml-6 mt-3">Total Balance</p>
+                                                <p className="text-xl font-bold leading-tight ml-6">
+                                                    {currentCurrencySymbol}{'0.00'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <img
+                                            src={nfcIcon}
+                                            alt="NFC"
+                                            className="w-8 h-7 object-contain mt-3"
+                                        />
                                     </div>
+
+                                    {/* Card Number */}
+                                    <p className={`mt-4 text-lg font-mono tracking-wider ${isSelected ? "text-white" : "text-text"}`}>
+                                        {formatCardNumber(wallet.card_number)}
+                                    </p>
+
+                                    {/* Footer */}
+                                    <div className="flex justify-between items-center mt-4">
+                                        <span className={`${isSelected ? "text-white/70" : "text-metallic-gray"} text-sm`}>
+                                            {wallet.expiry || "09/30"}
+                                        </span>
+
+                                        <img
+                                            src={visaIcon}
+                                            alt="VISA"
+                                            className="h-8 opacity-90"
+                                        />
+                                    </div>
+
                                 </div>
                             </div>
+                        );
+                    })}
+                </div>
 
-                            {/* Action Buttons */}
-                            <div className="flex space-x-3">
-                                <button
-                                    onClick={() => handleOpenTransactionModal(wallet)}
-                                    className="flex-1 bg-white border-2 border-green-500 text-green-500 hover:bg-green-50 py-2 rounded-lg font-semibold transition-colors duration-200"
-                                >
-                                    Add Transaction
-                                </button>
-                                <button
-                                    onClick={() => handleOpenEditModal(wallet)}
-                                    className="flex-1 bg-white border-2 border-blue-500 text-blue-500 hover:bg-blue-50 py-2 rounded-lg font-semibold transition-colors duration-200"
-                                >
-                                    Edit
-                                </button>
-                                <button
-                                    onClick={() => handleDeleteWallet(wallet.id)}
-                                    className="flex-1 bg-[#D06978] text-white hover:bg-red-700 py-2 rounded-lg font-semibold transition-colors duration-200"
-                                    disabled={isLoading}
-                                >
-                                    {isLoading ? 'Deleting...' : 'Delete'}
-                                </button>
+
+                {/* SELECTED WALLET DETAILS */}
+                {selectedWallet && (
+                    <div className="bg-white rounded-xl shadow-sm p-6 border border-strokes space-y-4">
+
+                        <div>
+                            <p className="text-sm text-metallic-gray">Balance</p>
+                            <p className="text-2xl font-bold text-text">
+                                {getCurrencySymbol(selectedWallet.currency)}
+                                {selectedWallet.balance || "0.00"}
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-sm text-metallic-gray">Currency</p>
+                                <p className="font-medium">{selectedWallet.currency}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-sm text-metallic-gray">Type</p>
+                                <p className="font-medium capitalize">
+                                    {selectedWallet.wallet_type?.replace("_", " ") || "debit"}
+                                </p>
                             </div>
                         </div>
-                    ))}
 
-                    {/* Empty State for Wallets */}
-                    {wallets.length === 0 && (
-                        <div className="bg-white rounded-xl shadow-sm p-6 border border-strokes text-center">
-                            <h3 className="text-lg font-semibold text-text mb-2">No Wallets Yet</h3>
-                            <p className="text-metallic-gray mb-4">Create your first wallet to start managing your finances</p>
+                        {/* BUTTONS */}
+                        <div className="space-y-3 pt-2">
+
+                            {/* Row 1 – Add Wallet (Full width) */}
                             <button
                                 onClick={() => setIsCreateModalOpen(true)}
-                                className="bg-white border-2 border-green-500 text-green-500 hover:bg-green-50 px-6 py-3 rounded-lg font-semibold transition-colors duration-200"
+                                style={{ color: "green" }}
+                                className="w-full bg-white border-2 border-green-500 !text-green-500 hover:bg-green-50 py-3 rounded-lg font-semibold"
                             >
                                 + Add Wallet
                             </button>
+
+
+                            {/* Row 2 – Add Transaction (70%) + Delete (30%) */}
+                            <div className="flex space-x-3">
+                                <button
+                                    onClick={() => handleOpenTransactionModal(selectedWallet)}
+                                    style={{ color: "green" }}
+                                    className="flex-[0.7] bg-white border-2 border-blue-500 !text-green-500 hover:bg-blue-50 py-3 rounded-lg font-semibold"
+                                >
+                                    Add Transaction
+                                </button>
+
+                                <button
+                                    onClick={() => handleDeleteWallet(selectedWallet.id)}
+                                    disabled={isLoading}
+                                    className="flex-[0.3] bg-red-500 text-white hover:bg-red-600 py-3 rounded-lg font-semibold"
+                                >
+                                    {isLoading ? "..." : "Delete"}
+                                </button>
+                            </div>
+
                         </div>
+
+                    </div>
+                )}
+            </div>
+
+            {/* RIGHT COLUMN */}
+            <div className="space-y-8" style={{ width: "800px" }}>
+
+                {/* TRANSACTIONS */}
+                <div className="bg-[#F5F7FA] rounded-xl p-6">
+
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-semibold text-text">Transactions</h3>
+
+                        {/* Search icon */}
+                        <button onClick={() => setShowSearch(!showSearch)}>
+                            🔍
+                        </button>
+                    </div>
+
+                    {/* Filters */}
+                    <div className="flex space-x-4 mb-6 items-center">
+                        <button className="text-blue font-medium border-b-2 border-blue pb-1">
+                            All Transactions
+                        </button>
+                        <button className="text-metallic-gray pb-1">
+                            Regular Transactions
+                        </button>
+                    </div>
+
+                    {/* Search Bar */}
+                    {showSearch && (
+                        <input
+                            type="text"
+                            placeholder="Search transactions..."
+                            className="w-full mb-4 p-2 border rounded"
+                        />
                     )}
-                </div>
 
-                {/* Middle Column - Transactions */}
-                <div className="lg:col-span-1">
-                    <div className="bg-white rounded-xl shadow-sm p-6 border border-strokes">
-                        <h3 className="text-lg font-semibold text-text mb-6">Transactions</h3>
+                    {/* Transaction List */}
+                    <div className="space-y-3">
+                        {transactions.length > 0 ? (
+                            transactions.map((t, index) => (
+                                <div
+                                    key={index}
+                                    className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                                >
+                                    <div className="flex items-center space-x-3">
+                                        {/* Icon depending on transaction type */}
+                                        <div className="text-2xl">
+                                            {getTransactionIcon(t.source)}
+                                        </div>
 
-                        <div className="flex space-x-4 mb-6">
-                            <button className="text-blue font-medium border-b-2 border-blue pb-1">All Transactions</button>
-                            <button className="text-metallic-gray pb-1">Regular Transactions</button>
-                        </div>
-
-                        <div className="space-y-4">
-                            <h4 className="font-medium text-text">Today</h4>
-                            {transactions.slice(0, 4).map((transaction, index) => (
-                                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                    <div>
-                                        <p className="font-medium text-text">{transaction.description || 'Transaction'}</p>
-                                        <p className="text-sm text-metallic-gray">{transaction.type}</p>
-                                        {transaction.note && (
-                                            <p className="text-xs text-metallic-gray mt-1">{transaction.note}</p>
-                                        )}
+                                        <div>
+                                            <p className="font-bold text-text">{t.source}</p>
+                                            <p className="text-sm text-metallic-gray">{t.date}</p>
+                                        </div>
                                     </div>
-                                    <p className={`font-semibold ${
-                                        transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                                    }`}>
-                                        {transaction.type === 'income' ? '+' : '-'}${transaction.amount}
+
+                                    {/* Amount */}
+                                    <p className="font-semibold">
+                                        {getCurrencySymbol(t.currency)}
+                                        {t.amount}
                                     </p>
                                 </div>
-                            ))}
-
-                            {transactions.length === 0 && (
-                                <div className="text-center py-4">
-                                    <p className="text-metallic-gray">No transactions yet</p>
-                                </div>
-                            )}
-                        </div>
+                            ))
+                        ) : (
+                            <p className="text-center text-metallic-gray py-4">
+                                No transactions yet
+                            </p>
+                        )}
                     </div>
                 </div>
 
-                {/* Right Column - Upcoming Payments */}
-                <div className="lg:col-span-1">
-                    <div className="bg-white rounded-xl shadow-sm p-6 border border-strokes">
-                        <h3 className="text-lg font-semibold text-text mb-6">Upcoming Payments</h3>
+                {/* UPCOMING PAYMENTS */}
+                <div className="bg-[#F5F7FA] p-6 shadow-none border-none">
 
-                        <div className="space-y-4">
-                            <h4 className="font-medium text-text">Next month</h4>
-                            {upcomingPayments.map((payment, index) => (
-                                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <h3 className="text-lg font-semibold text-text mb-6">Upcoming Payments</h3>
+
+                    {upcomingPayments.length > 0 ? (
+                        upcomingPayments.map((p, index) => (
+                            <div
+                                key={index}
+                                className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                            >
+                                <div className="flex items-center space-x-3">
+                                    <div className="text-2xl">📅</div>
+
                                     <div>
-                                        <p className="font-medium text-text">{payment.name}</p>
-                                        <p className="text-sm text-metallic-gray">{payment.date}</p>
+                                        <p className="font-bold text-text">{p.name}</p>
+                                        <p className="text-sm text-metallic-gray">{p.date}</p>
                                     </div>
-                                    <p className="font-semibold text-red-600">-${payment.amount}</p>
                                 </div>
-                            ))}
 
-                            {upcomingPayments.length === 0 && (
-                                <div className="text-center py-4">
-                                    <p className="text-metallic-gray">No upcoming payments</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                                <p className="font-semibold text-red-600">
+                                    -{getCurrencySymbol(p.currency)}
+                                    {p.amount}
+                                </p>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-center text-metallic-gray py-4">
+                            No upcoming payments
+                        </p>
+                    )}
                 </div>
             </div>
 
-            {/* Create Wallet Modal */}
-            <CreateWalletModal
-                isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
-                onSubmit={handleCreateWallet}
-                isLoading={isLoading}
-            />
-
-            {/* Edit Wallet Modal */}
-            <EditWalletModal
-                isOpen={isEditModalOpen}
-                onClose={() => {
-                    setIsEditModalOpen(false);
-                    setWalletToEdit(null);
-                }}
-                onSubmit={handleUpdateWallet}
-                isLoading={isLoading}
-                wallet={walletToEdit}
-            />
-
-            {/* Add Transaction Modal */}
-            <AddTransactionModal
-                isOpen={isTransactionModalOpen}
-                onClose={() => setIsTransactionModalOpen(false)}
-                onSubmit={handleAddTransaction}
-                isLoading={isLoading}
-                wallets={wallets}
-                selectedWallet={selectedWallet}
-            />
+            {/* Modals */}
+            <CreateWalletModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onSubmit={handleCreateWallet} isLoading={isLoading} />
+            <AddTransactionModal isOpen={isTransactionModalOpen} onClose={() => setIsTransactionModalOpen(false)} onSubmit={handleAddTransaction} isLoading={isLoading} wallets={wallets} selectedWallet={selectedWallet} />
         </div>
     );
+
 };
 
 export default MyWalletsContent;
