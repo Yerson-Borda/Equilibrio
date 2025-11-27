@@ -7,21 +7,22 @@ import dropdownIcon from '../../assets/icons/dropdown-icon.png';
 import dropupIcon from '../../assets/icons/dropup-icon.png';
 
 import { apiService } from '../../services/api';
-import { formatCurrency, getCurrencyName } from '../../config/currencies';
+import { formatCurrency} from '../../config/currencies';
 
 const Header = () => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [user, setUser] = useState(null);
-    const [totalBalance, setTotalBalance] = useState(0);
+    const [setTotalBalance] = useState(0);
     const [isLoadingBalance, setIsLoadingBalance] = useState(false);
     const [balanceBreakdown, setBalanceBreakdown] = useState([]);
 
     const navigate = useNavigate();
     const location = useLocation();
 
+
     useEffect(() => {
         fetchUserData();
-        fetchTotalBalance();
+        fetchTotalBalance();// eslint-disable-next-line react-hooks/exhaustive-deps
     }, [location]);
 
     const fetchUserData = async () => {
@@ -76,34 +77,8 @@ const Header = () => {
                 {/* Left side — Total Balance */}
                 <div className="flex-1">
                     <div className="flex items-center space-x-4">
-
                         {/* Balance Card */}
-                        <div className="bg-white rounded-lg shadow-sm px-6 py-3 border border-strokes">
-                            <div className="flex items-center space-x-3">
-                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                <div>
-                                    <p className="text-sm text-metallic-gray">Total Balance</p>
-
-                                    <p className="text-xl font-bold text-text">
-                                        {isLoadingBalance ? (
-                                            <span className="text-metallic-gray">Loading...</span>
-                                        ) : (
-                                            formatCurrency(
-                                                totalBalance,
-                                                user?.default_currency || "USD"
-                                            )
-                                        )}
-                                    </p>
-
-                                    {user?.default_currency && (
-                                        <p className="text-xs text-metallic-gray">
-                                            in {getCurrencyName(user.default_currency)}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
+                        <h1 className="text-3xl font-bold text-gray-900 mt-6 ml-1">Dashboard</h1>
                         {/* Wallet Count + Multi-currency indicators */}
                         {!isLoadingBalance && balanceBreakdown.length > 0 && (
                             <div className="flex items-center space-x-4">

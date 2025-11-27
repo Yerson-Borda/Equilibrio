@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import AppLayout from '../components/layout/AppLayout';
 import Dashboard from '../components/dashboard/Dashboard';
 import { apiService } from '../services/api';
 
@@ -11,42 +10,71 @@ const DashboardPage = () => {
         totalBalance: 0,
         totalSpending: 0,
         totalSaved: 0,
-        defaultCurrency: 'USD'
+        defaultCurrency: 'USD',
     });
 
-    useEffect(() => {
-        fetchDashboardData();
-    }, []);
+    const parseNumber = (value) => {
+        if (value === null || value === undefined) return 0;
+        const n = typeof value === 'string' ? parseFloat(value) : Number(value);
+        return Number.isNaN(n) ? 0 : n;
+    };
+
+    const extractTotalBalance = (balanceData) => {
+        if (balanceData == null) return 0;
+
+        if (typeof balanceData === 'number') return balanceData;
+        if (typeof balanceData === 'string') return parseNumber(balanceData);
+
+        if (typeof balanceData === 'object') {
+            if ('total_balance' in balanceData) {
+                return parseNumber(balanceData.total_balance);
+            }
+            if ('balance' in balanceData) {
+                return parseNumber(balanceData.balance);
+            }
+        }
+
+        return 0;
+    };
 
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
             setError(null);
-            console.log('🔄 Fetching dashboard data.');
 
-            const walletsData = await apiService.getWallets();
-            console.log('📋 Wallets loaded:', walletsData);
+            const [walletsData, userData, balanceData, summary] = await Promise.all([
+                apiService.getWallets(),
+                apiService.getCurrentUser(),
+                apiService.getUserTotalBalance(),
+                apiService.getCurrentSummary(),
+            ]);
+
             setWallets(walletsData || []);
 
-            const balanceData = await apiService.getUserTotalBalance();
-            console.log('💰 Balance data:', balanceData);
+            const defaultCurrency = userData?.default_currency || 'USD';
+            const totalBalance = extractTotalBalance(balanceData);
 
-            const totalSpending = await calculateTotalSpending();
-            const totalSaved = await calculateTotalSaved();
-            const userData = await apiService.getCurrentUser();
+            const totalSpent = parseNumber(summary?.total_spent);
+            const totalSaved = parseNumber(summary?.total_saved);
 
-            const stats = {
-                totalBalance: balanceData.total_balance || 0,
-                totalSpending,
+            setUserStats({
+                totalBalance,
+                totalSpending: totalSpent,
                 totalSaved,
-                defaultCurrency: userData.default_currency || 'USD'
-            };
+                defaultCurrency,
+            });
 
-            console.log('📊 Final user stats:', stats);
-            setUserStats(stats);
-        } catch (error) {
-            console.error('❌ Error fetching dashboard data:', error);
-            if (error.status === 401) {
+            console.log('📊 Dashboard user stats from backend:', {
+                totalBalance,
+                totalSpending: totalSpent,
+                totalSaved,
+                defaultCurrency,
+            });
+        } catch (err) {
+            console.error('❌ Error fetching dashboard data:', err);
+            const status = err?.status || err?.response?.status;
+
+            if (status === 401) {
                 window.location.href = '/login';
             } else {
                 setError('Failed to load dashboard data');
@@ -56,85 +84,49 @@ const DashboardPage = () => {
         }
     };
 
-    const calculateTotalSpending = async () => {
-        try {
-            const transactions = await apiService.getTransactions();
-            const expenses = (transactions || []).filter(
-                (t) => t.type === 'expense'
-            );
-            const total = expenses.reduce(
-                (sum, transaction) => sum + parseFloat(transaction.amount),
-                0
-            );
-            console.log('💸 Total spending calculated:', total);
-            return total;
-        } catch (error) {
-            console.error('Error calculating spending:', error);
-            return 0;
-        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        fetchDashboardData();// eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleWalletCreated = () => {
+        // After a new wallet is created in <Dashboard />, refresh high-level stats
+        fetchDashboardData();
     };
 
-    const calculateTotalSaved = async () => {
-        try {
-            const transactions = await apiService.getTransactions();
-            const income = (transactions || []).filter(
-                (t) => t.type === 'income'
-            );
-            const expenses = (transactions || []).filter(
-                (t) => t.type === 'expense'
-            );
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue mx-auto" />
+                    <p className="mt-4 text-text">Loading dashboard...</p>
+                </div>
+            </div>
+        );
+    }
 
-            const totalIncome = income.reduce(
-                (sum, transaction) => sum + parseFloat(transaction.amount),
-                0
-            );
-            const totalExpenses = expenses.reduce(
-                (sum, transaction) => sum + parseFloat(transaction.amount),
-                0
-            );
-            const saved = Math.max(0, totalIncome - totalExpenses);
-            console.log('🏦 Total saved calculated:', saved);
-            return saved;
-        } catch (error) {
-            console.error('Error calculating savings:', error);
-            return 0;
-        }
-    };
-
-    const handleWalletCreated = (newWallet) => {
-        console.log('🆕 Wallet created callback:', newWallet);
-        // Dashboard handles real-time updates, keep this for future side-effects if needed
-    };
+    if (error) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="text-center">
+                    <p className="text-red-500 text-lg">{error}</p>
+                    <button
+                        onClick={fetchDashboardData}
+                        className="mt-4 bg-blue text-white px-4 py-2 rounded-lg"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <AppLayout activeItem="dashboard">
-            {loading ? (
-                <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue mx-auto"></div>
-                        <p className="mt-4 text-text">Loading dashboard…</p>
-                    </div>
-                </div>
-            ) : error ? (
-                <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                        <p className="text-red-500 text-lg">{error}</p>
-                        <button
-                            onClick={fetchDashboardData}
-                            className="mt-4 bg-blue text-white px-4 py-2 rounded-lg"
-                        >
-                            Retry
-                        </button>
-                    </div>
-                </div>
-            ) : (
-                <Dashboard
-                    wallets={wallets}
-                    onWalletCreated={handleWalletCreated}
-                    userStats={userStats}
-                />
-            )}
-        </AppLayout>
+        <Dashboard
+            wallets={wallets}
+            onWalletCreated={handleWalletCreated}
+            userStats={userStats}
+        />
     );
 };
 

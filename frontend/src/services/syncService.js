@@ -1,5 +1,5 @@
-import { apiService } from '././api.jsx';
-import { webSocketService } from '././websocketService.js';
+import { apiService } from './api.jsx';
+import { webSocketService } from './websocketService.js';
 
 class SyncService {
     constructor() {
@@ -7,226 +7,186 @@ class SyncService {
         this.lastSyncTime = null;
         this.syncInterval = 30000; // 30 seconds
         this.syncTimer = null;
+
+        // Simple event system: eventName -> Set(listeners)
+        this.listeners = new Map();
     }
 
-    // Initialize sync after login
+    // ==============================
+    // Public API used by the app
+    // ==============================
+
+    // Called after login
     initialize(userId) {
         console.log('Initializing sync service for user:', userId);
 
-        // Connect to WebSocket for real-time updates
-        webSocketService.connect(userId);
-
-        // Set up event listeners for real-time updates
-        this.setupWebSocketListeners();
-
-        // Perform initial sync
-        this.performFullSync();
-
-        // Start periodic sync
-        this.startPeriodicSync();
-    }
-
-    setupWebSocketListeners() {
-        // Listen for real-time updates
-        webSocketService.addEventListener('transaction_created', (data) => {
-            console.log('Real-time: Transaction created', data);
-            this.handleTransactionUpdate(data);
-        });
-
-        webSocketService.addEventListener('transaction_updated', (data) => {
-            console.log('Real-time: Transaction updated', data);
-            this.handleTransactionUpdate(data);
-        });
-
-        webSocketService.addEventListener('transaction_deleted', (data) => {
-            console.log('Real-time: Transaction deleted', data);
-            this.handleTransactionDelete(data);
-        });
-
-        webSocketService.addEventListener('wallet_created', (data) => {
-            console.log('Real-time: Wallet created', data);
-            this.handleWalletUpdate(data);
-        });
-
-        webSocketService.addEventListener('wallet_updated', (data) => {
-            console.log('Real-time: Wallet updated', data);
-            this.handleWalletUpdate(data);
-        });
-
-        webSocketService.addEventListener('wallet_deleted', (data) => {
-            console.log('Real-time: Wallet deleted', data);
-            this.handleWalletDelete(data);
-        });
-
-        webSocketService.addEventListener('connected', () => {
-            console.log('WebSocket connected - sync service ready');
-        });
-
-        webSocketService.addEventListener('disconnected', () => {
-            console.log('WebSocket disconnected - falling back to periodic sync');
-        });
-    }
-
-    async performFullSync() {
-        if (this.isSyncing) return;
-
-        this.isSyncing = true;
-        console.log('Performing full sync...');
-
-        try {
-            // Sync all data
-            await Promise.all([
-                this.syncWallets(),
-                this.syncTransactions(),
-                this.syncCategories(),
-                this.syncUserData()
-            ]);
-
-            this.lastSyncTime = new Date();
-            console.log('Full sync completed at:', this.lastSyncTime);
-
-            // Dispatch sync complete event
-            this.dispatchSyncEvent('sync_complete', {
-                lastSyncTime: this.lastSyncTime
-            });
-
-        } catch (error) {
-            console.error('Full sync failed:', error);
-            this.dispatchSyncEvent('sync_error', { error });
-        } finally {
-            this.isSyncing = false;
-        }
-    }
-
-    async syncWallets() {
-        try {
-            const wallets = await apiService.getWallets();
-            this.cacheData('wallets', wallets);
-            return wallets;
-        } catch (error) {
-            console.error('Failed to sync wallets:', error);
-            throw error;
-        }
-    }
-
-    async syncTransactions() {
-        try {
-            const transactions = await apiService.getTransactions();
-            this.cacheData('transactions', transactions);
-            return transactions;
-        } catch (error) {
-            console.error('Failed to sync transactions:', error);
-            throw error;
-        }
-    }
-
-    async syncCategories() {
-        try {
-            const categories = await apiService.getCategories();
-            this.cacheData('categories', categories);
-            return categories;
-        } catch (error) {
-            console.error('Failed to sync categories:', error);
-            throw error;
-        }
-    }
-
-    async syncUserData() {
-        try {
-            const userData = await apiService.getDetailedUserInfo();
-            this.cacheData('user', userData);
-            return userData;
-        } catch (error) {
-            console.error('Failed to sync user data:', error);
-            throw error;
-        }
-    }
-
-    startPeriodicSync() {
-        // Clear existing timer
-        if (this.syncTimer) {
-            clearInterval(this.syncTimer);
-        }
-
-        // Start new periodic sync
-        this.syncTimer = setInterval(() => {
-            if (!this.isSyncing && webSocketService.isConnected()) {
-                this.performFullSync();
+        // WebSocket connect is handled by websocketService elsewhere,
+        // but we can still log status here.
+        if (userId) {
+            if (!webSocketService.isConnected?.()) {
+                webSocketService.connect(userId);
             }
+        }
+
+        this.startSync();
+    }
+
+    // Start periodic background sync
+    startSync() {
+        if (this.syncTimer) return;
+
+        // Do one immediate sync, then schedule
+        this.syncNow();
+
+        this.syncTimer = setInterval(() => {
+            this.syncNow();
         }, this.syncInterval);
     }
 
+    // Stop periodic sync (called on logout)
     stopSync() {
         if (this.syncTimer) {
             clearInterval(this.syncTimer);
             this.syncTimer = null;
         }
-        webSocketService.disconnect();
+        this.isSyncing = false;
+        console.log('Sync service stopped');
     }
 
-    // Cache data in localStorage with timestamp
-    cacheData(key, data) {
-        const cacheItem = {
-            data: data,
-            timestamp: new Date().toISOString(),
-            version: '1.0'
-        };
-        localStorage.setItem(`cache_${key}`, JSON.stringify(cacheItem));
-    }
+    // Manual one-shot sync
+    async syncNow() {
+        if (this.isSyncing) {
+            console.log('Sync already in progress, skipping');
+            return;
+        }
 
-    // Get cached data if not expired
-    getCachedData(key, maxAgeMinutes = 5) {
-        const cached = localStorage.getItem(`cache_${key}`);
-        if (!cached) return null;
+        this.isSyncing = true;
+        console.log('🔄 Sync started');
 
         try {
-            const cacheItem = JSON.parse(cached);
-            const cacheTime = new Date(cacheItem.timestamp);
-            const now = new Date();
-            const diffMinutes = (now - cacheTime) / (1000 * 60);
+            const [wallets, transactions, categories] = await Promise.all([
+                apiService.getWallets(),
+                apiService.getTransactions(),
+                apiService.getCategories(),
+            ]);
 
-            if (diffMinutes < maxAgeMinutes) {
-                return cacheItem.data;
-            } else {
-                // Cache expired, remove it
-                localStorage.removeItem(`cache_${key}`);
-                return null;
-            }
+            this.cacheData('wallets', wallets);
+            this.cacheData('transactions', transactions);
+            this.cacheData('categories', categories);
+
+            this.lastSyncTime = new Date().toISOString();
+
+            // Notify listeners that fresh data is available
+            this.dispatchSyncEvent('wallet_synced', wallets);
+            this.dispatchSyncEvent('transaction_synced', transactions);
+            this.dispatchSyncEvent('category_synced', categories);
+
+            console.log('✅ Sync finished at', this.lastSyncTime);
         } catch (error) {
-            console.error('Error reading cached data:', error);
-            localStorage.removeItem(`cache_${key}`);
-            return null;
+            console.error('❌ Sync failed:', error);
+        } finally {
+            this.isSyncing = false;
         }
     }
 
-    // Event dispatching for UI updates
-    dispatchSyncEvent(event, data) {
-        window.dispatchEvent(new CustomEvent(`sync_${event}`, { detail: data }));
+    // Store data in localStorage as a simple cache
+    cacheData(key, data) {
+        try {
+            localStorage.setItem(
+                `equilibrio_${key}`,
+                JSON.stringify({
+                    data,
+                    timestamp: new Date().toISOString(),
+                })
+            );
+        } catch (error) {
+            console.error('Failed to cache data for', key, error);
+        }
     }
 
-    // Real-time update handlers
-    handleTransactionUpdate(data) {
-        this.dispatchSyncEvent('transaction_updated', data);
+    // Retrieve cached data
+    getCachedData(key, defaultValue = null) {
+        try {
+            const raw = localStorage.getItem(`equilibrio_${key}`);
+            if (!raw) return defaultValue;
+
+            const parsed = JSON.parse(raw);
+            return parsed.data ?? defaultValue;
+        } catch (error) {
+            console.error('Failed to read cached data for', key, error);
+            return defaultValue;
+        }
     }
 
-    handleTransactionDelete(data) {
-        this.dispatchSyncEvent('transaction_deleted', data);
+    // ==============================
+    // Event system
+    // ==============================
+
+    addListener(eventName, callback) {
+        if (!eventName || typeof callback !== 'function') return;
+
+        if (!this.listeners.has(eventName)) {
+            this.listeners.set(eventName, new Set());
+        }
+
+        this.listeners.get(eventName).add(callback);
+    }
+
+    removeListener(eventName, callback) {
+        if (!this.listeners.has(eventName)) return;
+
+        if (!callback) {
+            // Remove all listeners for this event
+            this.listeners.delete(eventName);
+            return;
+        }
+
+        const set = this.listeners.get(eventName);
+        set.delete(callback);
+        if (set.size === 0) {
+            this.listeners.delete(eventName);
+        }
+    }
+
+    dispatchSyncEvent(eventName, payload) {
+        const listeners = this.listeners.get(eventName);
+        if (!listeners || listeners.size === 0) return;
+
+        listeners.forEach((cb) => {
+            try {
+                cb(payload);
+            } catch (error) {
+                console.error(`Error in syncService listener for "${eventName}":`, error);
+            }
+        });
+    }
+
+    // ==============================
+    // Hooks that can be called from WebSocket events
+    // (optional, but keeps compatibility with older code)
+    // ==============================
+
+    handleWalletCreate(data) {
+        this.cacheData('wallets', data);
+        this.dispatchSyncEvent('wallet_synced', data);
     }
 
     handleWalletUpdate(data) {
-        this.dispatchSyncEvent('wallet_updated', data);
+        this.dispatchSyncEvent('wallet_synced', data);
     }
 
     handleWalletDelete(data) {
         this.dispatchSyncEvent('wallet_deleted', data);
     }
 
-    // Get sync status
+    // Get overall sync status (useful for Settings / debug UI)
     getSyncStatus() {
         return {
             isSyncing: this.isSyncing,
             lastSyncTime: this.lastSyncTime,
-            isWebSocketConnected: webSocketService.isConnected()
+            isWebSocketConnected: webSocketService.isConnected
+                ? webSocketService.isConnected()
+                : false,
         };
     }
 }

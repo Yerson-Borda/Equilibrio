@@ -1,7 +1,5 @@
 import React from 'react';
-import Button from '../ui/Button';
 import welcomeImage from '../../assets/images/welcome-image.png';
-import welcomeTextImage from '../../assets/images/welcome-text-image.png';
 // Import your custom stat icons
 import balanceIcon from '../../assets/icons/balance-icon.png';
 import spendingIcon from '../../assets/icons/spending-icon.png';
@@ -18,39 +16,33 @@ const EmptyState = ({ onCreateWallet, userStats }) => {
     const { totalBalance, totalSpending, totalSaved } = safeUserStats;
 
     return (
-        <div className="max-w-7xl mx-auto pt-8">
-            {/* Stats Cards with Left-Centered Icons - Same design as before but with real data */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+        <div className="max-w-9xl mx-auto ">
+            {/* Stats Cards with Left-Centered Icons */}
+            <div className="flex flex-row gap-[15px] mb-6">
                 {/* Total Balance - Dark Background */}
-                <div className="bg-[#363A3F] rounded-lg shadow-sm p-6 border border-strokes">
-                    <div className="flex items-center">
-                        <img src={balanceIcon} alt="Balance" className="w-10 h-10 mr-4" />
-                        <div className="flex-1 text-center">
-                            <h3 className="text-sm font-medium text-white mb-1">Total balance</h3>
-                            <p className="text-2xl font-bold text-white">${totalBalance.toFixed(2)}</p>
-                        </div>
+                <div className="bg-[#363A3F] flex flex-row items-center w-[222px] h-[110px] rounded-[10px] shadow-sm border border-strokes pt-6 pr-5 pb-6 pl-5 gap-[15px]">
+                    <img src={balanceIcon} alt="Balance" className="w-10 h-10" />
+                    <div className="flex-1 text-center">
+                        <h3 className="text-sm font-medium text-[#9c9c9c] mb-1">Total balance</h3>
+                        <p className="text-2xl font-bold text-white">${totalBalance.toFixed(2)}</p>
                     </div>
                 </div>
 
                 {/* Total Spending */}
-                <div className="bg-white rounded-lg shadow-sm p-6 border border-strokes">
-                    <div className="flex items-center">
-                        <img src={spendingIcon} alt="Spending" className="w-10 h-10 mr-4" />
-                        <div className="flex-1 text-center">
-                            <h3 className="text-sm font-medium text-metallic-gray mb-1">Total spending</h3>
-                            <p className="text-2xl font-bold text-text">${totalSpending.toFixed(2)}</p>
-                        </div>
+                <div className="bg-white flex flex-row items-center w-[222px] h-[110px] rounded-[10px] shadow-sm border border-strokes pt-6 pr-5 pb-6 pl-5 gap-[15px]">
+                    <img src={spendingIcon} alt="Spending" className="w-10 h-10" />
+                    <div className="flex-1 text-center">
+                        <h3 className="text-sm font-medium text-metallic-gray mb-1">Total spending</h3>
+                        <p className="text-2xl font-bold text-text">${totalSpending.toFixed(2)}</p>
                     </div>
                 </div>
 
                 {/* Total Saved */}
-                <div className="bg-white rounded-lg shadow-sm p-6 border border-strokes">
-                    <div className="flex items-center">
-                        <img src={savedIcon} alt="Saved" className="w-10 h-10 mr-4" />
-                        <div className="flex-1 text-center">
-                            <h3 className="text-sm font-medium text-metallic-gray mb-1">Total saved</h3>
-                            <p className="text-2xl font-bold text-text">${totalSaved.toFixed(2)}</p>
-                        </div>
+                <div className="bg-white flex flex-row items-center w-[222px] h-[110px] rounded-[10px] shadow-sm border border-strokes pt-6 pr-5 pb-6 pl-5 gap-[15px]">
+                    <img src={savedIcon} alt="Saved" className="w-10 h-10" />
+                    <div className="flex-1 text-center">
+                        <h3 className="text-sm font-medium text-metallic-gray mb-1">Total saved</h3>
+                        <p className="text-2xl font-bold text-text">${totalSaved.toFixed(2)}</p>
                     </div>
                 </div>
             </div>
@@ -62,23 +54,24 @@ const EmptyState = ({ onCreateWallet, userStats }) => {
                     <img
                         src={welcomeImage}
                         alt="Welcome to Equilibrio"
-                        className="max-w-4xl w-full h-auto"
+                        className="max-w-2xl w-full h-auto"
                     />
                 </div>
 
                 {/* Welcome Text and Button - Right Side */}
                 <div className="flex-1 flex flex-col items-center justify-center">
                     {/* Welcome Text Image - Centered above button */}
-                    <div className="w-full flex justify-center mb-8">
-                        <img
-                            src={welcomeTextImage}
-                            alt="Welcome to Equilibrio - Create a Wallet and Start tracking your Money Today!"
-                            className="w-full max-w-md"
-                        />
+                    <div className="text-center mb-8">
+                        <h1 className="text-6xl text-[#598eff]">
+                            Welcome to <span className="text-[#4361ee] font-extrabold">Equilibrio</span>
+                        </h1>
+                        <p className="text-[#4361ee] mt-2 text-3xl">
+                            Create a Wallet and Start tracking your Money Today!
+                        </p>
                     </div>
 
                     {/* Create Wallet Button - LONG BAR */}
-                    <div className="w-full max-w-2xl">
+                    <div className="w-full max-w-xl">
                         <button
                             onClick={onCreateWallet}
                             className="w-full py-6 text-2xl font-bold text-white bg-blue rounded-xl hover:bg-blue-600 transition-colors duration-200 shadow-lg flex items-center justify-center"
