@@ -2,12 +2,15 @@ package com.example.moneymate.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.domain.transaction.model.TransactionEntity
+import com.example.domain.transaction.usecase.GetTransactionsUseCase
 import com.example.domain.user.model.UserDetailedData
 import com.example.domain.user.usecase.GetUserDetailedUseCase
 import com.example.domain.wallet.model.TotalBalance
 import com.example.domain.wallet.usecase.GetTotalBalanceUseCase
 import com.example.moneymate.utils.ScreenState
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,7 +18,8 @@ import kotlinx.coroutines.launch
 
 class HomeViewModel(
     private val getUserDetailedUseCase: GetUserDetailedUseCase,
-    private val getTotalBalanceUseCase: GetTotalBalanceUseCase
+    private val getTotalBalanceUseCase: GetTotalBalanceUseCase,
+    private val getTransactionsUseCase: GetTransactionsUseCase // Add this
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeScreenState())
@@ -33,6 +37,8 @@ class HomeViewModel(
     fun loadAllData() {
         loadUserData()
         loadTotalBalance()
+        loadFinancialOverview() // Add this
+        loadRecentTransactions()
     }
 
     fun loadUserData() {
@@ -93,15 +99,124 @@ class HomeViewModel(
             }
         }
     }
+
+    fun loadFinancialOverview() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(financialOverviewState = ScreenState.Loading)
+            try {
+                println("DEBUG: HomeViewModel - Loading financial overview...")
+                val result = getTransactionsUseCase()
+
+                if (result.isSuccess) {
+                    val transactions = result.getOrThrow()
+                    val (totalIncome, totalExpense) = calculateFinancialTotals(transactions)
+
+                    _uiState.value = _uiState.value.copy(
+                        financialOverviewState = ScreenState.Success(
+                            FinancialOverviewData(
+                                totalIncome = totalIncome,
+                                totalExpense = totalExpense
+                            )
+                        )
+                    )
+                    println("DEBUG: HomeViewModel - Loaded financial overview: Income=$$totalIncome, Expense=$$totalExpense")
+                } else {
+                    val exception = result.exceptionOrNull() ?: Exception("Failed to load transactions")
+                    _uiState.value = _uiState.value.copy(
+                        financialOverviewState = ScreenState.Error(
+                            com.example.moneymate.utils.ErrorHandler.mapExceptionToAppError(exception),
+                            retryAction = { loadFinancialOverview() }
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                println("DEBUG: HomeViewModel - Error loading financial overview: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    financialOverviewState = ScreenState.Error(
+                        com.example.moneymate.utils.ErrorHandler.mapExceptionToAppError(e),
+                        retryAction = { loadFinancialOverview() }
+                    )
+                )
+            }
+        }
+    }
+
+    fun loadRecentTransactions() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(recentTransactionsState = ScreenState.Loading)
+            try {
+                println("DEBUG: HomeViewModel - Loading recent transactions...")
+                val result = getTransactionsUseCase()
+
+                if (result.isSuccess) {
+                    val allTransactions = result.getOrThrow()
+                    // Get only the most recent 3-5 transactions
+                    val recentTransactions = allTransactions.take(5)
+
+                    _uiState.value = _uiState.value.copy(
+                        recentTransactionsState = ScreenState.Success(recentTransactions)
+                    )
+                    println("DEBUG: HomeViewModel - Loaded ${recentTransactions.size} recent transactions")
+                } else {
+                    val exception = result.exceptionOrNull() ?: Exception("Failed to load transactions")
+                    _uiState.value = _uiState.value.copy(
+                        recentTransactionsState = ScreenState.Error(
+                            com.example.moneymate.utils.ErrorHandler.mapExceptionToAppError(exception),
+                            retryAction = { loadRecentTransactions() }
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                println("DEBUG: HomeViewModel - Error loading recent transactions: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    recentTransactionsState = ScreenState.Error(
+                        com.example.moneymate.utils.ErrorHandler.mapExceptionToAppError(e),
+                        retryAction = { loadRecentTransactions() }
+                    )
+                )
+            }
+        }
+    }
+
+    private fun calculateFinancialTotals(transactions: List<TransactionEntity>): Pair<Double, Double> {
+        var totalIncome = 0.0
+        var totalExpense = 0.0
+
+        transactions.forEach { transaction ->
+            // Convert amount string to double (handle potential parsing errors)
+            val amount = try {
+                transaction.amount.toDouble()
+            } catch (e: NumberFormatException) {
+                0.0
+            }
+
+            when (transaction.type.lowercase()) {
+                "income" -> totalIncome += amount
+                "expense" -> totalExpense += amount
+                // You can handle "transfer" type if needed
+            }
+        }
+
+        return Pair(totalIncome, totalExpense)
+    }
 }
+
+data class FinancialOverviewData(
+    val totalIncome: Double,
+    val totalExpense: Double
+)
 
 data class HomeScreenState(
     val userDataState: ScreenState<UserDetailedData> = ScreenState.Loading,
-    val balanceState: ScreenState<TotalBalance?> = ScreenState.Loading
+    val balanceState: ScreenState<TotalBalance?> = ScreenState.Loading,
+    val financialOverviewState: ScreenState<FinancialOverviewData> = ScreenState.Loading,
+    val recentTransactionsState: ScreenState<List<TransactionEntity>> = ScreenState.Loading
 ) {
     // Helper properties for backward compatibility
     val isLoading: Boolean
-        get() = userDataState is ScreenState.Loading && balanceState is ScreenState.Loading
+        get() = userDataState is ScreenState.Loading &&
+                balanceState is ScreenState.Loading &&
+                financialOverviewState is ScreenState.Loading
 
     val isTotalBalanceLoading: Boolean
         get() = balanceState is ScreenState.Loading
@@ -115,6 +230,17 @@ data class HomeScreenState(
     val totalBalance: TotalBalance?
         get() = when (balanceState) {
             is ScreenState.Success -> balanceState.data
+            else -> null
+        }
+
+    val financialOverview: FinancialOverviewData?
+        get() = when (financialOverviewState) {
+            is ScreenState.Success -> financialOverviewState.data
+            else -> null
+        }
+    val recentTransactions: List<TransactionEntity>?
+        get() = when (recentTransactionsState) {
+            is ScreenState.Success -> recentTransactionsState.data
             else -> null
         }
 }

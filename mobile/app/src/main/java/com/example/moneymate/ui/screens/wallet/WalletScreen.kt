@@ -43,6 +43,7 @@ import androidx.navigation.NavController
 import com.example.domain.transaction.model.TransactionEntity
 import com.example.domain.wallet.model.Wallet
 import com.example.moneymate.R
+import com.example.moneymate.ui.components.TransactionsSection
 import com.example.moneymate.ui.components.states.FullScreenError
 import com.example.moneymate.ui.components.states.FullScreenLoading
 import com.example.moneymate.ui.components.states.SectionStateManager
@@ -323,91 +324,5 @@ private fun WalletCardItem(
                 )
             }
         }
-    }
-}
-
-
-
-@Composable
-private fun TransactionsSection(
-    transactions: List<TransactionEntity>,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        Text(
-            text = "Transactions",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF1A1A1A)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (transactions.isEmpty()) {
-            EmptyTransactionsState()
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(transactions) { transaction ->
-                    TransactionItem(transaction = transaction)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TransactionItem(transaction: TransactionEntity) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = transaction.note ?: "Transaction", // Use note instead of title
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF1A1A1A),
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = "Category ID: ${transaction.categoryId}", // You might want to map this to category name
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF666666)
-                )
-            }
-
-            Text(
-                text = if (transaction.type == "income") "+$${transaction.amount}" else "-$${transaction.amount}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (transaction.type == "income") Color(0xFF10B981) else Color(0xFFEF4444),
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
-
-@Composable
-private fun EmptyTransactionsState() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "No transactions yet",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF666666)
-        )
     }
 }

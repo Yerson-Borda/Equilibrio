@@ -12,11 +12,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.domain.transaction.model.TransactionEntity
 import com.example.domain.user.model.StatsData
+import com.example.moneymate.ui.components.TransactionsSection
 
 @Composable
 fun RegularHomeContent(
     stats: StatsData,
+    recentTransactions: List<TransactionEntity>? = null,
+    currencySymbol: String = "$",
     onSeeAllBudget: () -> Unit,
     onSeeAllTransactions: () -> Unit
 ) {
@@ -25,102 +29,20 @@ fun RegularHomeContent(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
     ) {
-        // Show basic stats since we don't have detailed data yet
-        BasicStatsSection(stats = stats)
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Placeholder for future features
-        ComingSoonSection()
-    }
-}
-
-@Composable
-fun BasicStatsSection(stats: StatsData) {
-    Column {
-        Text(
-            text = "Overview",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold
+        // Budget vs Expense Section
+        BudgetExpenseSection(
+            budgetRemaining = null,
+            budgetStatus = null,
+            onSeeAll = onSeeAllBudget
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    color = Color(0xFF1E1E1E),
-                    shape = RoundedCornerShape(12.dp)
-                )
-                .padding(16.dp)
-        ) {
-            Column {
-                Text(
-                    text = "Financial Summary",
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "Wallets:",
-                        color = Color(0xFFAAAAAA),
-                        fontSize = 14.sp
-                    )
-                    Text(
-                        text = "${stats.walletCount}",
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "Total Transactions:",
-                        color = Color(0xFFAAAAAA),
-                        fontSize = 14.sp
-                    )
-                    Text(
-                        text = "${stats.totalTransactions}",
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ComingSoonSection() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                color = Color(0xFF1E1E1E),
-                shape = RoundedCornerShape(12.dp)
-            )
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "More features coming soon!",
-            color = Color(0xFFAAAAAA),
-            fontSize = 14.sp
+        // Recent Transactions Section
+        TransactionsSection(
+            transactions = recentTransactions ?: emptyList(),
+            currencySymbol = currencySymbol,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }

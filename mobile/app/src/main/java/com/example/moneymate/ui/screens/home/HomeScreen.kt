@@ -73,9 +73,8 @@ fun HomeScreen(
 
     // Main content with state management
     when {
-        // Show full screen loading if both user data and balance are loading
-        uiState.userDataState is com.example.moneymate.utils.ScreenState.Loading &&
-                uiState.balanceState is com.example.moneymate.utils.ScreenState.Loading -> {
+        // Show full screen loading if critical data is loading
+        uiState.userDataState is com.example.moneymate.utils.ScreenState.Loading -> {
             FullScreenLoading(message = "Loading home data...")
         }
         // Show full screen error if user data failed to load (critical data)
@@ -125,10 +124,17 @@ fun HomeScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        FinancialOverviewCard(
-                            expenseCount = userData.stats.expenseCount,
-                            incomeCount = userData.stats.incomeCount
-                        )
+                        // Financial Overview section with state management
+                        SectionStateManager(
+                            state = uiState.financialOverviewState,
+                            onRetry = { viewModel.loadFinancialOverview() }
+                        ) { financialData ->
+                            FinancialOverviewCard(
+                                totalIncome = financialData.totalIncome,
+                                totalExpense = financialData.totalExpense,
+                                currencySymbol = currencySymbol
+                            )
+                        }
 
                         // Only show FirstLoginContent if there are no wallets AND no transactions
                         if (userData.stats.walletCount == 0 && userData.stats.totalTransactions == 0) {
@@ -137,11 +143,17 @@ fun HomeScreen(
                                 onAddWallet = onAddWallet
                             )
                         } else {
-                            RegularHomeContent(
-                                stats = userData.stats,
-                                onSeeAllBudget = onSeeAllBudget,
-                                onSeeAllTransactions = onSeeAllTransactions
-                            )
+                            SectionStateManager(
+                                state = uiState.recentTransactionsState,
+                                onRetry = { viewModel.loadRecentTransactions() }
+                            ) { transactions ->
+                                RegularHomeContent(
+                                    stats = userData.stats,
+                                    recentTransactions = transactions,
+                                    onSeeAllBudget = onSeeAllBudget,
+                                    onSeeAllTransactions = onSeeAllTransactions
+                                )
+                            }
                         }
                     }
 
