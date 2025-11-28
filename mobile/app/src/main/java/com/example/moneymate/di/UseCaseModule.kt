@@ -6,6 +6,8 @@ import com.example.domain.auth.usecase.SignInUseCase
 import com.example.domain.auth.usecase.SignInUseCaseImpl
 import com.example.domain.auth.usecase.SignUpUseCase
 import com.example.domain.auth.usecase.SignUpUseCaseImpl
+import com.example.domain.budget.usecase.GetCurrentBudgetUseCase
+import com.example.domain.budget.usecase.UpdateBudgetUseCase
 import com.example.domain.category.usecase.CreateCategoryUseCase
 import com.example.domain.category.usecase.DeleteCategoryUseCase
 import com.example.domain.category.usecase.GetCategoriesUseCase
@@ -66,5 +68,6 @@ val useCaseModule = module {
     factory{GetRecentTransactionsUseCase(get())}
     factory{GetCategorySummaryUseCase(get())}
     factory{ GetMonthlyComparisonUseCase(get()) }
-
+    factory{ GetCurrentBudgetUseCase(get()) }
+    factory{ UpdateBudgetUseCase(get()) }
 }

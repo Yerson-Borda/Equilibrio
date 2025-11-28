@@ -71,6 +71,14 @@ fun HomeScreen(
         }
     }
 
+    // Add budget error handling
+    LaunchedEffect(uiState.budgetState) {
+        if (uiState.budgetState is com.example.moneymate.utils.ScreenState.Error) {
+            val error = (uiState.budgetState as com.example.moneymate.utils.ScreenState.Error).error
+            Toast.makeText(context, error.getUserFriendlyMessage(), Toast.LENGTH_LONG).show()
+        }
+    }
+
     // Main content with state management
     when {
         // Show full screen loading if critical data is loading
@@ -143,13 +151,16 @@ fun HomeScreen(
                                 onAddWallet = onAddWallet
                             )
                         } else {
+                            // Budget section with state management
                             SectionStateManager(
-                                state = uiState.recentTransactionsState,
-                                onRetry = { viewModel.loadRecentTransactions() }
-                            ) { transactions ->
+                                state = uiState.budgetState,
+                                onRetry = { viewModel.loadBudgetData() }
+                            ) { budgetData ->
                                 RegularHomeContent(
                                     stats = userData.stats,
-                                    recentTransactions = transactions,
+                                    recentTransactions = uiState.recentTransactions,
+                                    budgetData = budgetData, // Pass budget data
+                                    currencySymbol = currencySymbol,
                                     onSeeAllBudget = onSeeAllBudget,
                                     onSeeAllTransactions = onSeeAllTransactions
                                 )

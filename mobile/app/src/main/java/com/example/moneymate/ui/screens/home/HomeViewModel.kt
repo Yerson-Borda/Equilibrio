@@ -2,6 +2,8 @@ package com.example.moneymate.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.domain.budget.model.Budget
+import com.example.domain.budget.usecase.GetCurrentBudgetUseCase
 import com.example.domain.transaction.model.TransactionEntity
 import com.example.domain.transaction.usecase.GetTransactionsUseCase
 import com.example.domain.user.model.UserDetailedData
@@ -9,8 +11,6 @@ import com.example.domain.user.usecase.GetUserDetailedUseCase
 import com.example.domain.wallet.model.TotalBalance
 import com.example.domain.wallet.usecase.GetTotalBalanceUseCase
 import com.example.moneymate.utils.ScreenState
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +19,8 @@ import kotlinx.coroutines.launch
 class HomeViewModel(
     private val getUserDetailedUseCase: GetUserDetailedUseCase,
     private val getTotalBalanceUseCase: GetTotalBalanceUseCase,
-    private val getTransactionsUseCase: GetTransactionsUseCase // Add this
+    private val getTransactionsUseCase: GetTransactionsUseCase,
+    private val getBudgetUseCase: GetCurrentBudgetUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeScreenState())
@@ -37,10 +38,47 @@ class HomeViewModel(
     fun loadAllData() {
         loadUserData()
         loadTotalBalance()
-        loadFinancialOverview() // Add this
+        loadFinancialOverview()
         loadRecentTransactions()
+        loadBudgetData() // Add this
     }
 
+    // Add this new function to load budget data
+    fun loadBudgetData() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(budgetState = ScreenState.Loading)
+            try {
+                println("DEBUG: HomeViewModel - Loading budget data...")
+                val result = getBudgetUseCase()
+
+                if (result.isSuccess) {
+                    val budgetData = result.getOrThrow()
+                    _uiState.value = _uiState.value.copy(
+                        budgetState = ScreenState.Success(budgetData)
+                    )
+                    println("DEBUG: HomeViewModel - Loaded budget data: $budgetData")
+                } else {
+                    val exception = result.exceptionOrNull() ?: Exception("Failed to load budget data")
+                    _uiState.value = _uiState.value.copy(
+                        budgetState = ScreenState.Error(
+                            com.example.moneymate.utils.ErrorHandler.mapExceptionToAppError(exception),
+                            retryAction = { loadBudgetData() }
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                println("DEBUG: HomeViewModel - Error loading budget data: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    budgetState = ScreenState.Error(
+                        com.example.moneymate.utils.ErrorHandler.mapExceptionToAppError(e),
+                        retryAction = { loadBudgetData() }
+                    )
+                )
+            }
+        }
+    }
+
+    // Your existing functions (loadUserData, loadTotalBalance, etc.) remain the same
     fun loadUserData() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(userDataState = ScreenState.Loading)
@@ -201,22 +239,20 @@ class HomeViewModel(
     }
 }
 
-data class FinancialOverviewData(
-    val totalIncome: Double,
-    val totalExpense: Double
-)
-
+// Update the HomeScreenState to include budget data
 data class HomeScreenState(
     val userDataState: ScreenState<UserDetailedData> = ScreenState.Loading,
     val balanceState: ScreenState<TotalBalance?> = ScreenState.Loading,
     val financialOverviewState: ScreenState<FinancialOverviewData> = ScreenState.Loading,
-    val recentTransactionsState: ScreenState<List<TransactionEntity>> = ScreenState.Loading
+    val recentTransactionsState: ScreenState<List<TransactionEntity>> = ScreenState.Loading,
+    val budgetState: ScreenState<Budget?> = ScreenState.Loading // Add this
 ) {
     // Helper properties for backward compatibility
     val isLoading: Boolean
         get() = userDataState is ScreenState.Loading &&
                 balanceState is ScreenState.Loading &&
-                financialOverviewState is ScreenState.Loading
+                financialOverviewState is ScreenState.Loading &&
+                budgetState is ScreenState.Loading
 
     val isTotalBalanceLoading: Boolean
         get() = balanceState is ScreenState.Loading
@@ -238,9 +274,21 @@ data class HomeScreenState(
             is ScreenState.Success -> financialOverviewState.data
             else -> null
         }
+
     val recentTransactions: List<TransactionEntity>?
         get() = when (recentTransactionsState) {
             is ScreenState.Success -> recentTransactionsState.data
             else -> null
         }
+
+    val budgetData: Budget?
+        get() = when (budgetState) {
+            is ScreenState.Success -> budgetState.data
+            else -> null
+        }
 }
+
+data class FinancialOverviewData(
+    val totalIncome: Double,
+    val totalExpense: Double
+)
