@@ -13,22 +13,47 @@ import { getCurrencySymbol } from '../../config/currencies';
 const MyWalletsContent = ({
                               wallets = [],
                               onWalletCreated,
-                              onAddTransaction,
                               onWalletDeleted,
                           }) => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isCreatingWallet, setIsCreatingWallet] = useState(false);
-    const [selectedWallet, setSelectedWallet] = useState(null);
+    const [selectedWallet, setSelectedWallet] = useState(wallets[0] || null);
 
     const [transactions, setTransactions] = useState([]);
     const [upcomingPayments, setUpcomingPayments] = useState([]);
     const [showSearch, setShowSearch] = useState(false);
 
-    // Load transactions + upcoming payments once
+    // Inline Add Transaction state
+    const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
+    const [isSubmittingTransaction, setIsSubmittingTransaction] =
+        useState(false);
+    const [transactionType, setTransactionType] = useState('income'); // income | expense | transfer
+
+    // Categories (from separate income/expense APIs)
+    const [incomeCategories, setIncomeCategories] = useState([]);
+    const [expenseCategories, setExpenseCategories] = useState([]);
+
+    const [transactionForm, setTransactionForm] = useState({
+        amount: '',
+        category_id: '',
+        wallet_id: '',
+        source_wallet_id: '',
+        destination_wallet_id: '',
+        note: '',
+    });
+
+    // Load transactions, upcoming payments, categories once
     useEffect(() => {
         fetchTransactions();
         fetchUpcomingPayments();
+        fetchCategories();
     }, []);
+
+    useEffect(() => {
+        if (!selectedWallet && wallets.length > 0) {
+            setSelectedWallet(wallets[0]);
+        }
+    }, [wallets, selectedWallet]);
 
     const fetchTransactions = async () => {
         try {
@@ -46,6 +71,19 @@ const MyWalletsContent = ({
             { name: 'LinkedIn Ads', amount: 200.5, date: 'Next month' },
         ];
         setUpcomingPayments(mockUpcomingPayments);
+    };
+
+    const fetchCategories = async () => {
+        try {
+            const [income, expense] = await Promise.all([
+                apiService.getIncomeCategories(), // GET /api/categories/income
+                apiService.getExpenseCategories(), // GET /api/categories/expense
+            ]);
+            setIncomeCategories(Array.isArray(income) ? income : []);
+            setExpenseCategories(Array.isArray(expense) ? expense : []);
+        } catch (err) {
+            console.error('Error fetching categories:', err);
+        }
     };
 
     const handleOpenCreateWallet = () => {
@@ -75,6 +113,9 @@ const MyWalletsContent = ({
             setIsCreateModalOpen(false);
             setSelectedWallet(newWallet);
             alert('Wallet created successfully!');
+
+            // Full page refresh so balances/lists are in sync everywhere
+            window.location.reload();
         } catch (error) {
             console.error('Error creating wallet:', error);
             alert(
@@ -102,6 +143,9 @@ const MyWalletsContent = ({
             if (onWalletDeleted) onWalletDeleted(walletId);
             if (selectedWallet?.id === walletId) setSelectedWallet(null);
             alert('Wallet deleted successfully!');
+
+            // Refresh page after delete
+            window.location.reload();
         } catch (error) {
             console.error('Error deleting wallet:', error);
             alert('Failed to delete wallet');
@@ -110,9 +154,122 @@ const MyWalletsContent = ({
         }
     };
 
+    // Open inline Add Transaction section (instead of modal)
     const handleAddTransactionClick = (wallet) => {
-        if (onAddTransaction) {
-            onAddTransaction(wallet);
+        const baseWallet = wallet || selectedWallet || wallets[0] || null;
+        setSelectedWallet(baseWallet);
+
+        // default to income tab when opening
+        setTransactionType('income');
+
+        const defaultIncomeCategoryId =
+            incomeCategories.length > 0 ? incomeCategories[0].id : '';
+
+        setTransactionForm({
+            amount: '',
+            category_id: defaultIncomeCategoryId
+                ? String(defaultIncomeCategoryId)
+                : '',
+            wallet_id: baseWallet ? String(baseWallet.id) : '',
+            source_wallet_id: baseWallet ? String(baseWallet.id) : '',
+            destination_wallet_id: '',
+            note: '',
+        });
+
+        setIsAddTransactionOpen(true);
+    };
+
+    const handleCancelTransaction = () => {
+        setIsAddTransactionOpen(false);
+        setIsSubmittingTransaction(false);
+        // reset form back to clean state
+        setTransactionForm({
+            amount: '',
+            category_id: '',
+            wallet_id: '',
+            source_wallet_id: '',
+            destination_wallet_id: '',
+            note: '',
+        });
+    };
+
+    const handleTransactionFieldChange = (field, value) => {
+        setTransactionForm((prev) => ({
+            ...prev,
+            [field]: value,
+        }));
+    };
+
+    const handleConfirmTransaction = async () => {
+        try {
+            if (!transactionForm.amount) {
+                alert('Please enter an amount.');
+                return;
+            }
+
+            if (
+                transactionType !== 'transfer' &&
+                !transactionForm.category_id
+            ) {
+                alert('Please select a category.');
+                return;
+            }
+
+            setIsSubmittingTransaction(true);
+
+            const data = {
+                ...transactionForm,
+                type: transactionType,
+            };
+
+            if (transactionType === 'transfer') {
+                const transferPayload = {
+                    source_wallet_id: parseInt(data.source_wallet_id, 10),
+                    destination_wallet_id: parseInt(
+                        data.destination_wallet_id,
+                        10
+                    ),
+                    amount: parseFloat(data.amount),
+                    note: data.note || '',
+                };
+
+                await apiService.createTransfer(transferPayload);
+                alert('Transfer completed successfully!');
+            } else {
+                const formattedData = {
+                    amount: parseFloat(data.amount),
+                    description: data.note || '',
+                    type: data.type,
+                    transaction_date: new Date().toISOString().split('T')[0],
+                    wallet_id: parseInt(
+                        data.wallet_id ||
+                        selectedWallet?.id ||
+                        wallets[0]?.id,
+                        10
+                    ),
+                    category_id: parseInt(data.category_id, 10),
+                };
+
+                await apiService.createTransaction(formattedData);
+                alert('Transaction added successfully!');
+            }
+
+            await fetchTransactions();
+            window.dispatchEvent(new Event('transaction_updated'));
+
+            // Full page refresh so wallet balances + dashboard stay in sync
+            window.location.reload();
+
+            setIsAddTransactionOpen(false);
+        } catch (error) {
+            console.error('❌ Error creating transaction:', error);
+            alert(
+                `Failed to create transaction: ${
+                    error.message || 'Please try again.'
+                }`
+            );
+        } finally {
+            setIsSubmittingTransaction(false);
         }
     };
 
@@ -149,6 +306,20 @@ const MyWalletsContent = ({
 
     const getDisplayCurrencySymbol = (currencyCode) =>
         getCurrencySymbol(currencyCode || selectedWallet?.currency || 'USD');
+
+    const activeWalletForForm =
+        wallets.find((w) => String(w.id) === transactionForm.wallet_id) ||
+        selectedWallet;
+    const formCurrencySymbol = getCurrencySymbol(
+        activeWalletForForm?.currency || 'USD'
+    );
+
+    const categoriesForCurrentType =
+        transactionType === 'income'
+            ? incomeCategories
+            : transactionType === 'expense'
+                ? expenseCategories
+                : [];
 
     return (
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -286,16 +457,38 @@ const MyWalletsContent = ({
                 {selectedWallet && (
                     <Card>
                         <div className="space-y-4">
-                            <div>
-                                <p className="text-sm text-metallic-gray">
-                                    Balance
-                                </p>
-                                <p className="text-2xl font-bold text-text">
-                                    {getCurrencySymbol(selectedWallet.currency)}
-                                    {Number(
-                                        selectedWallet.balance || 0
-                                    ).toFixed(2)}
-                                </p>
+                            {/* Balance + EDIT icon */}
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <p className="text-sm text-metallic-gray">
+                                        Balance
+                                    </p>
+                                    <p className="text-2xl font-bold text-text">
+                                        {getCurrencySymbol(
+                                            selectedWallet.currency
+                                        )}
+                                        {Number(
+                                            selectedWallet.balance || 0
+                                        ).toFixed(2)}
+                                    </p>
+                                </div>
+
+                                {/* Simple edit icon button (can be wired to EditWalletModal later) */}
+                                <button
+                                    type="button"
+                                    className="text-sm text-blue-500 hover:text-blue-600 flex items-center gap-1"
+                                    onClick={() =>
+                                        console.log(
+                                            'Edit wallet clicked',
+                                            selectedWallet
+                                        )
+                                    }
+                                >
+                                    ✏️
+                                    <span className="hidden sm:inline">
+                                        Edit
+                                    </span>
+                                </button>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -313,15 +506,17 @@ const MyWalletsContent = ({
                                         Type
                                     </p>
                                     <p className="font-medium capitalize">
-                                        {selectedWallet.wallet_type
-                                            ?.replace('_', ' ') || 'debit'}
+                                        {selectedWallet.wallet_type?.replace(
+                                            '_',
+                                            ' '
+                                        ) || 'debit'}
                                     </p>
                                 </div>
                             </div>
 
                             {/* Buttons */}
                             <div className="space-y-3 pt-2">
-                                {/* Row 1 – Add wallet */}
+                                {/* Row 1 – Add wallet (GREEN) */}
                                 <button
                                     onClick={handleOpenCreateWallet}
                                     className="w-full bg-white border-2 border-green-500 text-green-500 hover:bg-green-50 py-3 rounded-lg font-semibold"
@@ -329,31 +524,34 @@ const MyWalletsContent = ({
                                     + Add Wallet
                                 </button>
 
-                                {/* Row 2 – Add transaction + Delete */}
-                                <div className="flex space-x-3">
-                                    <button
-                                        onClick={() =>
-                                            handleAddTransactionClick(
-                                                selectedWallet
-                                            )
-                                        }
-                                        className="flex-[0.7] bg-white border-2 border-blue-500 text-blue-500 hover:bg-blue-50 py-3 rounded-lg font-semibold"
-                                    >
-                                        Add Transaction
-                                    </button>
+                                {/* Row 2 – Add transaction + Delete
+                                    Hidden when Add Transaction panel is open (5.3 state) */}
+                                {!isAddTransactionOpen && (
+                                    <div className="flex space-x-3">
+                                        <button
+                                            onClick={() =>
+                                                handleAddTransactionClick(
+                                                    selectedWallet
+                                                )
+                                            }
+                                            className="flex-[0.7] bg-white border-2 border-green-500 text-green-500 hover:bg-green-50 py-3 rounded-lg font-semibold"
+                                        >
+                                            Add Transaction
+                                        </button>
 
-                                    <button
-                                        onClick={() =>
-                                            handleDeleteWallet(
-                                                selectedWallet.id
-                                            )
-                                        }
-                                        disabled={isCreatingWallet}
-                                        className="flex-[0.3] bg-red-500 text-white hover:bg-red-600 py-3 rounded-lg font-semibold"
-                                    >
-                                        {isCreatingWallet ? '...' : 'Delete'}
-                                    </button>
-                                </div>
+                                        <button
+                                            onClick={() =>
+                                                handleDeleteWallet(
+                                                    selectedWallet.id
+                                                )
+                                            }
+                                            disabled={isCreatingWallet}
+                                            className="flex-[0.3] bg-red-500 text-white hover:bg-red-600 py-3 rounded-lg font-semibold"
+                                        >
+                                            {isCreatingWallet ? '...' : 'Delete'}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </Card>
@@ -362,108 +560,329 @@ const MyWalletsContent = ({
 
             {/* RIGHT COLUMN */}
             <div className="space-y-8" style={{ width: '800px' }}>
-                {/* Transactions */}
-                <Card title="Transactions">
-                    <div className="flex justify-between items-center mb-4">
-                        <div className="flex space-x-4 items-center">
-                            <button className="text-blue font-medium border-b-2 border-blue pb-1 text-sm">
-                                All Transactions
-                            </button>
-                            <button className="text-metallic-gray pb-1 text-sm">
-                                Regular Transactions
-                            </button>
+                {/* When adding a transaction – show ONLY the form (5.3) */}
+                {isAddTransactionOpen ? (
+                    <Card>
+                        <div className="p-2">
+                            <h2 className="text-xl font-semibold mb-4">
+                                Add Transaction
+                            </h2>
+
+                            {/* Tabs */}
+                            <div className="flex space-x-6 border-b mb-6">
+                                {['income', 'expense', 'transfer'].map((t) => (
+                                    <button
+                                        key={t}
+                                        onClick={() =>
+                                            setTransactionType(t)
+                                        }
+                                        className={`pb-2 text-sm capitalize ${
+                                            transactionType === t
+                                                ? 'text-blue font-semibold border-b-2 border-blue'
+                                                : 'text-metallic-gray'
+                                        }`}
+                                    >
+                                        {t}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Amount display */}
+                            <div className="text-center mb-6">
+                                <p className="text-4xl font-bold text-gray-700">
+                                    {formCurrencySymbol}
+                                    {transactionForm.amount || '0.00'}
+                                </p>
+                            </div>
+
+                            {/* Wallet + Category / Transfer wallets */}
+                            {transactionType === 'transfer' ? (
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div>
+                                        <p className="text-xs text-metallic-gray mb-1">
+                                            From Wallet
+                                        </p>
+                                        <select
+                                            className="border rounded-lg p-2 w-full"
+                                            value={
+                                                transactionForm.source_wallet_id
+                                            }
+                                            onChange={(e) =>
+                                                handleTransactionFieldChange(
+                                                    'source_wallet_id',
+                                                    e.target.value
+                                                )
+                                            }
+                                        >
+                                            <option value="">
+                                                Select wallet
+                                            </option>
+                                            {wallets.map((w) => (
+                                                <option
+                                                    key={w.id}
+                                                    value={w.id}
+                                                >
+                                                    {w.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-metallic-gray mb-1">
+                                            To Wallet
+                                        </p>
+                                        <select
+                                            className="border rounded-lg p-2 w-full"
+                                            value={
+                                                transactionForm.destination_wallet_id
+                                            }
+                                            onChange={(e) =>
+                                                handleTransactionFieldChange(
+                                                    'destination_wallet_id',
+                                                    e.target.value
+                                                )
+                                            }
+                                        >
+                                            <option value="">
+                                                Select wallet
+                                            </option>
+                                            {wallets.map((w) => (
+                                                <option
+                                                    key={w.id}
+                                                    value={w.id}
+                                                >
+                                                    {w.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div>
+                                        <p className="text-xs text-metallic-gray mb-1">
+                                            Wallet
+                                        </p>
+                                        <select
+                                            className="border rounded-lg p-2 w-full"
+                                            value={transactionForm.wallet_id}
+                                            onChange={(e) =>
+                                                handleTransactionFieldChange(
+                                                    'wallet_id',
+                                                    e.target.value
+                                                )
+                                            }
+                                        >
+                                            {wallets.map((w) => (
+                                                <option key={w.id} value={w.id}>
+                                                    {w.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs text-metallic-gray mb-1">
+                                            Category
+                                        </p>
+                                        <select
+                                            className="border rounded-lg p-2 w-full"
+                                            value={
+                                                transactionForm.category_id || ''
+                                            }
+                                            onChange={(e) =>
+                                                handleTransactionFieldChange(
+                                                    'category_id',
+                                                    e.target.value
+                                                )
+                                            }
+                                        >
+                                            <option value="">
+                                                Select category
+                                            </option>
+                                            {categoriesForCurrentType.map(
+                                                (cat) => (
+                                                    <option
+                                                        key={cat.id}
+                                                        value={cat.id}
+                                                    >
+                                                        {cat.name}
+                                                    </option>
+                                                )
+                                            )}
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Amount input */}
+                            <div className="mb-4">
+                                <input
+                                    type="number"
+                                    className="w-full border rounded-lg p-3"
+                                    placeholder="Enter amount"
+                                    value={transactionForm.amount}
+                                    onChange={(e) =>
+                                        handleTransactionFieldChange(
+                                            'amount',
+                                            e.target.value
+                                        )
+                                    }
+                                />
+                            </div>
+
+                            {/* Note */}
+                            <div className="mb-6">
+                                <textarea
+                                    className="w-full border rounded-lg p-3 h-24 resize-none"
+                                    placeholder="Note"
+                                    value={transactionForm.note}
+                                    onChange={(e) =>
+                                        handleTransactionFieldChange(
+                                            'note',
+                                            e.target.value
+                                        )
+                                    }
+                                />
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="flex space-x-4">
+                                <button
+                                    onClick={handleConfirmTransaction}
+                                    disabled={isSubmittingTransaction}
+                                    className="flex-1 bg-[#16A34A]/10 text-[#16A34A] font-semibold py-3 rounded-xl hover:bg-[#16A34A]/20 disabled:opacity-60"
+                                >
+                                    {isSubmittingTransaction
+                                        ? 'Saving...'
+                                        : 'Confirm Transaction'}
+                                </button>
+
+                                <button
+                                    onClick={handleCancelTransaction}
+                                    className="flex-1 bg-red-500 text-white font-semibold py-3 rounded-xl hover:bg-red-600"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
                         </div>
+                    </Card>
+                ) : (
+                    // 5.1 state: Transactions + Upcoming Payments
+                    <>
+                        <Card title="Transactions">
+                            <div className="flex justify-between items-center mb-4">
+                                <div className="flex space-x-4 items-center">
+                                    <button className="text-blue font-medium border-b-2 border-blue pb-1 text-sm">
+                                        All Transactions
+                                    </button>
+                                    <button className="text-metallic-gray pb-1 text-sm">
+                                        Regular Transactions
+                                    </button>
+                                </div>
 
-                        <button onClick={() => setShowSearch(!showSearch)}>
-                            🔍
-                        </button>
-                    </div>
+                                <button
+                                    onClick={() => setShowSearch(!showSearch)}
+                                >
+                                    🔍
+                                </button>
+                            </div>
 
-                    {showSearch && (
-                        <input
-                            type="text"
-                            placeholder="Search transactions..."
-                            className="w-full mb-4 p-2 border rounded"
-                        />
-                    )}
+                            {showSearch && (
+                                <input
+                                    type="text"
+                                    placeholder="Search transactions..."
+                                    className="w-full mb-4 p-2 border rounded"
+                                />
+                            )}
 
-                    <div className="space-y-3 max-h-80 overflow-y-auto">
-                        {transactions.length > 0 ? (
-                            transactions.map((t, index) => {
-                                const symbol = getDisplayCurrencySymbol(
-                                    t.currency
-                                );
-                                return (
+                            <div className="space-y-3 max-h-80 overflow-y-auto">
+                                {transactions.length > 0 ? (
+                                    transactions.map((t, index) => {
+                                        const symbol =
+                                            getDisplayCurrencySymbol(
+                                                t.currency
+                                            );
+                                        return (
+                                            <div
+                                                key={index}
+                                                className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                                            >
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="text-2xl">
+                                                        {getTransactionIcon(
+                                                            t.type
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-text">
+                                                            {t.description ||
+                                                                t.category ||
+                                                                'Transaction'}
+                                                        </p>
+                                                        <p className="text-sm text-metallic-gray">
+                                                            {getTxDate(t)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <p className="font-semibold">
+                                                    {symbol}
+                                                    {Number(
+                                                        t.amount || 0
+                                                    ).toFixed(2)}
+                                                </p>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <p className="text-center text-metallic-gray py-4">
+                                        No transactions yet
+                                    </p>
+                                )}
+                            </div>
+                        </Card>
+
+                        <Card
+                            title="Upcoming Payments"
+                            className="bg-[#F5F7FA] border-none"
+                        >
+                            {upcomingPayments.length > 0 ? (
+                                upcomingPayments.map((p, index) => (
                                     <div
                                         key={index}
-                                        className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                                        className="flex justify-between items-center p-3 bg-gray-50 rounded-lg mb-3"
                                     >
                                         <div className="flex items-center space-x-3">
-                                            <div className="text-2xl">
-                                                {getTransactionIcon(t.type)}
-                                            </div>
+                                            <div className="text-2xl">📅</div>
                                             <div>
                                                 <p className="font-bold text-text">
-                                                    {t.description ||
-                                                        t.category ||
-                                                        'Transaction'}
+                                                    {p.name}
                                                 </p>
                                                 <p className="text-sm text-metallic-gray">
-                                                    {getTxDate(t)}
+                                                    {p.date}
                                                 </p>
                                             </div>
                                         </div>
 
-                                        <p className="font-semibold">
-                                            {symbol}
-                                            {Number(t.amount || 0).toFixed(2)}
+                                        <p className="font-semibold text-red-600">
+                                            -
+                                            {getDisplayCurrencySymbol(
+                                                p.currency ||
+                                                selectedWallet?.currency
+                                            )}
+                                            {Number(p.amount || 0).toFixed(2)}
                                         </p>
                                     </div>
-                                );
-                            })
-                        ) : (
-                            <p className="text-center text-metallic-gray py-4">
-                                No transactions yet
-                            </p>
-                        )}
-                    </div>
-                </Card>
-
-                {/* Upcoming payments */}
-                <Card title="Upcoming Payments" className="bg-[#F5F7FA] border-none">
-                    {upcomingPayments.length > 0 ? (
-                        upcomingPayments.map((p, index) => (
-                            <div
-                                key={index}
-                                className="flex justify-between items-center p-3 bg-gray-50 rounded-lg mb-3"
-                            >
-                                <div className="flex items-center space-x-3">
-                                    <div className="text-2xl">📅</div>
-                                    <div>
-                                        <p className="font-bold text-text">
-                                            {p.name}
-                                        </p>
-                                        <p className="text-sm text-metallic-gray">
-                                            {p.date}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <p className="font-semibold text-red-600">
-                                    -
-                                    {getDisplayCurrencySymbol(
-                                        p.currency || selectedWallet?.currency
-                                    )}
-                                    {Number(p.amount || 0).toFixed(2)}
+                                ))
+                            ) : (
+                                <p className="text-center text-metallic-gray py-4">
+                                    No upcoming payments
                                 </p>
-                            </div>
-                        ))
-                    ) : (
-                        <p className="text-center text-metallic-gray py-4">
-                            No upcoming payments
-                        </p>
-                    )}
-                </Card>
+                            )}
+                        </Card>
+                    </>
+                )}
             </div>
 
             {/* Create Wallet Modal */}

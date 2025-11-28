@@ -178,7 +178,6 @@ const MyWalletsPage = () => {
     };
 
     // Main effect: load data + set up WebSocket listeners
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         fetchWallets();
         loadCurrentUser();
@@ -216,6 +215,7 @@ const MyWalletsPage = () => {
             webSocketService.removeEventListener('wallet_updated', walletUpdatedHandler);
             webSocketService.removeEventListener('wallet_deleted', walletDeletedHandler);
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [location.state]);
 
     if (loading) {

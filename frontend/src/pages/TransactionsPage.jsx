@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import AppLayout from '../components/layout/AppLayout';
 import DualLineChart from '../components/charts/DualLineChart';
+import MonthlyBarChart from '../components/charts/MonthlyBarChart';
+import ExpenseDistributionChart from '../components/charts/ExpenseDistributionChart';
 import { apiService } from '../services/api';
 
 const formatDateLabel = (dateStr) => {
@@ -9,24 +11,72 @@ const formatDateLabel = (dateStr) => {
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 };
 
+const todayISO = () => new Date().toISOString().split('T')[0];
+const sevenDaysAgoISO = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 6);
+    return d.toISOString().split('T')[0];
+};
+
 const TransactionsPage = () => {
     const [transactions, setTransactions] = useState([]);
+    const [categories, setCategories] = useState([]);
+
     const [isLoading, setIsLoading] = useState(true);
-    const [filterType, setFilterType] = useState('all');
-    const [range, setRange] = useState('7d');
+    const [filterType, setFilterType] = useState('all'); // all | income | expense
+    const [range, setRange] = useState('365d'); // 7d | 30d | 90d | 365d (Year)
     const [error, setError] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    // chart carousel: 0 = monthly bar, 1 = dual line, 2 = expense distro
+    const [chartIndex, setChartIndex] = useState(0);
+    const chartViews = ['monthly', 'daily', 'distribution'];
+
+    // which series to show in monthly bar chart
+    const [barSeriesType, setBarSeriesType] = useState('expense'); // income | expense
+
+    // date range for 2nd diagram (dual line)
+    const [fromDate, setFromDate] = useState(sevenDaysAgoISO());
+    const [toDate, setToDate] = useState(todayISO());
 
     useEffect(() => {
         const load = async () => {
             try {
                 setIsLoading(true);
                 setError(null);
-                const data = await apiService.getTransactions();
-                setTransactions(data || []);
+
+                const [txData, cats] = await Promise.all([
+                    apiService.getTransactions(),
+                    apiService.getCategories(),
+                ]);
+
+                const txList = txData || [];
+                setTransactions(txList);
+                setCategories(cats || []);
+
+                // set default from/to to full data range so daily chart has data
+                if (txList.length > 0) {
+                    let minDate = null;
+                    let maxDate = null;
+
+                    txList.forEach((t) => {
+                        const raw = t.transaction_date || t.created_at;
+                        const d = new Date(raw);
+                        if (Number.isNaN(d.getTime())) return;
+                        if (!minDate || d < minDate) minDate = d;
+                        if (!maxDate || d > maxDate) maxDate = d;
+                    });
+
+                    if (minDate && maxDate) {
+                        setFromDate(minDate.toISOString().split('T')[0]);
+                        setToDate(maxDate.toISOString().split('T')[0]);
+                    }
+                }
             } catch (err) {
                 console.error('Error loading transactions page:', err);
                 setError(
-                    err?.message || 'Failed to load transactions. Please try again.'
+                    err?.message ||
+                    'Failed to load transactions. Please try again.'
                 );
             } finally {
                 setIsLoading(false);
@@ -35,26 +85,88 @@ const TransactionsPage = () => {
         load();
     }, []);
 
+    // handlers for arrows
+    const handlePrevChart = () => {
+        setChartIndex(
+            (prev) => (prev - 1 + chartViews.length) % chartViews.length
+        );
+    };
+
+    const handleNextChart = () => {
+        setChartIndex((prev) => (prev + 1) % chartViews.length);
+    };
+
+    // Map of category_id -> name
+    const categoryMap = useMemo(() => {
+        const m = {};
+        (categories || []).forEach((c) => {
+            if (c?.id != null) m[c.id] = c.name;
+        });
+        return m;
+    }, [categories]);
+
+    const parseISO = (value) => {
+        if (!value) return null;
+        const d = new Date(value);
+        return Number.isNaN(d.getTime()) ? null : d;
+    };
+
+    // Filtered + searched transactions (for charts + table)
     const filteredTransactions = useMemo(() => {
-        if (filterType === 'all') return transactions;
-        return transactions.filter((t) => t.type === filterType);
-    }, [transactions, filterType]);
+        let base = transactions;
+        if (filterType !== 'all') {
+            base = base.filter((t) => t.type === filterType);
+        }
+        if (!searchQuery) return base;
 
-    const chartData = useMemo(() => {
-        const now = new Date();
-        let days = 7;
-        if (range === '30d') days = 30;
-        if (range === '90d') days = 90;
+        const q = searchQuery.toLowerCase();
+        return base.filter((t) => {
+            const desc = (t.description || '').toLowerCase();
+            const catName =
+                categoryMap[t.category_id] ||
+                (t.category?.name || t.category_name || t.category || '');
+            return (
+                desc.includes(q) ||
+                (catName && catName.toLowerCase().includes(q))
+            );
+        });
+    }, [transactions, filterType, searchQuery, categoryMap]);
 
-        const start = new Date(now);
-        start.setDate(now.getDate() - (days - 1));
+    const getDaysForRange = (r) => {
+        switch (r) {
+            case '7d':
+                return 7;
+            case '30d':
+                return 30;
+            case '90d':
+                return 90;
+            case '365d':
+            default:
+                return 365; // Year
+        }
+    };
+
+    // DAILY dual-line chart data (Income vs Expense) – uses from/to;
+    // if from/to invalid, fall back to full data span
+    const dailyChartData = useMemo(() => {
+        let start = parseISO(fromDate);
+        let end = parseISO(toDate);
+
+        if (!start || !end || start > end) {
+            const allDates = filteredTransactions
+                .map((t) => parseISO(t.transaction_date || t.created_at))
+                .filter(Boolean);
+            if (!allDates.length) return [];
+            start = new Date(Math.min(...allDates.map((d) => d.getTime())));
+            end = new Date(Math.max(...allDates.map((d) => d.getTime())));
+        }
 
         const map = new Map();
 
         const addToMap = (dateStr, type, amount) => {
             const d = new Date(dateStr);
             if (Number.isNaN(d.getTime())) return;
-            if (d < start || d > now) return;
+            if (d < start || d > end) return;
 
             const key = d.toISOString().split('T')[0];
             if (!map.has(key)) {
@@ -78,7 +190,7 @@ const TransactionsPage = () => {
 
         const result = [];
         const cursor = new Date(start);
-        while (cursor <= now) {
+        while (cursor <= end) {
             const key = cursor.toISOString().split('T')[0];
             const entry = map.get(key) || {
                 date: key,
@@ -94,7 +206,85 @@ const TransactionsPage = () => {
         }
 
         return result;
+    }, [filteredTransactions, fromDate, toDate]);
+
+    // MONTHLY bar chart data (view 0) – respects selected range
+    const monthlyChartData = useMemo(() => {
+        const days = getDaysForRange(range);
+        const now = new Date();
+        const start = new Date(now);
+        start.setDate(now.getDate() - (days - 1));
+
+        const months = Array.from({ length: 12 }).map((_, idx) => ({
+            monthIndex: idx,
+            label: new Date(2024, idx, 1).toLocaleDateString(undefined, {
+                month: 'short',
+            }),
+            income: 0,
+            expense: 0,
+        }));
+
+        filteredTransactions.forEach((t) => {
+            const dateStr = t.transaction_date || t.created_at;
+            const d = new Date(dateStr);
+            if (Number.isNaN(d.getTime())) return;
+            if (d < start || d > now) return;
+            const m = d.getMonth();
+            if (m < 0 || m > 11) return;
+
+            const amt = Number(t.amount || 0);
+            if (t.type === 'income') {
+                months[m].income += amt;
+            } else if (t.type === 'expense') {
+                months[m].expense += amt;
+            }
+        });
+
+        return months;
     }, [filteredTransactions, range]);
+
+    // EXPENSE distribution data (view 2) – respects selected range & only expense
+    const expenseDistributionData = useMemo(() => {
+        const days = getDaysForRange(range);
+        const now = new Date();
+        const start = new Date(now);
+        start.setDate(now.getDate() - (days - 1));
+
+        const map = new Map();
+
+        filteredTransactions
+            .filter((t) => t.type === 'expense')
+            .forEach((t) => {
+                const dateStr = t.transaction_date || t.created_at;
+                const d = new Date(dateStr);
+                if (Number.isNaN(d.getTime())) return;
+                if (d < start || d > now) return;
+
+                const name =
+                    categoryMap[t.category_id] ||
+                    t.category?.name ||
+                    t.category_name ||
+                    t.category ||
+                    'Other';
+                const key = String(name);
+                const amt = Math.abs(Number(t.amount || 0));
+                map.set(key, (map.get(key) || 0) + amt);
+            });
+
+        return Array.from(map.entries()).map(([name, value]) => ({
+            name,
+            value,
+        }));
+    }, [filteredTransactions, range, categoryMap]);
+
+    const currentChartType = chartViews[chartIndex];
+
+    const chartTitle =
+        currentChartType === 'monthly'
+            ? 'Transactions Overview'
+            : currentChartType === 'daily'
+                ? 'Income vs Expense'
+                : 'Expense Distribution';
 
     return (
         <AppLayout activeItem="transactions">
@@ -111,39 +301,231 @@ const TransactionsPage = () => {
                 </div>
             ) : (
                 <div className="max-w-7xl mx-auto space-y-8">
-                    <div className="flex items-center justify-between">
-                        <h1 className="text-2xl font-bold text-text">Transactions</h1>
+                    {/* HEADER + SEARCH + FILTER TABS */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h1 className="text-2xl font-bold text-text">
+                                Transactions
+                            </h1>
+                            <div className="flex items-center space-x-4 text-metallic-gray">
+                                <button className="p-2 rounded-full hover:bg-gray-100">
+                                    🔍
+                                </button>
+                                <button className="p-2 rounded-full hover:bg-gray-100">
+                                    🔔
+                                </button>
+                            </div>
+                        </div>
 
-                        <div className="flex items-center space-x-4">
-                            <select
-                                className="border border-strokes rounded-md px-3 py-2 text-sm"
-                                value={filterType}
-                                onChange={(e) => setFilterType(e.target.value)}
-                            >
-                                <option value="all">All</option>
-                                <option value="income">Income</option>
-                                <option value="expense">Expense</option>
-                            </select>
+                        {/* Search bar */}
+                        <div className="w-full">
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-metallic-gray">
+                                    🔍
+                                </span>
+                                <input
+                                    type="text"
+                                    placeholder="Search anything on Transactions"
+                                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-strokes text-sm focus:outline-none focus:ring-2 focus:ring-blue/40"
+                                    value={searchQuery}
+                                    onChange={(e) =>
+                                        setSearchQuery(e.target.value)
+                                    }
+                                />
+                            </div>
+                        </div>
 
-                            <select
-                                className="border border-strokes rounded-md px-3 py-2 text-sm"
-                                value={range}
-                                onChange={(e) => setRange(e.target.value)}
-                            >
-                                <option value="7d">Last 7 days</option>
-                                <option value="30d">Last 30 days</option>
-                                <option value="90d">Last 90 days</option>
-                            </select>
+                        {/* All / Income / Expenses tabs */}
+                        <div className="flex items-center space-x-6 text-sm">
+                            {['all', 'income', 'expense'].map((t) => (
+                                <button
+                                    key={t}
+                                    onClick={() => setFilterType(t)}
+                                    className={`pb-2 border-b-2 ${
+                                        filterType === t
+                                            ? 'border-blue text-blue font-semibold'
+                                            : 'border-transparent text-metallic-gray'
+                                    }`}
+                                >
+                                    {t === 'all'
+                                        ? 'All'
+                                        : t === 'income'
+                                            ? 'Income'
+                                            : 'Expenses'}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
+                    {/* MAIN CHART CARD (carousel) */}
                     <div className="bg-white rounded-xl shadow-sm border border-strokes p-6">
-                        <h2 className="text-lg font-semibold text-text mb-4">
-                            Income vs Expense
-                        </h2>
-                        <DualLineChart data={chartData} />
+                        {/* Header row with title + filters */}
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold text-text">
+                                {chartTitle}
+                            </h2>
+
+                            {/* Right side controls by chart type */}
+                            {currentChartType === 'monthly' && (
+                                <div className="flex items-center space-x-3 text-xs">
+                                    <div className="bg-gray-100 rounded-full p-1 flex">
+                                        <button
+                                            onClick={() =>
+                                                setBarSeriesType('income')
+                                            }
+                                            className={`px-3 py-1 rounded-full ${
+                                                barSeriesType === 'income'
+                                                    ? 'bg-black text-white'
+                                                    : 'text-metallic-gray'
+                                            }`}
+                                        >
+                                            Income
+                                        </button>
+                                        <button
+                                            onClick={() =>
+                                                setBarSeriesType('expense')
+                                            }
+                                            className={`px-3 py-1 rounded-full ${
+                                                barSeriesType === 'expense'
+                                                    ? 'bg-black text-white'
+                                                    : 'text-metallic-gray'
+                                            }`}
+                                        >
+                                            Expenses
+                                        </button>
+                                    </div>
+
+                                    <select
+                                        className="border border-strokes rounded-md px-2 py-1 text-xs"
+                                        value={range}
+                                        onChange={(e) =>
+                                            setRange(e.target.value)
+                                        }
+                                    >
+                                        <option value="7d">
+                                            Last 7 days
+                                        </option>
+                                        <option value="30d">
+                                            Last 30 days
+                                        </option>
+                                        <option value="90d">
+                                            Last 90 days
+                                        </option>
+                                        <option value="365d">Year</option>
+                                    </select>
+                                </div>
+                            )}
+
+                            {currentChartType === 'daily' && (
+                                <div className="flex items-center space-x-4 text-xs">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="flex items-center space-x-1">
+                                            <span className="w-2 h-2 rounded-full bg-[#6366F1]" />
+                                            <span className="text-metallic-gray">
+                                                Income
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center space-x-1">
+                                            <span className="w-2 h-2 rounded-full bg-[#F97316]" />
+                                            <span className="text-metallic-gray">
+                                                Expense
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Date range selector like "20 Mar" to "01 Apr" */}
+                                    <div className="flex items-center space-x-1">
+                                        <input
+                                            type="date"
+                                            value={fromDate}
+                                            onChange={(e) =>
+                                                setFromDate(e.target.value)
+                                            }
+                                            className="border border-strokes rounded-md px-2 py-1 text-xs"
+                                        />
+                                        <span className="text-metallic-gray">
+                                            to
+                                        </span>
+                                        <input
+                                            type="date"
+                                            value={toDate}
+                                            onChange={(e) =>
+                                                setToDate(e.target.value)
+                                            }
+                                            className="border border-strokes rounded-md px-2 py-1 text-xs"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {currentChartType === 'distribution' && (
+                                <div className="flex items-center space-x-3 text-xs">
+                                    <span className="text-metallic-gray">
+                                        Only expenses included
+                                    </span>
+                                    <select
+                                        className="border border-strokes rounded-md px-2 py-1 text-xs"
+                                        value={range}
+                                        onChange={(e) =>
+                                            setRange(e.target.value)
+                                        }
+                                    >
+                                        <option value="7d">
+                                            Last 7 days
+                                        </option>
+                                        <option value="30d">
+                                            Last 30 days
+                                        </option>
+                                        <option value="90d">
+                                            Last 90 days
+                                        </option>
+                                        <option value="365d">Year</option>
+                                    </select>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Chart with arrows positioned near the diagram */}
+                        <div className="relative">
+                            {/* Left arrow */}
+                            <button
+                                onClick={handlePrevChart}
+                                className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 w-8 h-8 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 shadow"
+                            >
+                                ‹
+                            </button>
+
+                            {/* Actual chart area, padded so arrows don't overlap */}
+                            <div className="px-0 sm:px-8">
+                                {currentChartType === 'monthly' && (
+                                    <MonthlyBarChart
+                                        data={monthlyChartData}
+                                        activeSeries={barSeriesType}
+                                    />
+                                )}
+
+                                {currentChartType === 'daily' && (
+                                    <DualLineChart data={dailyChartData} />
+                                )}
+
+                                {currentChartType === 'distribution' && (
+                                    <ExpenseDistributionChart
+                                        data={expenseDistributionData}
+                                    />
+                                )}
+                            </div>
+
+                            {/* Right arrow */}
+                            <button
+                                onClick={handleNextChart}
+                                className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 shadow"
+                            >
+                                ›
+                            </button>
+                        </div>
                     </div>
 
+                    {/* TABLE: Transactions list (with Action column + View button) */}
                     <div className="bg-white rounded-xl shadow-sm border border-strokes p-6">
                         <h2 className="text-lg font-semibold text-text mb-4">
                             Recent Transactions
@@ -158,34 +540,64 @@ const TransactionsPage = () => {
                                 <table className="min-w-full text-sm">
                                     <thead>
                                     <tr className="text-left text-metallic-gray border-b border-strokes">
+                                        <th className="py-2 pr-4">
+                                            Name / Bank Card
+                                        </th>
+                                        <th className="py-2 pr-4">Category</th>
+                                        <th className="py-2 pr-4 text-right">
+                                            Amount
+                                        </th>
                                         <th className="py-2 pr-4">Date</th>
-                                        <th className="py-2 pr-4">Description</th>
-                                        <th className="py-2 pr-4">Type</th>
-                                        <th className="py-2 pr-4 text-right">Amount</th>
+                                        <th className="py-2 pr-4 text-right">
+                                            Action
+                                        </th>
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    {filteredTransactions.map((t) => (
-                                        <tr
-                                            key={t.id}
-                                            className="border-b border-strokes last:border-b-0"
-                                        >
-                                            <td className="py-2 pr-4">
-                                                {formatDateLabel(
-                                                    t.transaction_date || t.created_at
-                                                )}
-                                            </td>
-                                            <td className="py-2 pr-4">
-                                                {t.description || '-'}
-                                            </td>
-                                            <td className="py-2 pr-4 capitalize">
-                                                {t.type}
-                                            </td>
-                                            <td className="py-2 pr-4 text-right">
-                                                {Number(t.amount || 0).toFixed(2)}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {filteredTransactions.map((t) => {
+                                        const categoryName =
+                                            categoryMap[t.category_id] ||
+                                            t.category?.name ||
+                                            t.category_name ||
+                                            t.category ||
+                                            '-';
+                                        const dateLabel = formatDateLabel(
+                                            t.transaction_date ||
+                                            t.created_at
+                                        );
+                                        return (
+                                            <tr
+                                                key={t.id}
+                                                className="border-b border-strokes last:border-b-0"
+                                            >
+                                                <td className="py-2 pr-4">
+                                                    {t.description ||
+                                                        'Transaction'}
+                                                    {t.wallet_name && (
+                                                        <div className="text-[11px] text-metallic-gray">
+                                                            {t.wallet_name}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="py-2 pr-4">
+                                                    {categoryName}
+                                                </td>
+                                                <td className="py-2 pr-4 text-right">
+                                                    {Number(
+                                                        t.amount || 0
+                                                    ).toFixed(2)}
+                                                </td>
+                                                <td className="py-2 pr-4">
+                                                    {dateLabel}
+                                                </td>
+                                                <td className="py-2 pr-4 text-right">
+                                                    <button className="px-4 py-1.5 rounded-full bg-blue text-white text-xs font-semibold hover:bg-blue-600">
+                                                        View
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                     </tbody>
                                 </table>
                             </div>

@@ -37,46 +37,49 @@ const DualLineChart = ({ data = [], currencySymbol = '$' }) => {
         );
     };
 
+    // IMPORTANT: parent needs a height, otherwise chart is invisible
     return (
-        <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-                data={safeData}
-                margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
-            >
-                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                <XAxis
-                    dataKey="label"
-                    tick={{ fontSize: 11, fill: '#9CA3AF' }}
-                    axisLine={false}
-                    tickLine={false}
-                />
-                <YAxis
-                    tick={{ fontSize: 11, fill: '#9CA3AF' }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(value) =>
-                        `${currencySymbol}${value.toFixed(0)}`
-                    }
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Line
-                    type="monotone"
-                    dataKey="income"
-                    stroke="#6F5BFF" // purple
-                    strokeWidth={3}
-                    dot={false}
-                    activeDot={{ r: 5 }}
-                />
-                <Line
-                    type="monotone"
-                    dataKey="expense"
-                    stroke="#FFC75A" // yellow
-                    strokeWidth={3}
-                    dot={false}
-                    activeDot={{ r: 5 }}
-                />
-            </LineChart>
-        </ResponsiveContainer>
+        <div style={{ width: '100%', height: 300 }}>
+            <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                    data={safeData}
+                    margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
+                >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                    <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                        axisLine={false}
+                        tickLine={false}
+                    />
+                    <YAxis
+                        tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(value) =>
+                            `${currencySymbol}${value.toFixed(0)}`
+                        }
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Line
+                        type="monotone"
+                        dataKey="income"
+                        stroke="#6F5BFF" // purple
+                        strokeWidth={3}
+                        dot={false}
+                        activeDot={{ r: 5 }}
+                    />
+                    <Line
+                        type="monotone"
+                        dataKey="expense"
+                        stroke="#FFC75A" // yellow
+                        strokeWidth={3}
+                        dot={false}
+                        activeDot={{ r: 5 }}
+                    />
+                </LineChart>
+            </ResponsiveContainer>
+        </div>
     );
 };
 
