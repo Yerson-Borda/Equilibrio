@@ -1,5 +1,6 @@
 package com.example.moneymate.ui.screens.wallet
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,12 +38,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.wallet.model.Wallet
 import com.example.moneymate.R
+import com.example.moneymate.ui.components.states.FullScreenError
+import com.example.moneymate.ui.components.states.FullScreenLoading
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -52,111 +56,102 @@ fun WalletDetailScreen(
     onEditWallet: (Int) -> Unit,
     viewModel: WalletViewModel = koinViewModel()
 ) {
-    val walletDetail by viewModel.walletDetail.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
-    val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
-    val walletDeleted by viewModel.walletDeleted.collectAsState()
-    val transactions by viewModel.transactions.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
-    // Update to use TransactionEntity
-    val (income, expense) = remember(transactions, walletId) {
-        val walletTransactions = transactions.filter { it.walletId == walletId }
-        calculateIncomeExpense(walletTransactions)
-    }
-
+    // Load wallet data when screen opens
     LaunchedEffect(walletId) {
         println("DEBUG: Loading wallet detail for ID: $walletId")
         viewModel.loadWalletDetail(walletId)
-        viewModel.loadTransactions(walletId) // This now uses the transaction use case
-    }
-    LaunchedEffect(walletDetail) {
-        println("DEBUG: Wallet detail updated: $walletDetail")
+        viewModel.loadTransactions(walletId)
     }
 
-    LaunchedEffect(error) {
-        if (error != null) {
-            println("DEBUG: Error loading wallet: $error")
+    // Navigate back when wallet is successfully deleted
+    LaunchedEffect(uiState.deleteWalletState) {
+        if (uiState.deleteWalletState is com.example.moneymate.utils.ScreenState.Success) {
+            viewModel.resetDeleteWalletState()
+            onBackClick()
         }
     }
 
-    LaunchedEffect(walletDeleted) {
-        if (walletDeleted) {
-            viewModel.resetWalletDeleted()
-            onBackClick() // Navigate back to wallets list
+    // Handle delete errors with Toast
+    LaunchedEffect(uiState.deleteWalletState) {
+        if (uiState.deleteWalletState is com.example.moneymate.utils.ScreenState.Error) {
+            val error = (uiState.deleteWalletState as com.example.moneymate.utils.ScreenState.Error).error
+            Toast.makeText(context, error.getUserFriendlyMessage(), Toast.LENGTH_LONG).show()
         }
     }
 
     Scaffold(
         topBar = {
-            WalletDetailTopBar(
-                onBackClick = onBackClick
-            )
+            WalletDetailTopBar(onBackClick = onBackClick)
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(Color(0xFFF8F9FA))
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = Color(0xFF4D6BFA)
+        // Main content with state management
+        when {
+            // Show loading if wallet detail is loading
+            uiState.walletDetailState is com.example.moneymate.utils.ScreenState.Loading -> {
+                FullScreenLoading(message = "Loading wallet details...")
+            }
+            // Show error if wallet detail failed to load
+            uiState.walletDetailState is com.example.moneymate.utils.ScreenState.Error -> {
+                FullScreenError(
+                    error = (uiState.walletDetailState as com.example.moneymate.utils.ScreenState.Error).error,
+                    onRetry = { viewModel.loadWalletDetail(walletId) }
                 )
-            } else if (walletDetail != null) {
-                WalletDetailContent(
-                    walletDetail = walletDetail!!,
-                    onEditWallet = onEditWallet,
-                    onDeleteWallet = { viewModel.showDeleteConfirmation() },
-                    income = income,
-                    expense = expense,
+            }
+            // Show normal content
+            else -> {
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp)
-                )
-            } else if (error != null) {
-                // Show error state
-                Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .padding(paddingValues)
+                        .background(Color(0xFFF8F9FA))
                 ) {
-                    Text(
-                        text = "Error loading wallet",
-                        color = Color.Red,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                    Button(
-                        onClick = { viewModel.loadWalletDetail(walletId) }
-                    ) {
-                        Text("Retry")
-                    }
-                }
-            } else {
-                // Show empty state (no wallet data and no error)
-                Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "No wallet data found",
-                        color = Color.Gray,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                    Button(
-                        onClick = { viewModel.loadWalletDetail(walletId) }
-                    ) {
-                        Text("Retry")
-                    }
-                }
-            }
+                    when (val walletDetailState = uiState.walletDetailState) {
+                        is com.example.moneymate.utils.ScreenState.Success -> {
+                            val (income, expense) = remember(uiState.transactions, walletId) {
+                                viewModel.getWalletIncomeExpense(walletId)
+                            }
 
-            if (showDeleteDialog) {
-                DeleteConfirmationDialog(
-                    onConfirm = { viewModel.deleteWallet(walletId) },
-                    onDismiss = { viewModel.dismissDeleteConfirmation() }
-                )
+                            WalletDetailContent(
+                                walletDetail = walletDetailState.data,
+                                onEditWallet = onEditWallet,
+                                onDeleteWallet = { viewModel.showDeleteConfirmation() },
+                                income = income,
+                                expense = expense,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp)
+                            )
+                        }
+                        else -> {
+                            // This should not happen due to the when condition above, but added for safety
+                            Column(
+                                modifier = Modifier.align(Alignment.Center),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "No wallet data found",
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                                Button(
+                                    onClick = { viewModel.loadWalletDetail(walletId) }
+                                ) {
+                                    Text("Retry")
+                                }
+                            }
+                        }
+                    }
+
+                    if (uiState.showDeleteDialog) {
+                        DeleteConfirmationDialog(
+                            onConfirm = { viewModel.deleteWallet(walletId) },
+                            onDismiss = { viewModel.dismissDeleteConfirmation() }
+                        )
+                    }
+                }
             }
         }
     }

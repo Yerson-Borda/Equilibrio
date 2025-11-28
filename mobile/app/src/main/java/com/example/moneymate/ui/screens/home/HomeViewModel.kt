@@ -6,10 +6,10 @@ import com.example.domain.user.model.UserDetailedData
 import com.example.domain.user.usecase.GetUserDetailedUseCase
 import com.example.domain.wallet.model.TotalBalance
 import com.example.domain.wallet.usecase.GetTotalBalanceUseCase
-import kotlinx.coroutines.flow.MutableSharedFlow
+import com.example.moneymate.utils.ScreenState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -18,58 +18,105 @@ class HomeViewModel(
     private val getTotalBalanceUseCase: GetTotalBalanceUseCase
 ) : ViewModel() {
 
-    private val _totalBalance = MutableStateFlow<TotalBalance?>(null)
-    val totalBalance: StateFlow<TotalBalance?> = _totalBalance.asStateFlow()
-
-    private val _isTotalBalanceLoading = MutableStateFlow(false)
-    val isTotalBalanceLoading: StateFlow<Boolean> = _isTotalBalanceLoading.asStateFlow()
-
-    private val _userData = MutableStateFlow<UserDetailedData?>(null)
-    val userData = _userData.asStateFlow()
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading = _isLoading.asStateFlow()
-
-    private val _error = MutableSharedFlow<String>()
-    val error = _error.asSharedFlow()
+    private val _uiState = MutableStateFlow(HomeScreenState())
+    val uiState: StateFlow<HomeScreenState> = _uiState.asStateFlow()
 
     init {
+        println("DEBUG: HomeViewModel init - loading data")
+        loadAllData()
+    }
+
+    fun refreshAllData() {
+        loadAllData()
+    }
+
+    fun loadAllData() {
         loadUserData()
         loadTotalBalance()
     }
 
     fun loadUserData() {
         viewModelScope.launch {
-            _isLoading.value = true
+            _uiState.value = _uiState.value.copy(userDataState = ScreenState.Loading)
+            delay(5000)
+
             try {
+                println("DEBUG: HomeViewModel - Loading user data...")
                 val data = getUserDetailedUseCase()
                 println("DEBUG: HomeViewModel - Loaded user data: $data")
                 println("DEBUG: HomeViewModel - User fullName: ${data.user.fullName}")
                 println("DEBUG: HomeViewModel - Stats: ${data.stats}")
-                _userData.value = data
+
+                _uiState.value = _uiState.value.copy(
+                    userDataState = ScreenState.Success(data)
+                )
             } catch (e: Exception) {
                 println("DEBUG: HomeViewModel - Error loading user data: ${e.message}")
-                _error.emit("Failed to load user data: ${e.message}")
-            } finally {
-                _isLoading.value = false
+                _uiState.value = _uiState.value.copy(
+                    userDataState = ScreenState.Error(
+                        com.example.moneymate.utils.ErrorHandler.mapExceptionToAppError(e),
+                        retryAction = { loadUserData() }
+                    )
+                )
             }
         }
     }
-
 
     fun loadTotalBalance() {
         viewModelScope.launch {
-            _isTotalBalanceLoading.value = true
-            val result = getTotalBalanceUseCase()
-            if (result.isSuccess) {
-                _totalBalance.value = result.getOrNull()
+            _uiState.value = _uiState.value.copy(balanceState = ScreenState.Loading)
+
+            try {
+                println("DEBUG: HomeViewModel - Loading total balance...")
+                val result = getTotalBalanceUseCase()
+                if (result.isSuccess) {
+                    val balance = result.getOrNull()
+                    _uiState.value = _uiState.value.copy(
+                        balanceState = ScreenState.Success(balance)
+                    )
+                    println("DEBUG: HomeViewModel - Loaded total balance: $balance")
+                } else {
+                    val exception = result.exceptionOrNull() ?: Exception("Failed to load balance")
+                    _uiState.value = _uiState.value.copy(
+                        balanceState = ScreenState.Error(
+                            com.example.moneymate.utils.ErrorHandler.mapExceptionToAppError(exception),
+                            retryAction = { loadTotalBalance() }
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                println("DEBUG: HomeViewModel - Error loading total balance: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    balanceState = ScreenState.Error(
+                        com.example.moneymate.utils.ErrorHandler.mapExceptionToAppError(e),
+                        retryAction = { loadTotalBalance() }
+                    )
+                )
             }
-            _isTotalBalanceLoading.value = false
         }
     }
+}
 
-    fun refreshAllData() {
-        loadUserData()
-        loadTotalBalance()
-    }
+data class HomeScreenState(
+    val userDataState: ScreenState<UserDetailedData> = ScreenState.Loading,
+    val balanceState: ScreenState<TotalBalance?> = ScreenState.Loading
+) {
+    // Helper properties for backward compatibility
+    val isLoading: Boolean
+        get() = userDataState is ScreenState.Loading && balanceState is ScreenState.Loading
+
+    val isTotalBalanceLoading: Boolean
+        get() = balanceState is ScreenState.Loading
+
+    val userData: UserDetailedData?
+        get() = when (userDataState) {
+            is ScreenState.Success -> userDataState.data
+            else -> null
+        }
+
+    val totalBalance: TotalBalance?
+        get() = when (balanceState) {
+            is ScreenState.Success -> balanceState.data
+            else -> null
+        }
 }

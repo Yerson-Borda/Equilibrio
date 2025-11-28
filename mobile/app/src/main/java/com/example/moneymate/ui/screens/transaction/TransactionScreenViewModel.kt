@@ -15,6 +15,7 @@ import com.example.domain.transaction.usecase.GetCategorySummaryUseCase
 import com.example.domain.transaction.usecase.GetMonthlyChartDataUseCase
 import com.example.domain.transaction.usecase.GetMonthlyComparisonUseCase
 import com.example.domain.transaction.usecase.GetRecentTransactionsUseCase
+import com.example.moneymate.utils.ScreenState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,23 +31,24 @@ class TransactionScreenViewModel(
     private val _uiState = MutableStateFlow(TransactionScreenState())
     val uiState: StateFlow<TransactionScreenState> = _uiState.asStateFlow()
 
-    fun refreshData() {
-        loadData()
-    }
-
     init {
         println("DEBUG: ViewModel init - loading data")
         loadData()
     }
 
+    fun refreshData() {
+        loadData()
+    }
+
     fun loadData() {
-        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         loadAllChartData()
         loadRecentTransactions()
     }
 
-    private fun loadAllChartData() {
+    fun loadAllChartData() {
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(chartsState = ScreenState.Loading)
+
             try {
                 println("DEBUG: Loading all chart data...")
 
@@ -60,7 +62,8 @@ class TransactionScreenViewModel(
                 val chartsData = TransactionChartsData(
                     monthlyChart = monthlyChart.copy(
                         days = lineChartData.days,
-                        dateRange = defaultDateRange
+                        dateRange = defaultDateRange,
+                        selectedFilter = ChartFilter.EXPENSES // Set initial filter
                     ),
                     categorySummary = categorySummary,
                     monthlyComparison = monthlyComparison,
@@ -68,19 +71,19 @@ class TransactionScreenViewModel(
                 )
 
                 _uiState.value = _uiState.value.copy(
-                    chartsData = chartsData,
-                    isLoading = _uiState.value.recentTransactions.isEmpty()
+                    chartsState = ScreenState.Success(chartsData)
                 )
-                println("DEBUG: All chart data loaded successfully")
+                println("DEBUG: All chart data loaded successfully. Initial filter: ${chartsData.monthlyChart.selectedFilter}")
 
             } catch (e: Exception) {
                 println("DEBUG: Chart data error: ${e.message}")
-                // On error, use empty/default data but don't show error for charts
+                // On error, use empty/default data
                 val fallbackChartsData = TransactionChartsData(
                     monthlyChart = MonthlyChartData(
                         months = emptyList(),
                         days = emptyList(),
-                        dateRange = DateRange(getDefaultStartDate(), getDefaultEndDate())
+                        dateRange = DateRange(getDefaultStartDate(), getDefaultEndDate()),
+                        selectedFilter = ChartFilter.EXPENSES
                     ),
                     categorySummary = CategorySummaryData(
                         expenses = emptyList(),
@@ -97,16 +100,19 @@ class TransactionScreenViewModel(
                 )
 
                 _uiState.value = _uiState.value.copy(
-                    chartsData = fallbackChartsData,
-                    isLoading = _uiState.value.recentTransactions.isEmpty(),
-                    error = "Some chart data failed to load"
+                    chartsState = ScreenState.Error(
+                        com.example.moneymate.utils.ErrorHandler.mapExceptionToAppError(e),
+                        retryAction = { loadAllChartData() }
+                    )
                 )
             }
         }
     }
 
-    private fun loadRecentTransactions() {
+    fun loadRecentTransactions() {
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(transactionsState = ScreenState.Loading)
+
             try {
                 println("DEBUG: Loading recent transactions...")
                 val result = getRecentTransactionsUseCase.execute(limit = 20)
@@ -114,21 +120,26 @@ class TransactionScreenViewModel(
                 if (result.isSuccess) {
                     val transactions = result.getOrNull() ?: emptyList()
                     _uiState.value = _uiState.value.copy(
-                        recentTransactions = transactions,
-                        isLoading = false
+                        transactionsState = ScreenState.Success(transactions)
                     )
                     println("DEBUG: Loaded ${transactions.size} transactions")
                 } else {
                     _uiState.value = _uiState.value.copy(
-                        recentTransactions = emptyList(),
-                        isLoading = false
+                        transactionsState = ScreenState.Error(
+                            com.example.moneymate.utils.ErrorHandler.mapExceptionToAppError(
+                                result.exceptionOrNull() ?: Exception("Failed to load transactions")
+                            ),
+                            retryAction = { loadRecentTransactions() }
+                        )
                     )
                 }
             } catch (e: Exception) {
                 println("DEBUG: Recent transactions error: ${e.message}")
                 _uiState.value = _uiState.value.copy(
-                    recentTransactions = emptyList(),
-                    isLoading = false
+                    transactionsState = ScreenState.Error(
+                        com.example.moneymate.utils.ErrorHandler.mapExceptionToAppError(e),
+                        retryAction = { loadRecentTransactions() }
+                    )
                 )
             }
         }
@@ -136,41 +147,99 @@ class TransactionScreenViewModel(
 
     // Update chart type (for swipe/tab changes)
     fun updateCurrentChartType(chartType: ChartType) {
+        println("DEBUG: updateCurrentChartType called with: $chartType")
+        val currentCharts = when (val state = _uiState.value.chartsState) {
+            is ScreenState.Success -> {
+                println("DEBUG: Current charts state: SUCCESS")
+                state.data
+            }
+            else -> {
+                println("DEBUG: Current charts state: ${_uiState.value.chartsState}")
+                _uiState.value.chartsData // fallback
+            }
+        }
+
         _uiState.value = _uiState.value.copy(
-            chartsData = _uiState.value.chartsData.copy(currentChartType = chartType)
+            chartsState = ScreenState.Success(
+                currentCharts.copy(currentChartType = chartType)
+            )
         )
+        println("DEBUG: Chart type updated to: $chartType")
     }
 
-    // Update filters for charts
+    // Update filters for charts - ADD EXTENSIVE DEBUGGING
     fun updateChartFilter(filter: ChartFilter) {
-        val currentChartsData = _uiState.value.chartsData
+        println("🚀 DEBUG: updateChartFilter CALLED with: $filter")
 
-        when (currentChartsData.currentChartType) {
+        val currentCharts = when (val state = _uiState.value.chartsState) {
+            is ScreenState.Success -> {
+                println("✅ DEBUG: Charts state is SUCCESS")
+                println("📊 DEBUG: Current chart type: ${state.data.currentChartType}")
+                println("🎛️ DEBUG: Current monthly filter: ${state.data.monthlyChart.selectedFilter}")
+                state.data
+            }
+            else -> {
+                println("❌ DEBUG: Charts state is NOT SUCCESS: ${_uiState.value.chartsState}")
+                return
+            }
+        }
+
+        when (currentCharts.currentChartType) {
             ChartType.MONTHLY_TRENDS -> {
+                println("📈 DEBUG: Updating MONTHLY_TRENDS chart filter from ${currentCharts.monthlyChart.selectedFilter} to $filter")
+
                 _uiState.value = _uiState.value.copy(
-                    chartsData = currentChartsData.copy(
-                        monthlyChart = currentChartsData.monthlyChart.copy(selectedFilter = filter)
+                    chartsState = ScreenState.Success(
+                        currentCharts.copy(
+                            monthlyChart = currentCharts.monthlyChart.copy(selectedFilter = filter)
+                        )
                     )
                 )
+
+                // Verify the update
+                when (val newState = _uiState.value.chartsState) {
+                    is ScreenState.Success -> {
+                        println("✅ DEBUG: SUCCESS - Monthly chart filter updated to: ${newState.data.monthlyChart.selectedFilter}")
+                    }
+                    else -> {
+                        println("❌ DEBUG: FAILED - Charts state after update: $newState")
+                    }
+                }
             }
             ChartType.CATEGORY_BREAKDOWN -> {
+                println("📊 DEBUG: Updating CATEGORY_BREAKDOWN chart filter")
                 _uiState.value = _uiState.value.copy(
-                    chartsData = currentChartsData.copy(
-                        categorySummary = currentChartsData.categorySummary.copy(selectedFilter = filter)
+                    chartsState = ScreenState.Success(
+                        currentCharts.copy(
+                            categorySummary = currentCharts.categorySummary.copy(selectedFilter = filter)
+                        )
                     )
                 )
+                println("✅ DEBUG: Category summary filter updated to: $filter")
             }
             ChartType.MONTHLY_COMPARISON -> {
-                // Handle comparison chart filter if needed
+                println("📅 DEBUG: MONTHLY_COMPARISON filter change (no action needed)")
             }
         }
     }
 
     // Update period filter and reload data for charts
     fun updatePeriodFilter(period: PeriodFilter) {
+        println("DEBUG: updatePeriodFilter called with: $period")
         viewModelScope.launch {
             try {
-                when (_uiState.value.chartsData.currentChartType) {
+                val currentCharts = when (val state = _uiState.value.chartsState) {
+                    is ScreenState.Success -> {
+                        println("DEBUG: Current charts available for period update")
+                        state.data
+                    }
+                    else -> {
+                        println("DEBUG: No charts available for period update")
+                        return@launch
+                    }
+                }
+
+                when (currentCharts.currentChartType) {
                     ChartType.MONTHLY_TRENDS -> {
                         val months = when (period) {
                             PeriodFilter.YEAR -> 12
@@ -178,22 +247,25 @@ class TransactionScreenViewModel(
                             else -> 12 // Default for other periods in bar chart
                         }
                         val result = getMonthlyChartDataUseCase.execute(months = months)
-                        val currentChartsData = _uiState.value.chartsData
                         _uiState.value = _uiState.value.copy(
-                            chartsData = currentChartsData.copy(
-                                monthlyChart = result.copy(selectedPeriod = period)
+                            chartsState = ScreenState.Success(
+                                currentCharts.copy(
+                                    monthlyChart = result.copy(
+                                        selectedPeriod = period,
+                                        selectedFilter = currentCharts.monthlyChart.selectedFilter // Preserve current filter
+                                    )
+                                )
                             )
                         )
+                        println("DEBUG: Monthly chart period updated to: $period")
                     }
                     ChartType.CATEGORY_BREAKDOWN -> {
-                        // For line chart, we now use date range instead of fixed day counts
-                        // But we can still handle period filters for quick selections
                         val dateRange = when (period) {
                             PeriodFilter.DAYS_7 -> DateRange(getDateDaysAgo(7), getDefaultEndDate())
                             PeriodFilter.DAYS_15 -> DateRange(getDateDaysAgo(15), getDefaultEndDate())
                             PeriodFilter.DAYS_30 -> DateRange(getDateDaysAgo(30), getDefaultEndDate())
                             PeriodFilter.DAYS_90 -> DateRange(getDateDaysAgo(90), getDefaultEndDate())
-                            else -> _uiState.value.chartsData.monthlyChart.dateRange
+                            else -> currentCharts.monthlyChart.dateRange
                         }
                         updateDateRange(dateRange)
                     }
@@ -209,16 +281,23 @@ class TransactionScreenViewModel(
 
     // Update date range for line chart
     fun updateDateRange(dateRange: DateRange) {
+        println("DEBUG: updateDateRange called with: $dateRange")
         viewModelScope.launch {
             try {
+                val currentCharts = when (val state = _uiState.value.chartsState) {
+                    is ScreenState.Success -> state.data
+                    else -> return@launch
+                }
+
                 val lineChartData = getMonthlyChartDataUseCase.executeForLineChart(dateRange)
-                val currentChartsData = _uiState.value.chartsData
                 _uiState.value = _uiState.value.copy(
-                    chartsData = currentChartsData.copy(
-                        monthlyChart = currentChartsData.monthlyChart.copy(
-                            days = lineChartData.days,
-                            dateRange = dateRange,
-                            selectedPeriod = getPeriodFilterForDateRange(dateRange)
+                    chartsState = ScreenState.Success(
+                        currentCharts.copy(
+                            monthlyChart = currentCharts.monthlyChart.copy(
+                                days = lineChartData.days,
+                                dateRange = dateRange,
+                                selectedPeriod = getPeriodFilterForDateRange(dateRange)
+                            )
                         )
                     )
                 )
@@ -233,13 +312,19 @@ class TransactionScreenViewModel(
     fun refreshLineChartData() {
         viewModelScope.launch {
             try {
-                val currentDateRange = _uiState.value.chartsData.monthlyChart.dateRange
+                val currentCharts = when (val state = _uiState.value.chartsState) {
+                    is ScreenState.Success -> state.data
+                    else -> return@launch
+                }
+
+                val currentDateRange = currentCharts.monthlyChart.dateRange
                 val lineChartData = getMonthlyChartDataUseCase.executeForLineChart(currentDateRange)
-                val currentChartsData = _uiState.value.chartsData
                 _uiState.value = _uiState.value.copy(
-                    chartsData = currentChartsData.copy(
-                        monthlyChart = currentChartsData.monthlyChart.copy(
-                            days = lineChartData.days
+                    chartsState = ScreenState.Success(
+                        currentCharts.copy(
+                            monthlyChart = currentCharts.monthlyChart.copy(
+                                days = lineChartData.days
+                            )
                         )
                     )
                 )
@@ -254,11 +339,17 @@ class TransactionScreenViewModel(
     fun refreshCategorySummary(startDate: String, endDate: String) {
         viewModelScope.launch {
             try {
+                val currentCharts = when (val state = _uiState.value.chartsState) {
+                    is ScreenState.Success -> state.data
+                    else -> return@launch
+                }
+
                 val categorySummary = getCategorySummaryUseCase.execute(startDate, endDate)
-                val currentChartsData = _uiState.value.chartsData
                 _uiState.value = _uiState.value.copy(
-                    chartsData = currentChartsData.copy(
-                        categorySummary = categorySummary
+                    chartsState = ScreenState.Success(
+                        currentCharts.copy(
+                            categorySummary = categorySummary
+                        )
                     )
                 )
                 println("DEBUG: Category summary refreshed with custom date range")
@@ -272,11 +363,17 @@ class TransactionScreenViewModel(
     fun refreshMonthlyComparison(month: String) {
         viewModelScope.launch {
             try {
+                val currentCharts = when (val state = _uiState.value.chartsState) {
+                    is ScreenState.Success -> state.data
+                    else -> return@launch
+                }
+
                 val monthlyComparison = getMonthlyComparisonUseCase.execute(month)
-                val currentChartsData = _uiState.value.chartsData
                 _uiState.value = _uiState.value.copy(
-                    chartsData = currentChartsData.copy(
-                        monthlyComparison = monthlyComparison
+                    chartsState = ScreenState.Success(
+                        currentCharts.copy(
+                            monthlyComparison = monthlyComparison
+                        )
                     )
                 )
                 println("DEBUG: Monthly comparison refreshed")
@@ -289,16 +386,23 @@ class TransactionScreenViewModel(
     // Refresh specific chart data
     fun refreshChartData(chartType: ChartType) {
         viewModelScope.launch {
+            val currentCharts = when (val state = _uiState.value.chartsState) {
+                is ScreenState.Success -> state.data
+                else -> return@launch
+            }
+
             when (chartType) {
                 ChartType.MONTHLY_TRENDS -> {
                     try {
                         val monthlyChart = getMonthlyChartDataUseCase.execute(months = 12)
-                        val currentChartsData = _uiState.value.chartsData
                         _uiState.value = _uiState.value.copy(
-                            chartsData = currentChartsData.copy(
-                                monthlyChart = monthlyChart.copy(
-                                    dateRange = currentChartsData.monthlyChart.dateRange,
-                                    days = currentChartsData.monthlyChart.days
+                            chartsState = ScreenState.Success(
+                                currentCharts.copy(
+                                    monthlyChart = monthlyChart.copy(
+                                        dateRange = currentCharts.monthlyChart.dateRange,
+                                        days = currentCharts.monthlyChart.days,
+                                        selectedFilter = currentCharts.monthlyChart.selectedFilter // Preserve filter
+                                    )
                                 )
                             )
                         )
@@ -308,7 +412,6 @@ class TransactionScreenViewModel(
                 }
                 ChartType.CATEGORY_BREAKDOWN -> {
                     try {
-                        // Refresh line chart data with current date range
                         refreshLineChartData()
                     } catch (e: Exception) {
                         println("DEBUG: Line chart refresh error: ${e.message}")
@@ -317,10 +420,11 @@ class TransactionScreenViewModel(
                 ChartType.MONTHLY_COMPARISON -> {
                     try {
                         val monthlyComparison = getMonthlyComparisonUseCase.execute()
-                        val currentChartsData = _uiState.value.chartsData
                         _uiState.value = _uiState.value.copy(
-                            chartsData = currentChartsData.copy(
-                                monthlyComparison = monthlyComparison
+                            chartsState = ScreenState.Success(
+                                currentCharts.copy(
+                                    monthlyComparison = monthlyComparison
+                                )
                             )
                         )
                     } catch (e: Exception) {
@@ -329,10 +433,6 @@ class TransactionScreenViewModel(
                 }
             }
         }
-    }
-
-    fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
     }
 
     // Helper functions for date calculations
@@ -373,33 +473,51 @@ class TransactionScreenViewModel(
 }
 
 data class TransactionScreenState(
-    val isLoading: Boolean = true,
-    val error: String? = null,
-    val chartsData: TransactionChartsData = TransactionChartsData(
-        monthlyChart = MonthlyChartData(
-            months = emptyList(),
-            days = emptyList(),
-            dateRange = DateRange(
-                startDate = getDefaultStartDate(),
-                endDate = getDefaultEndDate()
-            ),
-            selectedPeriod = PeriodFilter.DAYS_30
-        ),
-        categorySummary = CategorySummaryData(
-            expenses = emptyList(),
-            incomes = emptyList(),
-            totalExpenses = 0.0,
-            totalIncomes = 0.0,
-            netFlow = 0.0
-        ),
-        monthlyComparison = MonthlyComparisonData(
-            categories = emptyList(),
-            selectedMonth = "Current Month"
-        ),
-        currentChartType = ChartType.MONTHLY_TRENDS
-    ),
-    val recentTransactions: List<TransactionEntity> = emptyList()
-)
+    val chartsState: ScreenState<TransactionChartsData> = ScreenState.Loading,
+    val transactionsState: ScreenState<List<TransactionEntity>> = ScreenState.Loading
+) {
+    // Helper properties for backward compatibility
+    val isLoading: Boolean
+        get() = chartsState is ScreenState.Loading && transactionsState is ScreenState.Loading
+
+    val chartsData: TransactionChartsData
+        get() = when (chartsState) {
+            is ScreenState.Success -> {
+                println("🔄 DEBUG: chartsData getter - SUCCESS state, filter: ${chartsState.data.monthlyChart.selectedFilter}")
+                chartsState.data
+            }
+            else -> {
+                println("🔄 DEBUG: chartsData getter - FALLBACK state")
+                TransactionChartsData(
+                    monthlyChart = MonthlyChartData(
+                        months = emptyList(),
+                        days = emptyList(),
+                        dateRange = DateRange(getDefaultStartDate(), getDefaultEndDate()),
+                        selectedPeriod = PeriodFilter.DAYS_30,
+                        selectedFilter = ChartFilter.EXPENSES
+                    ),
+                    categorySummary = CategorySummaryData(
+                        expenses = emptyList(),
+                        incomes = emptyList(),
+                        totalExpenses = 0.0,
+                        totalIncomes = 0.0,
+                        netFlow = 0.0
+                    ),
+                    monthlyComparison = MonthlyComparisonData(
+                        categories = emptyList(),
+                        selectedMonth = "Current Month"
+                    ),
+                    currentChartType = ChartType.MONTHLY_TRENDS
+                )
+            }
+        }
+
+    val recentTransactions: List<TransactionEntity>
+        get() = when (transactionsState) {
+            is ScreenState.Success -> transactionsState.data
+            else -> emptyList()
+        }
+}
 
 // Helper functions for default dates
 private fun getDefaultStartDate(): String {

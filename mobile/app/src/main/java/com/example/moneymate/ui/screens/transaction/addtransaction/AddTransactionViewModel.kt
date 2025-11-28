@@ -13,6 +13,7 @@ import com.example.domain.wallet.model.Wallet
 import com.example.domain.wallet.usecase.GetWalletsUseCase
 import com.example.moneymate.utils.AppError
 import com.example.moneymate.utils.ErrorHandler
+import com.example.moneymate.utils.ScreenState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,37 +34,33 @@ class AddTransactionViewModel(
     private val _navigationEvent = MutableStateFlow<NavigationEvent?>(null)
     val navigationEvent: StateFlow<NavigationEvent?> = _navigationEvent.asStateFlow()
 
-    private val _wallets = MutableStateFlow<List<Wallet>>(emptyList())
-    val wallets: StateFlow<List<Wallet>> = _wallets.asStateFlow()
-
-    private val _categories = MutableStateFlow<List<Category>>(emptyList())
-    val categories: StateFlow<List<Category>> = _categories.asStateFlow()
-
-    private val _errorState = MutableStateFlow<AppError?>(null)
-    val errorState: StateFlow<AppError?> = _errorState.asStateFlow()
+    // Remove individual flows since they're now part of uiState
+    // private val _wallets = MutableStateFlow<List<Wallet>>(emptyList())
+    // private val _categories = MutableStateFlow<List<Category>>(emptyList())
+    // private val _errorState = MutableStateFlow<AppError?>(null)
 
     fun onAttachmentsSelected(uris: List<String>) {
         _uiState.value = _uiState.value.copy(attachments = uris)
     }
 
-    fun clearError() {
-        _errorState.value = null
-    }
-
     init {
         loadWallets()
-        loadCategories() // Load categories based on initial transaction type
+        loadCategories()
     }
 
-    private fun loadWallets() {
+     fun loadWallets() {
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(walletsState = ScreenState.Loading)
+
             try {
-                _uiState.value = _uiState.value.copy(isLoading = true)
                 val result = getWalletsUseCase()
                 if (result.isSuccess) {
-                    _wallets.value = result.getOrThrow()
+                    val wallets = result.getOrThrow()
+                    _uiState.value = _uiState.value.copy(
+                        walletsState = ScreenState.Success(wallets)
+                    )
                     // Set the first wallet as default selection if available
-                    val firstWallet = _wallets.value.firstOrNull()
+                    val firstWallet = wallets.firstOrNull()
                     if (firstWallet != null) {
                         _uiState.value = _uiState.value.copy(
                             selectedWalletId = firstWallet.id ?: 0,
@@ -74,54 +71,75 @@ class AddTransactionViewModel(
                     }
                 } else {
                     val exception = result.exceptionOrNull() ?: Exception("Unknown error loading wallets")
-                    _errorState.value = ErrorHandler.mapExceptionToAppError(exception)
+                    _uiState.value = _uiState.value.copy(
+                        walletsState = ScreenState.Error(
+                            ErrorHandler.mapExceptionToAppError(exception),
+                            retryAction = { loadWallets() }
+                        )
+                    )
                 }
             } catch (e: Exception) {
-                _errorState.value = ErrorHandler.mapExceptionToAppError(e)
-            } finally {
-                _uiState.value = _uiState.value.copy(isLoading = false)
+                _uiState.value = _uiState.value.copy(
+                    walletsState = ScreenState.Error(
+                        ErrorHandler.mapExceptionToAppError(e),
+                        retryAction = { loadWallets() }
+                    )
+                )
             }
         }
     }
 
-    // Add this function to load categories based on transaction type
-    private fun loadCategories() {
+     fun loadCategories() {
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(categoriesState = ScreenState.Loading)
+
             try {
                 val result = when (_uiState.value.selectedType) {
                     TransactionType.INCOME -> getIncomeCategoriesUseCase()
                     TransactionType.EXPENSE -> getExpenseCategoriesUseCase()
-                    TransactionType.TRANSFER -> getExpenseCategoriesUseCase() // or handle differently
+                    TransactionType.TRANSFER -> getExpenseCategoriesUseCase()
                 }
 
                 if (result.isSuccess) {
-                    _categories.value = result.getOrThrow()
+                    val categories = result.getOrThrow()
+                    _uiState.value = _uiState.value.copy(
+                        categoriesState = ScreenState.Success(categories)
+                    )
                     // Set the first category as default selection if available
-                    val firstCategory = _categories.value.firstOrNull()
+                    val firstCategory = categories.firstOrNull()
                     if (firstCategory != null) {
                         _uiState.value = _uiState.value.copy(
                             selectedCategoryId = firstCategory.id,
                             selectedCategoryName = firstCategory.name
                         )
                     }
+                } else {
+                    val exception = result.exceptionOrNull() ?: Exception("Error loading categories")
+                    _uiState.value = _uiState.value.copy(
+                        categoriesState = ScreenState.Error(
+                            ErrorHandler.mapExceptionToAppError(exception),
+                            retryAction = { loadCategories() }
+                        )
+                    )
                 }
             } catch (e: Exception) {
-                // Handle error silently or log it
-                println("Error loading categories: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    categoriesState = ScreenState.Error(
+                        ErrorHandler.mapExceptionToAppError(e),
+                        retryAction = { loadCategories() }
+                    )
+                )
             }
         }
     }
 
     fun onTransactionTypeSelected(type: TransactionType) {
         _uiState.value = _uiState.value.copy(selectedType = type)
-        clearError()
         loadCategories() // Reload categories when type changes
     }
 
-    // ... rest of your existing functions remain the same
     fun onAmountChanged(amount: String) {
         _uiState.value = _uiState.value.copy(amount = amount)
-        clearError()
     }
 
     fun onWalletSelected(walletId: Int, walletName: String) {
@@ -129,7 +147,6 @@ class AddTransactionViewModel(
             selectedWalletId = walletId,
             selectedWalletName = walletName
         )
-        clearError()
     }
 
     fun onDestinationWalletSelected(walletId: Int, walletName: String) {
@@ -137,7 +154,6 @@ class AddTransactionViewModel(
             destinationWalletId = walletId,
             destinationWalletName = walletName
         )
-        clearError()
     }
 
     fun onCategorySelected(categoryId: Int, categoryName: String) {
@@ -165,7 +181,6 @@ class AddTransactionViewModel(
         val currentAmount = _uiState.value.amount
         val newAmount = if (currentAmount == "0") number else currentAmount + number
         _uiState.value = _uiState.value.copy(amount = newAmount)
-        clearError()
     }
 
     fun onBackspacePressed() {
@@ -175,7 +190,6 @@ class AddTransactionViewModel(
             _uiState.value = _uiState.value.copy(
                 amount = if (newAmount.isEmpty()) "0" else newAmount
             )
-            clearError()
         }
     }
 
@@ -197,8 +211,7 @@ class AddTransactionViewModel(
         }
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            clearError()
+            _uiState.value = _uiState.value.copy(transactionState = ScreenState.Loading)
 
             try {
                 when (_uiState.value.selectedType) {
@@ -210,22 +223,33 @@ class AddTransactionViewModel(
                     }
                 }
             } catch (e: Exception) {
-                _errorState.value = ErrorHandler.mapExceptionToAppError(e)
-            } finally {
-                _uiState.value = _uiState.value.copy(isLoading = false)
+                _uiState.value = _uiState.value.copy(
+                    transactionState = ScreenState.Error(
+                        ErrorHandler.mapExceptionToAppError(e),
+                        retryAction = { createTransaction() }
+                    )
+                )
             }
         }
     }
 
     private fun validateWalletBalance(): Boolean {
         if (_uiState.value.selectedType == TransactionType.EXPENSE) {
-            val selectedWallet = _wallets.value.find { it.id == _uiState.value.selectedWalletId }
+            val wallets = when (val state = _uiState.value.walletsState) {
+                is ScreenState.Success -> state.data
+                else -> emptyList()
+            }
+            val selectedWallet = wallets.find { it.id == _uiState.value.selectedWalletId }
             val walletBalance = selectedWallet?.balance?.toDoubleOrNull() ?: 0.0
             val expenseAmount = _uiState.value.amount.toDoubleOrNull() ?: 0.0
 
             if (walletBalance < expenseAmount) {
-                _errorState.value = AppError.ValidationError(
-                    "Insufficient balance. Your wallet has $${"%.2f".format(walletBalance)} but you're trying to spend $${"%.2f".format(expenseAmount)}"
+                _uiState.value = _uiState.value.copy(
+                    transactionState = ScreenState.Error(
+                        AppError.ValidationError(
+                            "Insufficient balance. Your wallet has $${"%.2f".format(walletBalance)} but you're trying to spend $${"%.2f".format(expenseAmount)}"
+                        )
+                    )
                 )
                 return false
             }
@@ -233,9 +257,14 @@ class AddTransactionViewModel(
         return true
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun handleTransferCreation() {
         if (_uiState.value.selectedWalletId == _uiState.value.destinationWalletId) {
-            _errorState.value = AppError.ValidationError("Cannot transfer to the same wallet")
+            _uiState.value = _uiState.value.copy(
+                transactionState = ScreenState.Error(
+                    AppError.ValidationError("Cannot transfer to the same wallet")
+                )
+            )
             return
         }
 
@@ -247,10 +276,16 @@ class AddTransactionViewModel(
         )
 
         if (result.isSuccess) {
+            _uiState.value = _uiState.value.copy(transactionState = ScreenState.Success(Unit))
             _navigationEvent.value = NavigationEvent.NavigateHome
         } else {
             val exception = result.exceptionOrNull() ?: Exception("Failed to create transfer")
-            _errorState.value = ErrorHandler.mapExceptionToAppError(exception)
+            _uiState.value = _uiState.value.copy(
+                transactionState = ScreenState.Error(
+                    ErrorHandler.mapExceptionToAppError(exception),
+                    retryAction = { createTransaction() }
+                )
+            )
         }
     }
 
@@ -267,33 +302,55 @@ class AddTransactionViewModel(
         )
 
         if (result.isSuccess) {
+            _uiState.value = _uiState.value.copy(transactionState = ScreenState.Success(Unit))
             _navigationEvent.value = NavigationEvent.NavigateHome
         } else {
             val exception = result.exceptionOrNull() ?: Exception("Failed to create transaction")
-            _errorState.value = ErrorHandler.mapExceptionToAppError(exception)
+            _uiState.value = _uiState.value.copy(
+                transactionState = ScreenState.Error(
+                    ErrorHandler.mapExceptionToAppError(exception),
+                    retryAction = { createTransaction() }
+                )
+            )
         }
     }
 
     private fun validateInputs(): Boolean {
         val amount = _uiState.value.amount
         if (amount == "0" || amount == "0." || amount.isEmpty()) {
-            _errorState.value = AppError.ValidationError("Please enter a valid amount")
+            _uiState.value = _uiState.value.copy(
+                transactionState = ScreenState.Error(
+                    AppError.ValidationError("Please enter a valid amount")
+                )
+            )
             return false
         }
 
         if (_uiState.value.selectedWalletId == 0) {
-            _errorState.value = AppError.ValidationError("Please select a wallet")
+            _uiState.value = _uiState.value.copy(
+                transactionState = ScreenState.Error(
+                    AppError.ValidationError("Please select a wallet")
+                )
+            )
             return false
         }
 
         // For transfers, check destination wallet
         if (_uiState.value.selectedType == TransactionType.TRANSFER) {
             if (_uiState.value.destinationWalletId == 0) {
-                _errorState.value = AppError.ValidationError("Please select a destination wallet")
+                _uiState.value = _uiState.value.copy(
+                    transactionState = ScreenState.Error(
+                        AppError.ValidationError("Please select a destination wallet")
+                    )
+                )
                 return false
             }
             if (_uiState.value.selectedWalletId == _uiState.value.destinationWalletId) {
-                _errorState.value = AppError.ValidationError("Cannot transfer to the same wallet")
+                _uiState.value = _uiState.value.copy(
+                    transactionState = ScreenState.Error(
+                        AppError.ValidationError("Cannot transfer to the same wallet")
+                    )
+                )
                 return false
             }
         }
@@ -310,7 +367,23 @@ class AddTransactionViewModel(
     fun clearNavigationEvent() {
         _navigationEvent.value = null
     }
+
+    // Helper functions to get data from screen states
+    fun getWallets(): List<Wallet> {
+        return when (val state = _uiState.value.walletsState) {
+            is ScreenState.Success -> state.data
+            else -> emptyList()
+        }
+    }
+
+    fun getCategories(): List<Category> {
+        return when (val state = _uiState.value.categoriesState) {
+            is ScreenState.Success -> state.data
+            else -> emptyList()
+        }
+    }
 }
+
 sealed class NavigationEvent {
     object NavigateHome : NavigationEvent()
 }
@@ -323,11 +396,15 @@ data class AddTransactionState(
     val destinationWalletId: Int = 0,
     val destinationWalletName: String = "Select Wallet",
     val selectedCategoryId: Int = 1,
-    val selectedCategoryName: String = "Food",
+    val selectedCategoryName: String = "Foods & Drinks",
     val description: String = "",
     val selectedTags: List<String> = emptyList(),
     val attachments: List<String> = emptyList(),
-    val isLoading: Boolean = false
+
+    // Screen states for loading and error handling
+    val walletsState: ScreenState<List<Wallet>> = ScreenState.Loading,
+    val categoriesState: ScreenState<List<Category>> = ScreenState.Loading,
+    val transactionState: ScreenState<Unit> = ScreenState.Empty
 )
 
 enum class TransactionType(val displayName: String, val apiValue: String) {

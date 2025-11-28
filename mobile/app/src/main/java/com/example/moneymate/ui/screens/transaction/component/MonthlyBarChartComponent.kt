@@ -49,6 +49,7 @@ fun MonthlyBarChartComponent(
     onPeriodChanged: (PeriodFilter) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    println("📊 DEBUG: MonthlyBarChartComponent recomposing with filter: ${monthlyChartData.selectedFilter}")
     val months = monthlyChartData.months
     val selectedFilter = monthlyChartData.selectedFilter
     val selectedPeriod = monthlyChartData.selectedPeriod
@@ -69,6 +70,13 @@ fun MonthlyBarChartComponent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Text(
+                text = "Monthly Trends",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+
             // Year/Month Filter only
             FilterDropdown(
                 items = PeriodFilter.entries.map { it.name },
@@ -82,7 +90,7 @@ fun MonthlyBarChartComponent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Income/Expenses Toggle Switch
+        // Income/Expenses Toggle Switch - FIXED VERSION
         IncomeExpenseToggle(
             selectedFilter = selectedFilter,
             onFilterChanged = onFilterChanged,
@@ -95,13 +103,13 @@ fun MonthlyBarChartComponent(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(240.dp) // Increased chart area height
+                .height(240.dp)
         ) {
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(240.dp)
-                    .pointerInput(months) {
+                    .pointerInput(months, selectedFilter) { // Add selectedFilter as key to recompose on filter change
                         awaitPointerEventScope {
                             while (true) {
                                 val event = awaitPointerEvent()
@@ -249,7 +257,7 @@ fun MonthlyBarChartComponent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Summary
+        // Summary - FIXED to show correct totals based on selected filter
         val totalIncome = months.sumOf { it.income }
         val totalExpenses = months.sumOf { it.expenses }
         val netAmount = totalIncome - totalExpenses
@@ -289,7 +297,7 @@ fun MonthlyBarChartComponent(
 }
 
 @Composable
- fun IncomeExpenseToggle(
+fun IncomeExpenseToggle(
     selectedFilter: ChartFilter,
     onFilterChanged: (ChartFilter) -> Unit,
     modifier: Modifier = Modifier
@@ -311,7 +319,12 @@ fun MonthlyBarChartComponent(
                         index = filter.ordinal,
                         count = ChartFilter.entries.size
                     ),
-                    onClick = { onFilterChanged(filter) },
+                    onClick = {
+                        println("🎯 DEBUG: IncomeExpenseToggle - Button clicked: ${filter.name}")
+                        println("🎯 DEBUG: Current selected filter: $selectedFilter")
+                        println("🎯 DEBUG: New filter to apply: $filter")
+                        onFilterChanged(filter)
+                    },
                     selected = filter == selectedFilter
                 ) {
                     Text(

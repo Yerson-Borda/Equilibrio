@@ -44,6 +44,7 @@ fun SwipeableChartContainer(
     viewModel: TransactionScreenViewModel, // ADD THIS
     modifier: Modifier = Modifier
 ) {
+    println("📱 DEBUG: SwipeableChartContainer - currentChartType: $currentChartType")
     val chartTypes = ChartType.values()
     val pagerState = rememberPagerState(initialPage = chartTypes.indexOf(currentChartType)) { chartTypes.size }
     val coroutineScope = rememberCoroutineScope()

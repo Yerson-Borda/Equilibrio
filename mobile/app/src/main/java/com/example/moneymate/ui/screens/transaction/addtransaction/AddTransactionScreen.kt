@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -51,13 +52,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.category.model.Category
 import com.example.domain.wallet.model.Wallet
+import com.example.moneymate.ui.components.states.FullScreenError
+import com.example.moneymate.ui.components.states.FullScreenLoading
+import com.example.moneymate.ui.components.states.SectionStateManager
+import com.example.moneymate.utils.IconMapper
+import com.example.moneymate.utils.ScreenState
 import org.koin.androidx.compose.koinViewModel
 
 
@@ -69,10 +77,7 @@ fun AddTransactionScreen(
     viewModel: AddTransactionViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val wallets by viewModel.wallets.collectAsState()
-    val categories by viewModel.categories.collectAsState()
     val navigationEvent by viewModel.navigationEvent.collectAsState()
-    val errorState by viewModel.errorState.collectAsState()
     val context = LocalContext.current
 
     // Add gallery launcher inside the composable
@@ -86,16 +91,7 @@ fun AddTransactionScreen(
         }
     )
 
-    // Show error messages
-    LaunchedEffect(errorState) {
-        errorState?.let { error ->
-            val message = error.getUserFriendlyMessage()
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-            // Clear error after showing
-            viewModel.clearError()
-        }
-    }
-
+    // Handle navigation events
     LaunchedEffect(navigationEvent) {
         when (navigationEvent) {
             is NavigationEvent.NavigateHome -> {
@@ -103,6 +99,14 @@ fun AddTransactionScreen(
                 viewModel.clearNavigationEvent()
             }
             else -> {}
+        }
+    }
+
+    // Handle transaction state errors (show as Toast)
+    LaunchedEffect(uiState.transactionState) {
+        if (uiState.transactionState is ScreenState.Error) {
+            val error = (uiState.transactionState as ScreenState.Error).error
+            Toast.makeText(context, error.getUserFriendlyMessage(), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -132,16 +136,15 @@ fun AddTransactionScreen(
                     onClick = {
                         viewModel.createTransaction()
                     },
-                    enabled = !uiState.isLoading &&
+                    enabled = uiState.transactionState !is ScreenState.Loading &&
                             uiState.selectedWalletId != 0 &&
                             uiState.amount != "0" &&
                             uiState.amount != "0." &&
-                            // For transfers, ensure destination wallet is selected and different from source
                             (uiState.selectedType != TransactionType.TRANSFER ||
                                     (uiState.destinationWalletId != 0 &&
                                             uiState.destinationWalletId != uiState.selectedWalletId))
                 ) {
-                    if (uiState.isLoading) {
+                    if (uiState.transactionState is ScreenState.Loading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
                             strokeWidth = 2.dp
@@ -156,104 +159,119 @@ fun AddTransactionScreen(
             }
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(paddingValues)
-        ) {
-            // Transaction Type Selector
-            TransactionTypeSelector(
-                selectedType = uiState.selectedType,
-                onTypeSelected = viewModel::onTransactionTypeSelected
-            )
+        // Main content with state management
+        when {
+            // Show full screen loading if both wallets and categories are loading
+            uiState.walletsState is ScreenState.Loading && uiState.categoriesState is ScreenState.Loading -> {
+                FullScreenLoading(message = "Loading transaction data...")
+            }
+            // Show full screen error if wallets failed to load (critical data)
+            uiState.walletsState is ScreenState.Error -> {
+                FullScreenError(
+                    error = (uiState.walletsState as ScreenState.Error).error,
+                    onRetry = { viewModel.loadWallets() }
+                )
+            }
+            // Show normal content
+            else -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                        .padding(paddingValues)
+                ) {
+                    // Transaction Type Selector
+                    TransactionTypeSelector(
+                        selectedType = uiState.selectedType,
+                        onTypeSelected = viewModel::onTransactionTypeSelected
+                    )
 
-            Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-            // Amount Display
-            Text(
-                text = "$${uiState.amount}",
-                style = MaterialTheme.typography.displayLarge,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
+                    // Amount Display
+                    Text(
+                        text = "$${uiState.amount}",
+                        style = MaterialTheme.typography.displayLarge,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
-            Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(32.dp))
 
-            // Dynamic Content based on Transaction Type
-            when (uiState.selectedType) {
-                TransactionType.TRANSFER -> {
-                    TransferContent(
-                        uiState = uiState,
-                        wallets = wallets,
-                        onSourceWalletSelected = { wallet ->
-                            viewModel.onWalletSelected(
-                                walletId = wallet.id ?: 0,
-                                walletName = wallet.name
-                            )
-                        },
-                        onDestinationWalletSelected = { wallet ->
-                            viewModel.onDestinationWalletSelected(
-                                walletId = wallet.id ?: 0,
-                                walletName = wallet.name
-                            )
-                        },
-                        onDescriptionChanged = viewModel::onDescriptionChanged,
-                        viewModel = viewModel,
-                        onAddAttachment = {
-                            // Launch gallery picker when button is clicked
-                            galleryLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    // Dynamic Content based on Transaction Type
+                    when (uiState.selectedType) {
+                        TransactionType.TRANSFER -> {
+                            TransferContent(
+                                uiState = uiState,
+                                walletsState = uiState.walletsState,
+                                onSourceWalletSelected = { wallet ->
+                                    viewModel.onWalletSelected(
+                                        walletId = wallet.id ?: 0,
+                                        walletName = wallet.name
+                                    )
+                                },
+                                onDestinationWalletSelected = { wallet ->
+                                    viewModel.onDestinationWalletSelected(
+                                        walletId = wallet.id ?: 0,
+                                        walletName = wallet.name
+                                    )
+                                },
+                                onDescriptionChanged = viewModel::onDescriptionChanged,
+                                viewModel = viewModel,
+                                onAddAttachment = {
+                                    galleryLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                }
                             )
                         }
+                        else -> { // INCOME or EXPENSE
+                            IncomeExpenseContent(
+                                uiState = uiState,
+                                walletsState = uiState.walletsState,
+                                categoriesState = uiState.categoriesState,
+                                onWalletSelected = { wallet ->
+                                    viewModel.onWalletSelected(
+                                        walletId = wallet.id ?: 0,
+                                        walletName = wallet.name
+                                    )
+                                },
+                                onCategorySelected = { categoryId, categoryName ->
+                                    viewModel.onCategorySelected(categoryId, categoryName)
+                                },
+                                onDescriptionChanged = viewModel::onDescriptionChanged,
+                                viewModel = viewModel,
+                                onAddAttachment = {
+                                    galleryLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Tags Section (common for all types)
+                    TagsSection(
+                        selectedTags = uiState.selectedTags,
+                        onTagSelected = viewModel::onTagSelected,
+                        onNewTagAdded = { newTag ->
+                            viewModel.onTagSelected(newTag)
+                        }
                     )
-                }
-                else -> { // INCOME or EXPENSE
-                    IncomeExpenseContent(
-                        uiState = uiState,
-                        wallets = wallets,
-                        onWalletSelected = { wallet ->
-                            viewModel.onWalletSelected(
-                                walletId = wallet.id ?: 0,
-                                walletName = wallet.name
-                            )
-                        },
-                        onCategorySelected = { categoryId, categoryName ->
-                            viewModel.onCategorySelected(categoryId, categoryName)
-                        },
-                        onDescriptionChanged = viewModel::onDescriptionChanged,
-                        viewModel = viewModel,
-                        onAddAttachment = {
-                            // Launch gallery picker when button is clicked
-                            galleryLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        },
-                        categories = categories
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    // Number Pad (common for all types)
+                    NumberPad(
+                        onNumberPressed = viewModel::onNumberPressed,
+                        onBackspacePressed = viewModel::onBackspacePressed,
+                        onDecimalPressed = viewModel::onDecimalPressed
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Tags Section (common for all types)
-            TagsSection(
-                selectedTags = uiState.selectedTags,
-                onTagSelected = viewModel::onTagSelected,
-                onNewTagAdded = { newTag ->
-                    viewModel.onTagSelected(newTag)
-                }
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Number Pad (common for all types)
-            NumberPad(
-                onNumberPressed = viewModel::onNumberPressed,
-                onBackspacePressed = viewModel::onBackspacePressed,
-                onDecimalPressed = viewModel::onDecimalPressed
-            )
         }
     }
 }
@@ -261,7 +279,7 @@ fun AddTransactionScreen(
 @Composable
 fun TransferContent(
     uiState: AddTransactionState,
-    wallets: List<Wallet>,
+    walletsState: ScreenState<List<Wallet>>,
     onAddAttachment: () -> Unit,
     onSourceWalletSelected: (Wallet) -> Unit,
     onDestinationWalletSelected: (Wallet) -> Unit,
@@ -273,23 +291,33 @@ fun TransferContent(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
     ) {
-        // From Wallet
-        WalletDropdown(
-            selectedWalletName = uiState.selectedWalletName,
-            wallets = wallets,
-            onWalletSelected = onSourceWalletSelected,
-            label = "From Wallet"
-        )
+        // From Wallet with state management
+        SectionStateManager(
+            state = walletsState,
+            onRetry = { viewModel.loadWallets() }
+        ) { wallets ->
+            WalletDropdown(
+                selectedWalletName = uiState.selectedWalletName,
+                wallets = wallets,
+                onWalletSelected = onSourceWalletSelected,
+                label = "From Wallet"
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // To Wallet
-        WalletDropdown(
-            selectedWalletName = uiState.destinationWalletName,
-            wallets = wallets.filter { it.id != uiState.selectedWalletId }, // Filter out source wallet
-            onWalletSelected = onDestinationWalletSelected,
-            label = "To Wallet"
-        )
+        // To Wallet with state management
+        SectionStateManager(
+            state = walletsState,
+            onRetry = { viewModel.loadWallets() }
+        ) { wallets ->
+            WalletDropdown(
+                selectedWalletName = uiState.destinationWalletName,
+                wallets = wallets.filter { it.id != uiState.selectedWalletId },
+                onWalletSelected = onDestinationWalletSelected,
+                label = "To Wallet"
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -315,8 +343,8 @@ fun TransferContent(
 @Composable
 fun IncomeExpenseContent(
     uiState: AddTransactionState,
-    wallets: List<Wallet>,
-    categories: List<Category>,
+    walletsState: ScreenState<List<Wallet>>,
+    categoriesState: ScreenState<List<Category>>,
     onAddAttachment: () -> Unit,
     onWalletSelected: (Wallet) -> Unit,
     onCategorySelected: (Int, String) -> Unit,
@@ -328,22 +356,32 @@ fun IncomeExpenseContent(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
     ) {
-        // Wallet
-        WalletDropdown(
-            selectedWalletName = uiState.selectedWalletName,
-            wallets = wallets,
-            onWalletSelected = onWalletSelected,
-            label = "Wallet"
-        )
+        // Wallet with state management
+        SectionStateManager(
+            state = walletsState,
+            onRetry = { viewModel.loadWallets() }
+        ) { wallets ->
+            WalletDropdown(
+                selectedWalletName = uiState.selectedWalletName,
+                wallets = wallets,
+                onWalletSelected = onWalletSelected,
+                label = "Wallet"
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Category - Updated to use real categories
-        CategoryDropdown(
-            selectedCategoryName = uiState.selectedCategoryName,
-            categories = categories, // Pass the real categories
-            onCategorySelected = onCategorySelected
-        )
+        // Category with state management
+        SectionStateManager(
+            state = categoriesState,
+            onRetry = { viewModel.loadCategories() }
+        ) { categories ->
+            CategoryDropdown(
+                selectedCategoryName = uiState.selectedCategoryName,
+                categories = categories,
+                onCategorySelected = onCategorySelected
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -365,6 +403,7 @@ fun IncomeExpenseContent(
         )
     }
 }
+
 @Composable
 fun WalletDropdown(
     selectedWalletName: String,
@@ -452,11 +491,45 @@ fun CategoryDropdown(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = selectedCategoryName,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
+            // Display selected category with icon in circle
+            val selectedCategory = categories.find { it.name == selectedCategoryName }
+            if (selectedCategory != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Icon in circle background
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(
+                                IconMapper.getBackgroundColor(selectedCategory.color)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(
+                                id = IconMapper.getIconDrawable(selectedCategory.icon)
+                            ),
+                            contentDescription = selectedCategory.name,
+                            colorFilter = ColorFilter.tint(
+                                IconMapper.parseColor(selectedCategory.color)
+                            ),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = selectedCategory.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            } else {
+                Text(
+                    text = selectedCategoryName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+            }
             Icon(
                 imageVector = Icons.Default.KeyboardArrowDown,
                 contentDescription = "Dropdown",
@@ -466,7 +539,8 @@ fun CategoryDropdown(
 
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth(0.9f)
         ) {
             if (categories.isEmpty()) {
                 DropdownMenuItem(
@@ -477,7 +551,37 @@ fun CategoryDropdown(
                 categories.forEach { category ->
                     DropdownMenuItem(
                         text = {
-                            Text(category.name)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                // Icon in circle for dropdown items
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .background(
+                                            IconMapper.getBackgroundColor(category.color)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Image(
+                                        painter = painterResource(
+                                            id = IconMapper.getIconDrawable(category.icon)
+                                        ),
+                                        contentDescription = category.name,
+                                        colorFilter = ColorFilter.tint(
+                                            IconMapper.parseColor(category.color)
+                                        ),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = category.name,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
                         },
                         onClick = {
                             onCategorySelected(category.id, category.name)

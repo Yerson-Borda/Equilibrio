@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,9 @@ import androidx.navigation.NavController
 import com.example.domain.transaction.model.TransactionEntity
 import com.example.domain.wallet.model.Wallet
 import com.example.moneymate.R
+import com.example.moneymate.ui.components.states.FullScreenError
+import com.example.moneymate.ui.components.states.FullScreenLoading
+import com.example.moneymate.ui.components.states.SectionStateManager
 import com.example.moneymate.ui.navigation.BottomNavigationBar
 import com.example.moneymate.ui.screens.home.AddRecordButton
 import org.koin.androidx.compose.koinViewModel
@@ -56,100 +60,122 @@ fun WalletScreen(
     onBackClick: () -> Unit,
     onAddRecord: () -> Unit,
 ) {
-    val wallets by viewModel.wallets.collectAsState()
-    val transactions by viewModel.transactions.collectAsState()
-    val selectedWallet by viewModel.selectedWallet.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
-    LaunchedEffect(Unit) {
-        viewModel.loadWallets()
+    // Handle operation success states
+    LaunchedEffect(uiState.createWalletState) {
+        if (uiState.createWalletState is com.example.moneymate.utils.ScreenState.Success) {
+            viewModel.resetCreateWalletState()
+        }
     }
-Box (modifier = Modifier.fillMaxSize()){
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF8F9FA))
-            .padding(16.dp)
-            .statusBarsPadding()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier.size(24.dp)
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_back_arrow),
-                    contentDescription = "Wallets",
-                    tint = Color.Black,
-                    modifier = Modifier.size(21.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(105.dp))
-            Text(
-                text = "Wallets",
-                color = Color.Black,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
+
+    // Main content with state management
+    when {
+        // Show full screen loading if wallets are loading
+        uiState.walletsState is com.example.moneymate.utils.ScreenState.Loading -> {
+            FullScreenLoading(message = "Loading wallets...")
+        }
+        // Show full screen error if wallets failed to load
+        uiState.walletsState is com.example.moneymate.utils.ScreenState.Error -> {
+            FullScreenError(
+                error = (uiState.walletsState as com.example.moneymate.utils.ScreenState.Error).error,
+                onRetry = { viewModel.loadWallets() }
             )
         }
-        Spacer(modifier = Modifier.height(24.dp))
+        // Show normal content
+        else -> {
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFFF8F9FA))
+                        .padding(16.dp)
+                        .statusBarsPadding()
+                ) {
+                    // Top bar
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = onBackClick,
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_back_arrow),
+                                contentDescription = "Wallets",
+                                tint = Color.Black,
+                                modifier = Modifier.size(21.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(105.dp))
+                        Text(
+                            text = "Wallets",
+                            color = Color.Black,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
 
-        // Wallets Cards Section
-        WalletsCardsSection(
-            wallets = wallets,
-            selectedWallet = selectedWallet,
-            onWalletSelected = viewModel::selectWallet,
-            onWalletDetail = { wallet ->
-                wallet.id?.let { walletId ->
-                    onNavigateToWalletDetail(walletId)
+                    // Wallets Cards Section with state management
+                    SectionStateManager(
+                        state = uiState.walletsState,
+                        onRetry = { viewModel.loadWallets() }
+                    ) { wallets ->
+                        WalletsCardsSection(
+                            wallets = wallets,
+                            selectedWallet = uiState.selectedWallet,
+                            onWalletSelected = viewModel::selectWallet,
+                            onWalletDetail = { wallet ->
+                                wallet.id?.let { walletId ->
+                                    onNavigateToWalletDetail(walletId)
+                                }
+                            },
+                            onCreateNewWallet = onNavigateToWalletCreation,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Transactions Section with state management
+                    SectionStateManager(
+                        state = uiState.transactionsState,
+                        onRetry = {
+                            uiState.selectedWallet?.id?.let { walletId ->
+                                viewModel.loadTransactions(walletId)
+                            }
+                        }
+                    ) { transactions ->
+                        TransactionsSection(
+                            transactions = transactions,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
-            },
-            onCreateNewWallet = onNavigateToWalletCreation,
-            modifier = Modifier.fillMaxWidth()
-        )
 
-        Spacer(modifier = Modifier.height(24.dp))
+                AddRecordButton(
+                    onClick = onAddRecord,
+                    iconRes = R.drawable.add_outline,
+                    contentDescription = "Add Record",
+                    size = 48,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 110.dp)
+                )
 
-        // Transactions Section
-        TransactionsSection(
-            transactions = transactions,
-            modifier = Modifier.weight(1f)
-        )
-
-        if (isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = Color(0xFF4D6BFA))
+                BottomNavigationBar(
+                    currentScreen = currentScreen,
+                    onNavigationItemSelected = onNavigationItemSelected,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
             }
         }
-
-
     }
-    AddRecordButton(
-        onClick = onAddRecord,
-        iconRes = R.drawable.add_outline,
-        contentDescription = "Add Record",
-        size = 48,
-        modifier = Modifier
-            .align(Alignment.BottomCenter)
-            .padding(bottom = 110.dp)
-    )
-    BottomNavigationBar(
-        currentScreen = currentScreen,
-        onNavigationItemSelected = onNavigationItemSelected,
-        modifier = Modifier.align(Alignment.BottomCenter)
-    )
-}
 }
 @Composable
 private fun WalletsCardsSection(
