@@ -13,7 +13,7 @@ class AuthRemoteDataSourceImpl(
         fullName: String?,
         email: String,
         password: String,
-        phoneNumber: String? ,
+        phoneNumber: String?,
         dateOfBirth: String?,
         avatarUrl: String?,
         defaultCurrency: String

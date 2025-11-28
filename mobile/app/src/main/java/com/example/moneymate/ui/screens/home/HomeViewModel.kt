@@ -38,8 +38,6 @@ class HomeViewModel(
     fun loadUserData() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(userDataState = ScreenState.Loading)
-            delay(5000)
-
             try {
                 println("DEBUG: HomeViewModel - Loading user data...")
                 val data = getUserDetailedUseCase()
