@@ -15,17 +15,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.domain.user.model.UserDetailedData
 import com.example.moneymate.R
 import com.example.moneymate.ui.components.states.FullScreenError
 import com.example.moneymate.ui.components.states.FullScreenLoading
 import com.example.moneymate.ui.components.states.SectionStateManager
 import com.example.moneymate.ui.navigation.BottomNavigationBar
 import com.example.moneymate.utils.Config
+import com.example.moneymate.utils.ScreenState
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -42,6 +45,16 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+
+    // Extract currency symbol from user data
+    val currencySymbol = remember(uiState.userDataState) {
+        when (uiState.userDataState) {
+            is ScreenState.Success -> {
+                extractCurrencySymbol((uiState.userDataState as ScreenState.Success<UserDetailedData>).data.user.defaultCurrency)
+            }
+            else -> "$" // Default to USD
+        }
+    }
 
     // Handle errors via Toast
     LaunchedEffect(uiState.userDataState) {
@@ -105,6 +118,7 @@ fun HomeScreen(
                         ) { balance ->
                             WalletBalanceCard(
                                 totalBalance = balance?.totalBalance,
+                                currencySymbol = currencySymbol,
                                 isLoading = uiState.isTotalBalanceLoading
                             )
                         }
@@ -151,6 +165,32 @@ fun HomeScreen(
                 )
             }
         }
+    }
+}
+
+// Helper function to extract currency symbol
+private fun extractCurrencySymbol(currencyString: String?): String {
+    // First check if it's a display format like "USD - $"
+    if (currencyString?.contains(" - ") == true) {
+        return currencyString.split(" - ").last().trim()
+    }
+
+    // If it's just a currency code, map it to symbol
+    return when (currencyString?.uppercase()) {
+        "USD" -> "$"
+        "EUR" -> "€"
+        "GBP" -> "£"
+        "JPY" -> "¥"
+        "CAD" -> "C$"
+        "AUD" -> "A$"
+        "CHF" -> "CHF"
+        "CNY" -> "¥"
+        "INR" -> "₹"
+        "RUB" -> "₽"
+        "BRL" -> "R$"
+        "MXN" -> "$"
+        "KRW" -> "₩"
+        else -> "$" // Default fallback
     }
 }
 

@@ -20,6 +20,7 @@ import com.example.moneymate.R
 @Composable
 fun WalletBalanceCard(
     totalBalance: Double?,
+    currencySymbol: String = "$",
     isLoading: Boolean = false
 ) {
     Box(
@@ -53,7 +54,7 @@ fun WalletBalanceCard(
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "$${"%.2f".format(totalBalance ?: 0.0)}",
+                    text = "$currencySymbol${"%.2f".format(totalBalance ?: 0.0)}", // Use dynamic symbol
                     color = Color.White,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold

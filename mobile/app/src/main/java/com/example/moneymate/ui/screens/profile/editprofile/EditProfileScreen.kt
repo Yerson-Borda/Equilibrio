@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.example.moneymate.R
+import com.example.moneymate.ui.components.CurrencyDropdown
 import com.example.moneymate.ui.screens.profile.editprofile.component.CustomEditTextField
 import com.example.moneymate.ui.screens.profile.editprofile.component.FormLabel
 import com.example.moneymate.utils.AppError
@@ -326,16 +327,40 @@ fun EditProfileScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Phone Number
-                FormLabel(text = "Phone Number")
-                CustomEditTextField(
-                    value = uiState.phoneNumber,
-                    onValueChange = viewModel::updatePhoneNumber,
-                    placeholder = "Enter your phone number",
-                    leadingIcon = R.drawable.ic_phone,
+                // Phone Number and Currency Row
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isLoading
-                )
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Phone Number - 60% width
+                    Column(
+                        modifier = Modifier.weight(0.6f)
+                    ) {
+                        FormLabel(text = "Phone Number")
+                        CustomEditTextField(
+                            value = uiState.phoneNumber,
+                            onValueChange = viewModel::updatePhoneNumber,
+                            placeholder = "Enter your phone number",
+                            leadingIcon = R.drawable.ic_phone,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !uiState.isLoading
+                        )
+                    }
+
+                    // Display Currency - 40% width
+                    Column(
+                        modifier = Modifier.weight(0.4f)
+                    ) {
+                        FormLabel(text = "Display Currency")
+                        CurrencyDropdown(
+                            selectedCurrency = uiState.defaultCurrency,
+                            onCurrencySelected = viewModel::updateDefaultCurrency,
+                            enabled = !uiState.isLoading,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+
 
                 Spacer(modifier = Modifier.height(20.dp))
 
