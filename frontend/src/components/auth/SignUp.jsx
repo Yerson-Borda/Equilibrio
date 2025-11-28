@@ -116,10 +116,14 @@ const SignUp = () => {
         }
 
         try {
-            const data = await apiService.register(formData.fullName, formData.email, formData.password);
-            console.log('Sign up successful:', data);
+            // Register the user
+            await apiService.register(formData.fullName, formData.email, formData.password);
 
-            // Redirect to empty page (dashboard/home)
+            // Automatically login after successful registration
+            const loginData = await apiService.login(formData.email, formData.password);
+            console.log('Sign up and login successful:', loginData);
+
+            // Redirect to dashboard
             window.location.href = '/dashboard';
 
         } catch (error) {
