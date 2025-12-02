@@ -164,7 +164,7 @@ def transfer_funds(db: Session, user_id: int, data):
 
     # Create transactions
     source_tx = Transaction(
-        name="Transfer out",
+        name="Transfers",
         amount=data.amount,
         note=data.note,
         type=TransactionType.TRANSFER,
@@ -175,7 +175,7 @@ def transfer_funds(db: Session, user_id: int, data):
     )
 
     dest_tx = Transaction(
-        name="Transfer in",
+        name="Transfers",
         amount=converted_amount,
         note=data.note,
         type=TransactionType.TRANSFER,
