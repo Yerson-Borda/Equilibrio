@@ -27,6 +27,7 @@ def create_transaction(db: Session, user_id: int, data):
         raise HTTPException(status_code=404, detail="Category not found")
 
     transaction = Transaction(
+        name=data.name,
         amount=data.amount,
         note=data.note,
         type=data.type,
@@ -163,6 +164,7 @@ def transfer_funds(db: Session, user_id: int, data):
 
     # Create transactions
     source_tx = Transaction(
+        name="Transfer out",
         amount=data.amount,
         note=data.note,
         type=TransactionType.TRANSFER,
@@ -173,6 +175,7 @@ def transfer_funds(db: Session, user_id: int, data):
     )
 
     dest_tx = Transaction(
+        name="Transfer in",
         amount=converted_amount,
         note=data.note,
         type=TransactionType.TRANSFER,

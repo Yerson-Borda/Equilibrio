@@ -5,6 +5,7 @@ from decimal import Decimal
 from app.utils.enums.transaction_type import TransactionType
 
 class TransactionBase(BaseModel):
+    name: str 
     amount: Decimal
     note: Optional[str] = None
     type: TransactionType
