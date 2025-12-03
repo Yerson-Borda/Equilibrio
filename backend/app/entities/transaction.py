@@ -21,3 +21,4 @@ class Transaction(Base):
     wallet = relationship("Wallet", back_populates="transactions")
     category = relationship("Category", back_populates="transactions")
     user = relationship("User", back_populates="transactions")
+    tags = relationship("Tag", secondary="transaction_tags", back_populates="transactions")

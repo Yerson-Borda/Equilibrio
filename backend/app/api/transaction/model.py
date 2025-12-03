@@ -14,12 +14,14 @@ class TransactionBase(BaseModel):
     category_id: int
 
 class TransactionCreate(TransactionBase):
+    tags: list[int] = []
     pass
 
 class TransactionResponse(TransactionBase):
     id: int
     user_id: int
     created_at: datetime
+    tags: list[str]
 
     class Config:
         from_attributes = True

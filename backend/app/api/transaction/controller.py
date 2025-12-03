@@ -30,6 +30,15 @@ def get_wallet_transactions(
     return service.get_wallet_transactions(db, current_user.id, wallet_id, limit)
 
 
+@router.get("/filter/by-tag/{tag_id}", response_model=list[TransactionResponse])
+def get_transactions_by_tag(
+    tag_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    return service.get_transactions_by_tag(db, current_user.id, tag_id)
+
+
 @router.get("/", response_model=list[TransactionResponse])
 def get_user_transactions(
     current_user: User = Depends(get_current_user),
