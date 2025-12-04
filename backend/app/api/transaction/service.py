@@ -2,6 +2,8 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from datetime import date
 from decimal import Decimal
+from app.api.transaction.model import TransactionResponse
+from app.entities.tag import Tag
 from app.entities.transaction import Transaction
 from app.entities.wallet import Wallet
 from app.entities.category import Category
@@ -27,6 +29,7 @@ def create_transaction(db: Session, user_id: int, data):
         raise HTTPException(status_code=404, detail="Category not found")
 
     transaction = Transaction(
+        name=data.name,
         amount=data.amount,
         note=data.note,
         type=data.type,
@@ -50,13 +53,21 @@ def create_transaction(db: Session, user_id: int, data):
             amount=float(data.amount)
         )
 
+    # Convert tag IDs → Tag ORM instances
+    if data.tags:
+        tag_objects = db.query(Tag).filter(
+            Tag.id.in_(data.tags),
+            Tag.user_id == user_id
+        ).all()
+        transaction.tags = tag_objects
+
     db.add(transaction)
     db.commit()
     db.refresh(transaction)
 
     update_monthly_summary(db, user_id, transaction)
 
-    return transaction
+    return _serialize_transaction(transaction)
 
 
 def get_wallet_transactions(db: Session, user_id: int, wallet_id: int, limit: int):
@@ -68,18 +79,22 @@ def get_wallet_transactions(db: Session, user_id: int, wallet_id: int, limit: in
     if not wallet:
         raise HTTPException(404, "Wallet not found or forbidden")
 
-    return db.query(Transaction).filter(
+    txs = db.query(Transaction).filter(
         Transaction.wallet_id == wallet_id
     ).order_by(
         Transaction.transaction_date.desc(),
         Transaction.id.desc()
     ).limit(limit).all()
 
+    return _serialize_transactions(txs)
+
 
 def get_user_transactions(db: Session, user_id: int):
-    return db.query(Transaction).filter(
+    txs = db.query(Transaction).filter(
         Transaction.user_id == user_id
     ).order_by(Transaction.transaction_date.desc()).all()
+
+    return _serialize_transactions(txs)
 
 
 def delete_transaction(db: Session, user_id: int, transaction_id: int):
@@ -163,6 +178,7 @@ def transfer_funds(db: Session, user_id: int, data):
 
     # Create transactions
     source_tx = Transaction(
+        name="Transfers",
         amount=data.amount,
         note=data.note,
         type=TransactionType.TRANSFER,
@@ -173,6 +189,7 @@ def transfer_funds(db: Session, user_id: int, data):
     )
 
     dest_tx = Transaction(
+        name="Transfers",
         amount=converted_amount,
         note=data.note,
         type=TransactionType.TRANSFER,
@@ -198,3 +215,48 @@ def transfer_funds(db: Session, user_id: int, data):
         "exchange_rate": float(exchange_rate),
         "converted_amount": float(converted_amount)
     }
+
+def get_transactions_by_tag(db: Session, user_id: int, tag_id: int):
+    txs = (
+        db.query(Transaction)
+        .join(Transaction.tags)
+        .filter(
+            Tag.id == tag_id,
+            Transaction.user_id == user_id
+        )
+        .order_by(Transaction.transaction_date.desc())
+        .all()
+    )
+
+    return _serialize_transactions(txs)
+
+def search_transactions_by_tag(db: Session, user_id: int, text: str):
+    txs = (
+        db.query(Transaction)
+        .join(Transaction.tags)
+        .filter(
+            Tag.name.ilike(f"%{text}%"),
+            Transaction.user_id == user_id
+        )
+        .all()
+    )
+
+    return _serialize_transactions(txs)
+
+def _serialize_transaction(tx: Transaction) -> TransactionResponse:
+    return TransactionResponse(
+        id=tx.id,
+        name=tx.name,
+        amount=tx.amount,
+        note=tx.note,
+        type=tx.type,
+        transaction_date=tx.transaction_date,
+        wallet_id=tx.wallet_id,
+        category_id=tx.category_id,
+        user_id=tx.user_id,
+        created_at=tx.created_at,
+        tags=[t.name for t in tx.tags]
+    )
+
+def _serialize_transactions(txs: list[Transaction]) -> list[TransactionResponse]:
+    return [_serialize_transaction(tx) for tx in txs]
