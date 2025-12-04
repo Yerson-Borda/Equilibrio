@@ -53,6 +53,8 @@ class CategoryLimitService:
 
         categories = CategoryService.get_all_categories(db, user_id)
 
+        categories = [cat for cat in categories if cat.type == TransactionType.EXPENSE]
+
         results = []
         for cat in categories:
 
@@ -88,3 +90,4 @@ class CategoryLimitService:
             })
 
         return results
+
