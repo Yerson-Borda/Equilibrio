@@ -8,7 +8,7 @@ from app.entities.user import User
 from app.api.tag.model import TagCreate, TagResponse
 from app.api.tag.service import create_tag, get_user_tags, delete_tag
 
-router = APIRouter(prefix="/tags", tags=["tags"])
+router = APIRouter()
 
 @router.post("/", response_model=TagResponse, status_code=status.HTTP_201_CREATED)
 def create_tag_endpoint(
