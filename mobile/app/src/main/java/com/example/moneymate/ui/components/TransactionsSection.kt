@@ -45,7 +45,7 @@ private fun TransactionItem(
         ) {
             Column {
                 Text(
-                    text = transaction.note?.ifEmpty { "Transaction" } ?: "Transaction",
+                    text = transaction.name,
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color(0xFF1A1A1A),
                     fontWeight = FontWeight.Medium

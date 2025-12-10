@@ -12,6 +12,7 @@ import com.example.domain.transaction.TransactionRepository
 import com.example.domain.transaction.model.CategoryData
 import com.example.domain.transaction.model.CategorySummaryData
 import com.example.domain.transaction.model.ComparisonCategoryData
+import com.example.domain.transaction.model.CreateTransaction
 import com.example.domain.transaction.model.DailyData
 import com.example.domain.transaction.model.SpendingTrendData
 import com.example.domain.transaction.model.TransactionEntity
@@ -26,22 +27,10 @@ class TransactionRepositoryImpl(
 ) : TransactionRepository {
 
     override suspend fun createTransaction(
-        amount: Any,
-        note: String?,
-        type: String,
-        transactionDate: String,
-        walletId: Int,
-        categoryId: Int
+        createTransaction: CreateTransaction
     ): Result<TransactionEntity> {
         return try {
-            val request = TransactionCreateRequest.create(
-                amount = amount,
-                note = note,
-                type = type,
-                transactionDate = transactionDate,
-                walletId = walletId,
-                categoryId = categoryId
-            )
+            val request = TransactionCreateRequest.fromDomain(createTransaction)
 
             val response = apiService.createTransaction(request)
             handleTransactionResponse(response)

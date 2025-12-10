@@ -1,41 +1,40 @@
 package com.example.data.network.transaction.model
 
+import com.example.domain.transaction.model.CreateTransaction
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class TransactionCreateRequest(
-    @SerialName("amount") val amount: String, // number | string in swagger
-    @SerialName("note") val note: String? = null, // Comes before type in swagger
-    @SerialName("type") val type: String, // "income", "expense", "transfer"
-    @SerialName("transaction_date") val transactionDate: String, // date format
+    @SerialName("name") val name: String,
+    @SerialName("amount") val amount: String, // Serialized as string, but we accept Any
+    @SerialName("note") val note: String? = null,
+    @SerialName("type") val type: String,
+    @SerialName("transaction_date") val transactionDate: String,
     @SerialName("wallet_id") val walletId: Int,
-    @SerialName("category_id") val categoryId: Int
-    // Removed description field as it's not in swagger TransactionCreate
+    @SerialName("category_id") val categoryId: Int,
+    @SerialName("tags") val tags: List<Int> = emptyList()
 ) {
     companion object {
-        fun create(
-            amount: Any,
-            note: String? = null,
-            type: String,
-            transactionDate: String,
-            walletId: Int,
-            categoryId: Int
-        ): TransactionCreateRequest {
-            val amountString = when (amount) {
+        fun fromDomain(createTransaction:CreateTransaction): TransactionCreateRequest {
+            val amountString = when (val amount = createTransaction.amount) {
                 is Double -> amount.toString()
+                is Float -> amount.toString()
                 is Int -> amount.toString()
+                is Long -> amount.toString()
                 is String -> amount
-                else -> throw IllegalArgumentException("Unsupported amount type")
+                else -> throw IllegalArgumentException("Unsupported amount type: ${amount::class.simpleName}")
             }
 
             return TransactionCreateRequest(
+                name = createTransaction.name,
                 amount = amountString,
-                note = note,
-                type = type,
-                transactionDate = transactionDate,
-                walletId = walletId,
-                categoryId = categoryId
+                note = createTransaction.note,
+                type = createTransaction.type,
+                transactionDate = createTransaction.transactionDate,
+                walletId = createTransaction.walletId,
+                categoryId = createTransaction.categoryId,
+                tags = createTransaction.tags
             )
         }
     }

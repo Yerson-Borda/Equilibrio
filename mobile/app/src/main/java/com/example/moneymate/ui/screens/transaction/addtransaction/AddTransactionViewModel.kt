@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.domain.category.model.Category
 import com.example.domain.category.usecase.GetExpenseCategoriesUseCase
 import com.example.domain.category.usecase.GetIncomeCategoriesUseCase
+import com.example.domain.transaction.model.CreateTransaction
 import com.example.domain.transaction.usecase.CreateTransactionUseCase
 import com.example.domain.transaction.usecase.CreateTransferUseCase
 import com.example.domain.wallet.model.Wallet
@@ -163,8 +164,12 @@ class AddTransactionViewModel(
         )
     }
 
-    fun onDescriptionChanged(description: String) {
-        _uiState.value = _uiState.value.copy(description = description)
+    fun onNameChanged(name: String) {
+        _uiState.value = _uiState.value.copy(name = name)
+    }
+
+    fun onNoteChanged(note: String) {
+        _uiState.value = _uiState.value.copy(note = note)
     }
 
     fun onTagSelected(tag: String) {
@@ -272,7 +277,7 @@ class AddTransactionViewModel(
             sourceWalletId = _uiState.value.selectedWalletId,
             destinationWalletId = _uiState.value.destinationWalletId,
             amount = _uiState.value.amount,
-            note = _uiState.value.description
+            note = _uiState.value.note
         )
 
         if (result.isSuccess) {
@@ -291,15 +296,20 @@ class AddTransactionViewModel(
 
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun handleTransactionCreation() {
-        val result = createTransactionUseCase(
+        // Create the CreateTransaction domain model
+        val createTransaction = CreateTransaction(
+            name = _uiState.value.name, // Using description as name
             amount = _uiState.value.amount,
-            description = _uiState.value.description,
-            note = _uiState.value.description,
+            note = _uiState.value.note, // Same description as note
             type = _uiState.value.selectedType.apiValue,
             transactionDate = LocalDate.now().toString(),
             walletId = _uiState.value.selectedWalletId,
-            categoryId = _uiState.value.selectedCategoryId
+            categoryId = _uiState.value.selectedCategoryId,
+            tags = emptyList() // Empty for now, you can add tag support later
         )
+
+        // Call the use case with the CreateTransaction object
+        val result = createTransactionUseCase(createTransaction)
 
         if (result.isSuccess) {
             _uiState.value = _uiState.value.copy(transactionState = ScreenState.Success(Unit))
@@ -397,7 +407,8 @@ data class AddTransactionState(
     val destinationWalletName: String = "Select Wallet",
     val selectedCategoryId: Int = 1,
     val selectedCategoryName: String = "Foods & Drinks",
-    val description: String = "",
+    val name: String = "",
+    val note: String = "",
     val selectedTags: List<String> = emptyList(),
     val attachments: List<String> = emptyList(),
 

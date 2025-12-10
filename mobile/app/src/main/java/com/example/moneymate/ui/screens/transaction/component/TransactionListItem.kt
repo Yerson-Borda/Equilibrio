@@ -33,7 +33,7 @@ fun TransactionListItem(
             modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = transaction.note ?: "Transaction",
+                text = transaction. name,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color.Black

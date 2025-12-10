@@ -3,6 +3,7 @@ package com.example.domain.transaction
 
 import com.example.domain.transaction.model.CategorySummaryData
 import com.example.domain.transaction.model.ComparisonCategoryData
+import com.example.domain.transaction.model.CreateTransaction
 import com.example.domain.transaction.model.DailyData
 import com.example.domain.transaction.model.SpendingTrendData
 import com.example.domain.transaction.model.TransactionEntity
@@ -10,12 +11,7 @@ import com.example.domain.transaction.model.TransferEntity
 
 interface TransactionRepository {
     suspend fun createTransaction(
-        amount: Any,
-        note: String?, // Changed from description to note
-        type: String, // "income", "expense", "transfer"
-        transactionDate: String,
-        walletId: Int,
-        categoryId: Int
+        createTransaction: CreateTransaction
     ): Result<TransactionEntity>
 
     suspend fun createTransfer(
