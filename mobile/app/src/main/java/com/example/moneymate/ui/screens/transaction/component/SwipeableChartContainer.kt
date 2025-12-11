@@ -71,7 +71,7 @@ fun SwipeableChartContainer(
             ) {
                 when (chartType) {
                     ChartType.MONTHLY_TRENDS -> {
-                        MonthlyBarChartComponent(
+                        YChartMonthlyBarChartComponent(
                             monthlyChartData = chartsData.monthlyChart,
                             onFilterChanged = onFilterChanged,
                             onPeriodChanged = onPeriodChanged,
@@ -81,9 +81,9 @@ fun SwipeableChartContainer(
                         )
                     }
                     ChartType.CATEGORY_BREAKDOWN -> {
-                        IncomeExpenseLineChartComponent(
+                        YChartIncomeExpenseLineChartComponent(
                             monthlyChartData = chartsData.monthlyChart,
-                            onDateRangeChanged = onDateRangeChanged, // USE THE CALLBACK
+                            onDateRangeChanged = onDateRangeChanged,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(16.dp)

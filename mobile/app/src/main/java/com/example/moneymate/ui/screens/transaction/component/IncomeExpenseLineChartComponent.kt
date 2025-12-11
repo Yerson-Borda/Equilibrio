@@ -467,7 +467,7 @@ private fun formatAmountForYAxis(amount: Int): String {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DatePickerDropdown(
+fun DatePickerDropdown(
     selectedDate: String,
     onDateSelected: (String) -> Unit,
     modifier: Modifier = Modifier
