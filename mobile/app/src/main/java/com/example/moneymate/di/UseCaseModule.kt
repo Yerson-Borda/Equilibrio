@@ -13,6 +13,9 @@ import com.example.domain.category.usecase.DeleteCategoryUseCase
 import com.example.domain.category.usecase.GetCategoriesUseCase
 import com.example.domain.category.usecase.GetExpenseCategoriesUseCase
 import com.example.domain.category.usecase.GetIncomeCategoriesUseCase
+import com.example.domain.tag.usecase.CreateTagUseCase
+import com.example.domain.tag.usecase.DeleteTagUseCase
+import com.example.domain.tag.usecase.GetTagsUseCase
 import com.example.domain.transaction.usecase.CreateTransactionUseCase
 import com.example.domain.transaction.usecase.CreateTransferUseCase
 import com.example.domain.transaction.usecase.GetCategorySummaryUseCase
@@ -70,4 +73,7 @@ val useCaseModule = module {
     factory{ GetMonthlyComparisonUseCase(get()) }
     factory{ GetCurrentBudgetUseCase(get()) }
     factory{ UpdateBudgetUseCase(get()) }
+    factory{ CreateTagUseCase(get()) }
+    factory{ DeleteTagUseCase(get()) }
+    factory{ GetTagsUseCase(get()) }
 }

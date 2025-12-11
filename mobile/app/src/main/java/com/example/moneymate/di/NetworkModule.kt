@@ -4,6 +4,7 @@ import com.example.data.network.auth.AuthApi
 import com.example.data.network.budget.BudgetApi
 import com.example.data.network.category.CategoryApi
 import com.example.data.network.common.Network
+import com.example.data.network.tag.TagApi
 import com.example.data.network.user.UserApi
 import com.example.data.network.transaction.TransactionApi
 import com.example.data.network.wallet.WalletApi
@@ -27,4 +28,5 @@ val networkModule = module {
     single<TransactionApi> {Network.getApi(get())}
     single<CategoryApi> {Network.getApi(get())}
     single<BudgetApi> {Network.getApi(get())}
+    single<TagApi>{Network.getApi(get())}
 }

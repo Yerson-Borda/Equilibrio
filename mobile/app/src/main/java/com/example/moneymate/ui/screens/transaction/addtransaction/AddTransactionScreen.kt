@@ -30,6 +30,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -62,10 +64,12 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.category.model.Category
+import com.example.domain.tag.model.Tag
 import com.example.domain.wallet.model.Wallet
 import com.example.moneymate.ui.components.states.FullScreenError
 import com.example.moneymate.ui.components.states.FullScreenLoading
@@ -197,8 +201,10 @@ fun AddTransactionScreen(
     ) { paddingValues ->
         // Main content with state management
         when {
-            // Show full screen loading if both wallets and categories are loading
-            uiState.walletsState is ScreenState.Loading && uiState.categoriesState is ScreenState.Loading -> {
+            // Show full screen loading if wallets, categories, or tags are loading
+            uiState.walletsState is ScreenState.Loading &&
+                    uiState.categoriesState is ScreenState.Loading &&
+                    uiState.tagsState is ScreenState.Loading -> {
                 FullScreenLoading(message = "Loading transaction data...")
             }
             // Show full screen error if wallets failed to load (critical data)
@@ -292,14 +298,112 @@ fun AddTransactionScreen(
 
                     Spacer(modifier = Modifier.height(7.dp))
 
-                    // Tags Section (common for all types)
-                    TagsSection(
-                        selectedTags = uiState.selectedTags,
-                        onTagSelected = viewModel::onTagSelected,
-                        onNewTagAdded = { newTag ->
-                            viewModel.onTagSelected(newTag)
+                    // Tags Section with state management
+                    when (uiState.tagsState) {
+                        is ScreenState.Loading -> {
+                            // Show loading for tags section
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                                    .height(60.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            }
                         }
-                    )
+                        is ScreenState.Error -> {
+                            // Show error for tags section
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp)
+                            ) {
+                                Text(
+                                    text = "Tags",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.Gray
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(40.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color.LightGray.copy(alpha = 0.1f))
+                                        .padding(horizontal = 12.dp),
+                                    contentAlignment = Alignment.CenterStart
+                                ) {
+                                    Text(
+                                        text = "Failed to load tags",
+                                        color = Color.Gray,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                // Still show the create tag button even if loading failed
+                                Button(
+                                    onClick = { /* Handle tag creation manually if needed */ },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(33.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF4D6BFA),
+                                        contentColor = Color.White
+                                    ),
+                                    shape = RectangleShape
+                                ) {
+                                    Text(
+                                        text = "Create New Tag",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+                        is ScreenState.Empty -> {
+                            // Show empty state for tags
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp)
+                            ) {
+                                Text(
+                                    text = "Tags",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.Gray
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(40.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color.LightGray.copy(alpha = 0.1f))
+                                        .padding(horizontal = 12.dp),
+                                    contentAlignment = Alignment.CenterStart
+                                ) {
+                                    Text(
+                                        text = "No tags available",
+                                        color = Color.Gray,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                            }
+                        }
+                        else -> {
+                            // Show tags section with data
+                            TagsSection(
+                                availableTags = uiState.availableTags,
+                                selectedTagIds = uiState.selectedTagIds,
+                                onTagSelected = viewModel::onTagSelected,
+                                onCreateTag = viewModel::onCreateTag
+                            )
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(15.dp))
 
@@ -367,32 +471,7 @@ fun TransferContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Row for Name text field and Attachment button (50/50 split)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Name text field - takes 50% width
-            Box(modifier = Modifier.weight(1f)) {
-                TransactionTextField(
-                    Type = "Name",
-                    text = uiState.name,
-                    onValueChanged = onNameChanged
-                )
-            }
-
-            // Attachment button - takes 50% width
-            Box(modifier = Modifier.weight(1f)) {
-                SimpleAttachmentButton(
-                    onAddAttachment = onAddAttachment,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(15.dp))
 
         // Note
         TransactionTextField(
@@ -401,7 +480,12 @@ fun TransferContent(
             onValueChanged = onNoteChanged
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(15.dp))
+
+        SimpleAttachmentButton(
+            onAddAttachment = onAddAttachment,
+            modifier = Modifier.fillMaxWidth()
+        )
 
         // Display selected attachments if any
         if (uiState.attachments.isNotEmpty()) {
@@ -958,9 +1042,10 @@ fun AttachmentsSection(
 
 @Composable
 fun TagsSection(
-    selectedTags: List<String>,
-    onTagSelected: (String) -> Unit,
-    onNewTagAdded: (String) -> Unit
+    availableTags: List<Tag>,
+    selectedTagIds: List<Int>,
+    onTagSelected: (Int) -> Unit,
+    onCreateTag: (String) -> Unit
 ) {
     var newTagText by remember { mutableStateOf("") }
 
@@ -974,26 +1059,37 @@ fun TagsSection(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
         ) {
-            val defaultTags = listOf("#work", "#bonus")
+            Text(
+                text = "Tags",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
 
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(defaultTags) { tag ->
+                // Show tags from backend
+                items(availableTags) { tag ->
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(10.dp))
+                            .background(color = if (selectedTagIds.contains(tag.id)) Color(
+                                0xFF6FBAFC
+                            ) else Color(0x40F8F8F8)
+                            )
                             .border(
                                 width = 1.dp,
-                                color = if (selectedTags.contains(tag)) Color.Blue else Color.LightGray,
+                                color = Color.LightGray,
                                 shape = RoundedCornerShape(10.dp)
                             )
-                            .clickable { onTagSelected(tag) }
+                            .clickable { onTagSelected(tag.id) }
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Text(
-                            text = tag,
-                            color = if (selectedTags.contains(tag)) Color.Blue else Color.Gray,
+                            text = "#${tag.name}",
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold,
                             fontSize = 14.sp
                         )
                     }
@@ -1027,7 +1123,16 @@ fun TagsSection(
                                     innerTextField()
                                 }
                             },
-                            singleLine = true
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    if (newTagText.isNotBlank()) {
+                                        onCreateTag(newTagText)
+                                        newTagText = ""
+                                    }
+                                }
+                            )
                         )
                     }
                 }
@@ -1038,7 +1143,7 @@ fun TagsSection(
         Button(
             onClick = {
                 if (newTagText.isNotBlank()) {
-                    onNewTagAdded(newTagText)
+                    onCreateTag(newTagText)
                     newTagText = ""
                 }
             },

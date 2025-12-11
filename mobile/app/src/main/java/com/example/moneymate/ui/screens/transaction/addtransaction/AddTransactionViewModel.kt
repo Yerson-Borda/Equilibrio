@@ -7,6 +7,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.domain.category.model.Category
 import com.example.domain.category.usecase.GetExpenseCategoriesUseCase
 import com.example.domain.category.usecase.GetIncomeCategoriesUseCase
+import com.example.domain.tag.model.Tag
+import com.example.domain.tag.usecase.CreateTagUseCase
+import com.example.domain.tag.usecase.GetTagsUseCase
 import com.example.domain.transaction.model.CreateTransaction
 import com.example.domain.transaction.usecase.CreateTransactionUseCase
 import com.example.domain.transaction.usecase.CreateTransferUseCase
@@ -26,7 +29,9 @@ class AddTransactionViewModel(
     private val createTransferUseCase: CreateTransferUseCase,
     private val getWalletsUseCase: GetWalletsUseCase,
     private val getIncomeCategoriesUseCase: GetIncomeCategoriesUseCase,
-    private val getExpenseCategoriesUseCase: GetExpenseCategoriesUseCase
+    private val getExpenseCategoriesUseCase: GetExpenseCategoriesUseCase,
+    private val getTagsUseCase: GetTagsUseCase,
+    private val createTagUseCase: CreateTagUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddTransactionState())
@@ -35,11 +40,6 @@ class AddTransactionViewModel(
     private val _navigationEvent = MutableStateFlow<NavigationEvent?>(null)
     val navigationEvent: StateFlow<NavigationEvent?> = _navigationEvent.asStateFlow()
 
-    // Remove individual flows since they're now part of uiState
-    // private val _wallets = MutableStateFlow<List<Wallet>>(emptyList())
-    // private val _categories = MutableStateFlow<List<Category>>(emptyList())
-    // private val _errorState = MutableStateFlow<AppError?>(null)
-
     fun onAttachmentsSelected(uris: List<String>) {
         _uiState.value = _uiState.value.copy(attachments = uris)
     }
@@ -47,6 +47,7 @@ class AddTransactionViewModel(
     init {
         loadWallets()
         loadCategories()
+        loadTags()
     }
 
      fun loadWallets() {
@@ -134,6 +135,38 @@ class AddTransactionViewModel(
         }
     }
 
+    fun loadTags() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(tagsState = ScreenState.Loading)
+
+            try {
+                val result = getTagsUseCase()
+                if (result.isSuccess) {
+                    val tags = result.getOrThrow()
+                    _uiState.value = _uiState.value.copy(
+                        availableTags = tags,
+                        tagsState = ScreenState.Success(tags)
+                    )
+                } else {
+                    val exception = result.exceptionOrNull() ?: Exception("Error loading tags")
+                    _uiState.value = _uiState.value.copy(
+                        tagsState = ScreenState.Error(
+                            ErrorHandler.mapExceptionToAppError(exception),
+                            retryAction = { loadTags() }
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    tagsState = ScreenState.Error(
+                        ErrorHandler.mapExceptionToAppError(e),
+                        retryAction = { loadTags() }
+                    )
+                )
+            }
+        }
+    }
+
     fun onTransactionTypeSelected(type: TransactionType) {
         _uiState.value = _uiState.value.copy(selectedType = type)
         loadCategories() // Reload categories when type changes
@@ -172,14 +205,46 @@ class AddTransactionViewModel(
         _uiState.value = _uiState.value.copy(note = note)
     }
 
-    fun onTagSelected(tag: String) {
-        val currentTags = _uiState.value.selectedTags.toMutableList()
-        if (currentTags.contains(tag)) {
-            currentTags.remove(tag)
+    // UPDATED: Change from String to Int for tag IDs
+    fun onTagSelected(tagId: Int) {
+        val currentTags = _uiState.value.selectedTagIds.toMutableList()
+        if (currentTags.contains(tagId)) {
+            currentTags.remove(tagId)
         } else {
-            currentTags.add(tag)
+            currentTags.add(tagId)
         }
-        _uiState.value = _uiState.value.copy(selectedTags = currentTags)
+        _uiState.value = _uiState.value.copy(selectedTagIds = currentTags)
+    }
+
+    // NEW: Method to create a new tag
+    fun onCreateTag(name: String) {
+        viewModelScope.launch {
+            // Remove # if user included it
+            val tagName = name.trim().removePrefix("#")
+
+            if (tagName.isBlank()) {
+                // Show error - tag name cannot be empty
+                return@launch
+            }
+
+            val result = createTagUseCase(tagName)
+            if (result.isSuccess) {
+                val newTag = result.getOrThrow()
+                // Add to available tags and select it
+                val currentTags = _uiState.value.availableTags.toMutableList()
+                currentTags.add(newTag)
+                _uiState.value = _uiState.value.copy(
+                    availableTags = currentTags
+                )
+                // Automatically select the newly created tag
+                onTagSelected(newTag.id)
+            } else {
+                // Handle error - could show a toast or update UI state
+                val exception = result.exceptionOrNull() ?: Exception("Failed to create tag")
+                // You might want to show this error to the user
+                println("Failed to create tag: ${exception.message}")
+            }
+        }
     }
 
     fun onNumberPressed(number: String) {
@@ -296,16 +361,16 @@ class AddTransactionViewModel(
 
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun handleTransactionCreation() {
-        // Create the CreateTransaction domain model
+        // Create the CreateTransaction domain model with selected tag IDs
         val createTransaction = CreateTransaction(
-            name = _uiState.value.name, // Using description as name
+            name = _uiState.value.name,
             amount = _uiState.value.amount,
-            note = _uiState.value.note, // Same description as note
+            note = _uiState.value.note,
             type = _uiState.value.selectedType.apiValue,
             transactionDate = LocalDate.now().toString(),
             walletId = _uiState.value.selectedWalletId,
             categoryId = _uiState.value.selectedCategoryId,
-            tags = emptyList() // Empty for now, you can add tag support later
+            tags = _uiState.value.selectedTagIds // Use selected tag IDs
         )
 
         // Call the use case with the CreateTransaction object
@@ -409,12 +474,14 @@ data class AddTransactionState(
     val selectedCategoryName: String = "Foods & Drinks",
     val name: String = "",
     val note: String = "",
-    val selectedTags: List<String> = emptyList(),
+    val selectedTagIds: List<Int> = emptyList(), // Changed from List<String> to List<Int>
+    val availableTags: List<Tag> = emptyList(), // Add this to store available tags
     val attachments: List<String> = emptyList(),
 
     // Screen states for loading and error handling
     val walletsState: ScreenState<List<Wallet>> = ScreenState.Loading,
     val categoriesState: ScreenState<List<Category>> = ScreenState.Loading,
+    val tagsState: ScreenState<List<Tag>> = ScreenState.Loading, // Add this
     val transactionState: ScreenState<Unit> = ScreenState.Empty
 )
 

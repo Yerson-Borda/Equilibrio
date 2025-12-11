@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,6 +50,7 @@ import com.example.moneymate.ui.components.states.FullScreenLoading
 import com.example.moneymate.ui.components.states.SectionStateManager
 import com.example.moneymate.ui.navigation.BottomNavigationBar
 import com.example.moneymate.ui.screens.home.AddRecordButton
+import com.example.moneymate.utils.ScreenState
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -66,21 +68,31 @@ fun WalletScreen(
 
     // Handle operation success states
     LaunchedEffect(uiState.createWalletState) {
-        if (uiState.createWalletState is com.example.moneymate.utils.ScreenState.Success) {
+        if (uiState.createWalletState is ScreenState.Success) {
             viewModel.resetCreateWalletState()
+        }
+    }
+
+    // Extract unique tags from all transactions
+    val availableTags = remember(uiState.transactionsState) {
+        when (val state = uiState.transactionsState) {
+            is ScreenState.Success -> {
+                state.data.flatMap { it.tags }.distinct().sorted()
+            }
+            else -> emptyList()
         }
     }
 
     // Main content with state management
     when {
         // Show full screen loading if wallets are loading
-        uiState.walletsState is com.example.moneymate.utils.ScreenState.Loading -> {
+        uiState.walletsState is ScreenState.Loading -> {
             FullScreenLoading(message = "Loading wallets...")
         }
         // Show full screen error if wallets failed to load
-        uiState.walletsState is com.example.moneymate.utils.ScreenState.Error -> {
+        uiState.walletsState is ScreenState.Error -> {
             FullScreenError(
-                error = (uiState.walletsState as com.example.moneymate.utils.ScreenState.Error).error,
+                error = (uiState.walletsState as ScreenState.Error).error,
                 onRetry = { viewModel.loadWallets() }
             )
         }
@@ -154,6 +166,7 @@ fun WalletScreen(
                     ) { transactions ->
                         TransactionsSection(
                             transactions = transactions,
+                            availableTags = availableTags,
                             modifier = Modifier.weight(1f)
                         )
                     }
