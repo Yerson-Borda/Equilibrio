@@ -46,7 +46,6 @@ fun AddRecordButton(
     }
 }
 
-// Preview with different sizes and states
 @Preview(showBackground = true)
 @Composable
 fun AddRecordButtonPreview() {

@@ -1,5 +1,6 @@
 package com.example.moneymate.ui.screens.wallet
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,11 +46,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.wallet.model.WalletCreateRequest
+import com.example.moneymate.ui.components.states.FullScreenLoading
+import com.example.moneymate.utils.ScreenState
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -57,15 +61,22 @@ fun CreateWalletScreen(
     onBackClick: () -> Unit,
     viewModel: WalletViewModel = koinViewModel()
 ) {
-    val isLoading by viewModel.isLoading.collectAsState()
-    val walletCreated by viewModel.walletCreated.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     // Navigate back when wallet is successfully created
-    LaunchedEffect(walletCreated) {
-        if (walletCreated) {
-            viewModel.resetWalletCreated()
+    LaunchedEffect(uiState.createWalletState) {
+        if (uiState.createWalletState is ScreenState.Success) {
+            viewModel.resetCreateWalletState()
             onBackClick()
+        }
+    }
+
+    // Handle create errors with Toast
+    LaunchedEffect(uiState.createWalletState) {
+        if (uiState.createWalletState is ScreenState.Error) {
+            val error = (uiState.createWalletState as ScreenState.Error).error
+            Toast.makeText(context, error.getUserFriendlyMessage(), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -83,11 +94,9 @@ fun CreateWalletScreen(
                 .padding(paddingValues)
                 .background(Color(0xFFF8F9FA))
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = Color(0xFF4D6BFA)
-                )
+            // Show loading during wallet creation
+            if (uiState.createWalletState is com.example.moneymate.utils.ScreenState.Loading) {
+                FullScreenLoading(message = "Creating wallet...")
             } else {
                 CreateWalletFormContent(
                     onCreateWallet = viewModel::createWallet,

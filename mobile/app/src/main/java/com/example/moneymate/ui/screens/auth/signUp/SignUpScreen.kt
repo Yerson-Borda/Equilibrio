@@ -10,11 +10,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -114,7 +113,7 @@ fun SignUpContent(
     val passwordValidation = Validation.isValidPassword(password.value)
     val passwordError = if (showErrors) passwordValidation.errorMessage else null
     val passwordSupportText = if (!showErrors && password.value.isNotEmpty()) passwordValidation.errorMessage else null
-    val scrollState = rememberScrollState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -124,106 +123,131 @@ fun SignUpContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState)
                 .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+            verticalArrangement = Arrangement.SpaceEvenly
         ) {
-            Spacer(modifier = Modifier.height(130.dp))
-            Image(
-                painter = painterResource(R.drawable.logo),
-                contentDescription = stringResource(R.string.logo)
-            )
-            Spacer(Modifier.height(26.dp))
-            Text(
-                text = stringResource(R.string.welcome),
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                color = Color.Black
-            )
-            Spacer(modifier = Modifier.height(13.dp))
-            Text(
-                text = stringResource(R.string.fill_all_inputs_for_registration),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.Black,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(33.dp))
-
-            CustomTextField(
-                value = fullName.value,
-                onValueChange = { fullName.value = it },
-                label = stringResource(R.string.full_name),
-                iconResId = R.drawable.ic_person,
+            // Top section - logo and titles
+            Column(
                 modifier = Modifier
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            CustomTextField(
-                value = email.value,
-                onValueChange = { email.value = it },
-                label = stringResource(R.string.email),
-                iconResId = R.drawable.ic_email,
-                keyboardType = KeyboardType.Email,
-                modifier = Modifier,
-                errorMessage = emailError
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            CustomTextField(
-                value = password.value,
-                onValueChange = { password.value = it },
-                label = "Password",
-                iconResId = R.drawable.ic_lock,
-                isPassword = true,
-                keyboardType = KeyboardType.Password,
-                modifier = Modifier,
-                errorMessage = passwordError,
-                supportingText = passwordSupportText
-            )
-
-            Spacer(modifier = Modifier.height(35.dp))
-
-            CustomButton(
-                text = stringResource(R.string.sign_up),
-                onClick = {
-                    showErrors = true
-                    val isEmailValid = Validation.isValidEmail(email.value)
-                    val isPasswordValid = passwordValidation.isValid
-                    val isFullNameValid = fullName.value.isNotBlank()
-
-                    if (isEmailValid && isPasswordValid && isFullNameValid) {
-                        onSignUpClick(fullName.value, email.value, password.value)
-                    }
-                },
-                isLoading = isLoading,
-                backgroundColor = Color(0xFF4D6BFA)
-            )
-
-            Spacer(modifier = Modifier.height(139.dp))
-
-            Row {
+                    .weight(1f)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.logo),
+                    contentDescription = stringResource(R.string.logo)
+                )
+                Spacer(Modifier.height(16.dp))
                 Text(
-                    text = stringResource(R.string.already_have_account),
+                    text = stringResource(R.string.welcome),
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = Color.Black
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.fill_all_inputs_for_registration),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color.Black,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    textAlign = TextAlign.Center
                 )
-                Text(
-                    text = stringResource(R.string.log_in),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF4D6BFA),
-                    modifier = Modifier
-                        .padding(vertical = 8.dp)
-                        .clickable(onClick = onLoginClick)
+            }
+
+            // Form section - fixed height to ensure button is visible
+            Column(
+                modifier = Modifier
+                    .weight(1.2f)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                CustomTextField(
+                    value = fullName.value,
+                    onValueChange = { fullName.value = it },
+                    label = stringResource(R.string.full_name),
+                    iconResId = R.drawable.ic_person,
+                    modifier = Modifier.fillMaxWidth()
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                CustomTextField(
+                    value = email.value,
+                    onValueChange = { email.value = it },
+                    label = stringResource(R.string.email),
+                    iconResId = R.drawable.ic_email,
+                    keyboardType = KeyboardType.Email,
+                    modifier = Modifier.fillMaxWidth(),
+                    errorMessage = emailError
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                CustomTextField(
+                    value = password.value,
+                    onValueChange = { password.value = it },
+                    label = "Password",
+                    iconResId = R.drawable.ic_lock,
+                    isPassword = true,
+                    keyboardType = KeyboardType.Password,
+                    modifier = Modifier.fillMaxWidth(),
+                    errorMessage = passwordError,
+                    supportingText = passwordSupportText
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Button with ensured visibility
+                CustomButton(
+                    text = stringResource(R.string.sign_up),
+                    onClick = {
+                        showErrors = true
+                        val isEmailValid = Validation.isValidEmail(email.value)
+                        val isPasswordValid = passwordValidation.isValid
+                        val isFullNameValid = fullName.value.isNotBlank()
+
+                        if (isEmailValid && isPasswordValid && isFullNameValid) {
+                            onSignUpClick(fullName.value, email.value, password.value)
+                        }
+                    },
+                    isLoading = isLoading,
+                    backgroundColor = Color(0xFF4D6BFA),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // Bottom section - login link
+            Column(
+                modifier = Modifier
+                    .weight(0.6f)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Bottom
+            ) {
+                Row(
+                    modifier = Modifier.padding(bottom = 24.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.already_have_account),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Black,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.log_in),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF4D6BFA),
+                        modifier = Modifier
+                            .padding(vertical = 8.dp)
+                            .clickable(onClick = onLoginClick)
+                    )
+                }
             }
         }
     }

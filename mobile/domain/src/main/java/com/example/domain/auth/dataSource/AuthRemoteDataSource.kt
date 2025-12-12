@@ -7,9 +7,12 @@ interface AuthRemoteDataSource {
     suspend fun signUp(
         fullName: String?,
         email: String,
-        password: String
+        password: String,
+        phoneNumber: String? = null,
+        dateOfBirth: String? = null,
+        avatarUrl: String? = null,
+        defaultCurrency: String = "USD"
     ): UserData
 
     suspend fun signIn(email: String, password: String): AccessToken
 }
-

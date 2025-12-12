@@ -7,6 +7,6 @@ interface DataStoreDataSource {
 suspend fun setAccessToken(accessToken: String?)
 suspend fun getRefreshToken():String?
 suspend fun setRefreshToken(refreshToken:String?)
-suspend fun setUserId(userId: String?)
+suspend fun setUserId(userId: Int?)
 suspend fun getUserId(): String?
 }

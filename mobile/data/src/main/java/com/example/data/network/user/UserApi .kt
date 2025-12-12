@@ -11,22 +11,22 @@ import retrofit2.http.*
 interface UserApi {
 
     // For Home Screen - returns UserDetailedResponse directly
-    @GET("api/v1/users/me/detailed")
+    @GET("api/users/me/detailed")
     suspend fun getUserDetailed(): UserDetailedResponse
 
     // For Edit Profile Screen - returns Response<UserResponse> (changed from UserInfoResponse)
-    @GET("api/v1/users/me")
+    @GET("api/users/me")
     suspend fun getUser(): Response<UserResponse>
 
-    @PUT("api/v1/users/me")
+    @PUT("api/users/me")
     suspend fun updateUser(@Body request: UpdateUserRequest): Response<UserResponse>
 
     @Multipart
-    @POST("api/v1/users/me/avatar")
+    @POST("api/users/me/avatar")
     suspend fun uploadAvatar(@Part file: MultipartBody.Part): Response<UserResponse>
 
-    @DELETE("api/v1/users/me/avatar")
+    @DELETE("api/users/me/avatar")
     suspend fun deleteAvatar(): Response<UserResponse>
-    @POST("api/v1/users/logout")
+    @POST("api/auth/logout")
     suspend fun logout(): Response<Unit>
 }

@@ -6,8 +6,10 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class UpdateUserRequest(
-    @SerialName("email") val email: String,
-    @SerialName("full_name") val fullName: String?,
-    @SerialName("phone_number") val phoneNumber: String?,
-    @SerialName("date_of_birth") val dateOfBirth: String?
+    @SerialName("email") val email: String? = null,
+    @SerialName("full_name") val fullName: String? = null,
+    @SerialName("phone_number") val phoneNumber: String? = null,
+    @SerialName("date_of_birth") val dateOfBirth: String? = null,
+    @SerialName("default_currency") val defaultCurrency: String? = null,
+    @SerialName("password") val password: String? = null
 )

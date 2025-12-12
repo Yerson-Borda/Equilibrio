@@ -15,7 +15,6 @@ object UserResponseMapper {
             dateOfBirth = userResponse.dateOfBirth,
             avatarUrl = userResponse.avatarUrl,
             defaultCurrency = userResponse.defaultCurrency,
-            isActive = userResponse.isActive ?: true,
             createdAt = userResponse.createdAt
         )
     }

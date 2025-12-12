@@ -14,11 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,8 +39,6 @@ import androidx.compose.ui.unit.sp
 import com.example.moneymate.R
 import com.example.moneymate.ui.components.CustomButton
 import com.example.moneymate.ui.components.CustomTextField
-import com.example.moneymate.ui.screens.auth.signUp.SignUpScreen
-import com.example.moneymate.ui.theme.MoneyMateTheme
 import com.example.moneymate.utils.Validation
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -57,16 +52,18 @@ fun SignInScreen(
     val context = LocalContext.current
 
     LaunchedEffect(key1 = Unit) {
-
+        launch {
             viewModel.showError.collect { error ->
                 Toast.makeText(context, error, Toast.LENGTH_LONG).show()
             }
+        }
     }
 
-    LaunchedEffect (key1 = Unit) {
+    LaunchedEffect(key1 = Unit) {
+        launch {
             viewModel.navigateToHome.collect {
                 onSignInSuccess()
-
+            }
         }
     }
 
@@ -93,8 +90,6 @@ fun SignInContent(
         null
     }
 
-    val scrollState = rememberScrollState()
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -104,109 +99,128 @@ fun SignInContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState)
                 .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+            verticalArrangement = Arrangement.Center
         ) {
-            Spacer(Modifier.height(130.dp))
-            Image(
-                painter = painterResource(R.drawable.logo),
-                contentDescription = stringResource(R.string.logo),
-                modifier = Modifier
-                    .height(117.dp)
-                    .width(180.dp)
-            )
-            Spacer(Modifier.height(26.dp))
-            Text(
-                text = stringResource(R.string.welcome_back),
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                color = Color.Black
-            )
-            Spacer(modifier = Modifier.height(13.dp))
-            Text(
-                text = stringResource(R.string.fill_all_inputs_for_logging_in),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.Black,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(33.dp))
-
-            CustomTextField(
-                value = email.value,
-                onValueChange = { email.value = it },
-                label = stringResource(R.string.email),
-                iconResId = R.drawable.ic_email,
-                keyboardType = KeyboardType.Email,
-                modifier = Modifier,
-                errorMessage = emailError
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            CustomTextField(
-                value = password.value,
-                onValueChange = { password.value = it },
-                label = stringResource(R.string.password),
-                iconResId = R.drawable.ic_lock,
-                isPassword = true,
-                keyboardType = KeyboardType.Password,
-                modifier = Modifier
-            )
-
-            Spacer(modifier = Modifier.height(35.dp))
-
-            CustomButton(
-                text = "SIGN IN",
-                onClick = {
-                    showErrors = true
-                    val isEmailValid = Validation.isValidEmail(email.value)
-                    val isPasswordValid = password.value.isNotBlank()
-
-                    if (isEmailValid && isPasswordValid) {
-                        onSignInClick(email.value, password.value)
-                    }
-                },
-                isLoading = isLoading,
-                backgroundColor = Color(0xFF4361EE)
-            )
-
-            Spacer(Modifier.height(170.dp))
-            Text(
-                text = stringResource(R.string.forgot_password),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.Black,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-
-            Spacer(modifier = Modifier.height(17.dp))
-
-            Row {
+            // Top section with logo and titles
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.logo),
+                    contentDescription = stringResource(R.string.logo),
+                    modifier = Modifier
+                        .height(100.dp) // Reduced from 117dp
+                        .width(160.dp)  // Reduced from 180dp
+                )
+                Spacer(Modifier.height(20.dp)) // Reduced from 26dp
                 Text(
-                    text = stringResource(R.string.don_t_have_an_account),
+                    text = stringResource(R.string.welcome_back),
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = Color.Black
+                )
+                Spacer(modifier = Modifier.height(8.dp)) // Reduced from 13dp
+                Text(
+                    text = stringResource(R.string.fill_all_inputs_for_logging_in),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color.Black,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-                Text(
-                    text = stringResource(R.string.sign_up),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF4361EE),
-                    modifier = Modifier
-                        .padding(vertical = 8.dp)
-                        .clickable(onClick = onSignUpClick)
+                    textAlign = TextAlign.Center
                 )
             }
 
-            // Add extra space at the bottom to ensure all content is visible
-            Spacer(Modifier.height(50.dp))
+            // Form section
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Spacer(modifier = Modifier.height(16.dp)) // Reduced from 33dp
+
+                CustomTextField(
+                    value = email.value,
+                    onValueChange = { email.value = it },
+                    label = stringResource(R.string.email),
+                    iconResId = R.drawable.ic_email,
+                    keyboardType = KeyboardType.Email,
+                    modifier = Modifier,
+                    errorMessage = emailError
+                )
+
+                Spacer(modifier = Modifier.height(16.dp)) // Reduced from 20dp
+
+                CustomTextField(
+                    value = password.value,
+                    onValueChange = { password.value = it },
+                    label = stringResource(R.string.password),
+                    iconResId = R.drawable.ic_lock,
+                    isPassword = true,
+                    keyboardType = KeyboardType.Password,
+                    modifier = Modifier
+                )
+
+                Spacer(modifier = Modifier.height(24.dp)) // Reduced from 35dp
+
+                CustomButton(
+                    text = "SIGN IN",
+                    onClick = {
+                        showErrors = true
+                        val isEmailValid = Validation.isValidEmail(email.value)
+                        val isPasswordValid = password.value.isNotBlank()
+
+                        if (isEmailValid && isPasswordValid) {
+                            onSignInClick(email.value, password.value)
+                        }
+                    },
+                    isLoading = isLoading,
+                    backgroundColor = Color(0xFF4361EE)
+                )
+            }
+
+            // Bottom section with links
+            Column(
+                modifier = Modifier.weight(0.8f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Bottom
+            ) {
+                Text(
+                    text = stringResource(R.string.forgot_password),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Black,
+                    modifier = Modifier
+                        .padding(vertical = 8.dp)
+                        .clickable { /* Handle forgot password */ }
+                )
+
+                Spacer(modifier = Modifier.height(12.dp)) // Reduced from 17dp
+
+                Row {
+                    Text(
+                        text = stringResource(R.string.don_t_have_an_account),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Black,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.sign_up),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF4361EE),
+                        modifier = Modifier
+                            .padding(vertical = 8.dp)
+                            .clickable(onClick = onSignUpClick)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
 }
@@ -214,9 +228,9 @@ fun SignInContent(
 @Preview(showBackground = true)
 @Composable
 fun SignInScreenPreview() {
-    MaterialTheme  {
+    MaterialTheme {
         SignInScreen(
-            onSignUpClick = {} ,
+            onSignUpClick = {},
             onSignInSuccess = {}
         )
     }

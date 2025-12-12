@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.domain.auth.dataStore.DataStoreDataSource
@@ -51,8 +52,7 @@ class DataStoreDataSourceImpl(
         }
     }
 
-    // User ID Implementation
-    override suspend fun setUserId(userId: String?) {
+    override suspend fun setUserId(userId: Int?) {
         dataStore.edit { preferences ->
             if (userId != null) {
                 preferences[USER_ID] = userId
@@ -64,13 +64,13 @@ class DataStoreDataSourceImpl(
 
     override suspend fun getUserId(): String? {
         return dataStore.data.map { preferences ->
-            preferences[USER_ID]?.takeIf { it.isNotEmpty() }
+            preferences[USER_ID]?.toString()?.takeIf { it.isNotEmpty() }
         }.first()
     }
 
     private companion object {
         val ACCESS_TOKEN = stringPreferencesKey("access_token")
         val REFRESH_TOKEN = stringPreferencesKey("refresh_token")
-        val USER_ID = stringPreferencesKey("user_id")
+        val USER_ID = intPreferencesKey("user_id")
     }
 }

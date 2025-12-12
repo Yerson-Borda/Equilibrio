@@ -6,12 +6,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class WalletUpdateRequest(
-    @SerialName("name") val name: String,
-    @SerialName("currency") val currency: String = "USD",
-    @SerialName("wallet_type") val walletType: String,
-    @SerialName("initial_balance") val initialBalance: Double = 0.0,
+    @SerialName("name") val name: String? = null,
+    @SerialName("currency") val currency: String? = null,
+    @SerialName("wallet_type") val walletType: String? = null,
+    @SerialName("balance") val balance: Double? = null, // Changed from initial_balance to balance
     @SerialName("card_number") val cardNumber: String? = null,
-    @SerialName("color") val color: String = "#3B82F6"
+    @SerialName("color") val color: String? = null
 ) {
     companion object {
         fun fromDomain(domain: DomainWalletUpdateRequest): WalletUpdateRequest {
@@ -19,7 +19,7 @@ data class WalletUpdateRequest(
                 name = domain.name,
                 currency = domain.currency,
                 walletType = domain.walletType,
-                initialBalance = domain.initialBalance,
+                balance = domain.initialBalance, // Map initialBalance to balance
                 cardNumber = domain.cardNumber,
                 color = domain.color
             )

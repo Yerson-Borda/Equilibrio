@@ -7,11 +7,11 @@ import com.example.domain.wallet.model.WalletCreateRequest as DomainWalletCreate
 @Serializable
 data class WalletCreateRequest(
     val name: String,
-    val currency: String = "USD",
+    val currency: String,
     val wallet_type: String,
-    val initial_balance: Double = 0.0,
     val card_number: String? = null,
-    val color: String = "#3B82F6"
+    val color: String,
+    val balance: Double // Changed from initial_balance to balance
 ) {
     companion object {
         fun fromDomain(domain: DomainWalletCreateRequest): WalletCreateRequest {
@@ -19,9 +19,9 @@ data class WalletCreateRequest(
                 name = domain.name,
                 currency = domain.currency,
                 wallet_type = domain.walletType,
-                initial_balance = domain.initialBalance,
                 card_number = domain.cardNumber,
-                color = domain.color
+                color = domain.color,
+                balance = domain.initialBalance // Map initialBalance to balance
             )
         }
     }

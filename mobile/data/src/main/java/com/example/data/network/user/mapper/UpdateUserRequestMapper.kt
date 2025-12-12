@@ -11,7 +11,8 @@ object UpdateUserRequestMapper {
             email = user.email,
             fullName = user.fullName,
             phoneNumber = user.phoneNumber,
-            dateOfBirth = user.dateOfBirth
+            dateOfBirth = user.dateOfBirth,
+            defaultCurrency = user.defaultCurrency
         )
     }
 }
