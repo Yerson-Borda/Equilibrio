@@ -91,7 +91,6 @@ fun AddTransactionScreen(
     val navigationEvent by viewModel.navigationEvent.collectAsState()
     val context = LocalContext.current
 
-    // Add gallery launcher inside the composable
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(),
         onResult = { uris ->
@@ -102,7 +101,6 @@ fun AddTransactionScreen(
         }
     )
 
-    // Handle navigation events
     LaunchedEffect(navigationEvent) {
         when (navigationEvent) {
             is NavigationEvent.NavigateHome -> {
@@ -113,7 +111,6 @@ fun AddTransactionScreen(
         }
     }
 
-    // Handle transaction state errors (show as Toast)
     LaunchedEffect(uiState.transactionState) {
         if (uiState.transactionState is ScreenState.Error) {
             val error = (uiState.transactionState as ScreenState.Error).error
@@ -130,7 +127,6 @@ fun AddTransactionScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Back button with circle background
                 IconButton(
                     onClick = onBackClick,
                     modifier = Modifier
@@ -199,22 +195,18 @@ fun AddTransactionScreen(
             }
         }
     ) { paddingValues ->
-        // Main content with state management
         when {
-            // Show full screen loading if wallets, categories, or tags are loading
             uiState.walletsState is ScreenState.Loading &&
                     uiState.categoriesState is ScreenState.Loading &&
                     uiState.tagsState is ScreenState.Loading -> {
                 FullScreenLoading(message = "Loading transaction data...")
             }
-            // Show full screen error if wallets failed to load (critical data)
             uiState.walletsState is ScreenState.Error -> {
                 FullScreenError(
                     error = (uiState.walletsState as ScreenState.Error).error,
                     onRetry = { viewModel.loadWallets() }
                 )
             }
-            // Show normal content
             else -> {
                 Column(
                     modifier = Modifier
@@ -223,15 +215,11 @@ fun AddTransactionScreen(
                         .padding(paddingValues)
                         .verticalScroll(rememberScrollState())
                 ) {
-                    // Transaction Type Selector
                     TransactionTypeSelector(
                         selectedType = uiState.selectedType,
                         onTypeSelected = viewModel::onTransactionTypeSelected
                     )
-
                     Spacer(modifier = Modifier.height(20.dp))
-
-                    // Amount Display
                     Text(
                         text = "$${uiState.amount}",
                         style = MaterialTheme.typography.displayLarge,
@@ -241,8 +229,6 @@ fun AddTransactionScreen(
                     )
 
                     Spacer(modifier = Modifier.height(25.dp))
-
-                    // Dynamic Content based on Transaction Type
                     when (uiState.selectedType) {
                         TransactionType.TRANSFER -> {
                             TransferContent(
@@ -261,7 +247,6 @@ fun AddTransactionScreen(
                                     )
                                 },
                                 onNoteChanged = viewModel::onNoteChanged,
-                                onNameChanged = viewModel::onNameChanged,
                                 viewModel = viewModel,
                                 onAddAttachment = {
                                     galleryLauncher.launch(
@@ -270,7 +255,7 @@ fun AddTransactionScreen(
                                 }
                             )
                         }
-                        else -> { // INCOME or EXPENSE
+                        else -> {
                             IncomeExpenseContent(
                                 uiState = uiState,
                                 walletsState = uiState.walletsState,
@@ -297,11 +282,8 @@ fun AddTransactionScreen(
                     }
 
                     Spacer(modifier = Modifier.height(7.dp))
-
-                    // Tags Section with state management
                     when (uiState.tagsState) {
                         is ScreenState.Loading -> {
-                            // Show loading for tags section
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -316,7 +298,6 @@ fun AddTransactionScreen(
                             }
                         }
                         is ScreenState.Error -> {
-                            // Show error for tags section
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -344,9 +325,8 @@ fun AddTransactionScreen(
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-                                // Still show the create tag button even if loading failed
                                 Button(
-                                    onClick = { /* Handle tag creation manually if needed */ },
+                                    onClick = {},
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(33.dp),
@@ -365,7 +345,6 @@ fun AddTransactionScreen(
                             }
                         }
                         is ScreenState.Empty -> {
-                            // Show empty state for tags
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -395,7 +374,6 @@ fun AddTransactionScreen(
                             }
                         }
                         else -> {
-                            // Show tags section with data
                             TagsSection(
                                 availableTags = uiState.availableTags,
                                 selectedTagIds = uiState.selectedTagIds,
@@ -404,10 +382,7 @@ fun AddTransactionScreen(
                             )
                         }
                     }
-
                     Spacer(modifier = Modifier.height(15.dp))
-
-                    // Number Pad (common for all types)
                     NumberPad(
                         onNumberPressed = viewModel::onNumberPressed,
                         onBackspacePressed = viewModel::onBackspacePressed,
@@ -427,7 +402,6 @@ fun TransferContent(
     onSourceWalletSelected: (Wallet) -> Unit,
     onDestinationWalletSelected: (Wallet) -> Unit,
     onNoteChanged: (String) -> Unit,
-    onNameChanged: (String) -> Unit,
     viewModel: AddTransactionViewModel
 ) {
     Column(
@@ -435,12 +409,10 @@ fun TransferContent(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
     ) {
-        // Row for both dropdowns side by side
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // From Wallet - takes half width
             Box(modifier = Modifier.weight(1f)) {
                 SectionStateManager(
                     state = walletsState,
@@ -455,7 +427,6 @@ fun TransferContent(
                 }
             }
 
-            // To Wallet - takes half width
             Box(modifier = Modifier.weight(1f)) {
                 SectionStateManager(
                     state = walletsState,
@@ -473,7 +444,6 @@ fun TransferContent(
 
         Spacer(modifier = Modifier.height(15.dp))
 
-        // Note
         TransactionTextField(
             Type = "Add Note",
             text = uiState.note,
@@ -487,7 +457,6 @@ fun TransferContent(
             modifier = Modifier.fillMaxWidth()
         )
 
-        // Display selected attachments if any
         if (uiState.attachments.isNotEmpty()) {
             SelectedAttachmentsSection(
                 attachments = uiState.attachments,
@@ -516,12 +485,10 @@ fun IncomeExpenseContent(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
     ) {
-        // Row for Wallet and Category dropdowns side by side
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Wallet dropdown - takes half width
             Box(modifier = Modifier.weight(1f)) {
                 SectionStateManager(
                     state = walletsState,
@@ -535,8 +502,6 @@ fun IncomeExpenseContent(
                     )
                 }
             }
-
-            // Category dropdown - takes half width
             Box(modifier = Modifier.weight(1f)) {
                 SectionStateManager(
                     state = categoriesState,
@@ -552,13 +517,10 @@ fun IncomeExpenseContent(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
-        // Row for Name text field and Attachment button (50/50 split)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Name text field - takes 50% width
             Box(modifier = Modifier.weight(1f)) {
                 TransactionTextField(
                     Type = "Name",
@@ -566,8 +528,6 @@ fun IncomeExpenseContent(
                     onValueChanged = onNameChanged
                 )
             }
-
-            // Attachment button - takes 50% width
             Box(modifier = Modifier.weight(1f)) {
                 SimpleAttachmentButton(
                     onAddAttachment = onAddAttachment,
@@ -577,8 +537,6 @@ fun IncomeExpenseContent(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
-        // Note text field (full width)
         TransactionTextField(
             Type = "Add Note",
             text = uiState.note,
@@ -586,8 +544,6 @@ fun IncomeExpenseContent(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
-
-        // Display selected attachments if any
         if (uiState.attachments.isNotEmpty()) {
             SelectedAttachmentsSection(
                 attachments = uiState.attachments,
@@ -608,7 +564,6 @@ fun SimpleAttachmentButton(
     Column(
         modifier = modifier.fillMaxWidth()
     ) {
-        // Add an invisible text to match the label height of TransactionTextField
         Text(
             text = " ",
             style = MaterialTheme.typography.bodySmall,
@@ -619,7 +574,7 @@ fun SimpleAttachmentButton(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp) // Same height as text field
+                .height(56.dp)
                 .clip(RoundedCornerShape(10.dp))
                 .border(
                     width = 1.dp,
@@ -795,11 +750,9 @@ fun CategoryDropdown(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Display selected category with icon in circle
             val selectedCategory = categories.find { it.name == selectedCategoryName }
             if (selectedCategory != null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Icon in circle background
                     Box(
                         modifier = Modifier
                             .size(40.dp)
@@ -939,106 +892,6 @@ fun TransactionTypeSelector(
         }
     }
 }
-@Composable
-fun AttachmentsSection(
-    attachments: List<String>,
-    onAddAttachment: () -> Unit,
-    onRemoveAttachment: (String) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
-        // Add Attachment Button
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(34.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .border(
-                    width = 1.dp,
-                    color = Color.LightGray,
-                    shape = RoundedCornerShape(10.dp)
-                )
-                .clickable { onAddAttachment() }
-                .padding(10.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Attachment",
-                    tint = Color.Green,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Add Attachment",
-                    color = Color.Green,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        }
-
-        // Display selected attachments
-        if (attachments.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Selected Attachments (${attachments.size})",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(attachments) { uri ->
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.LightGray.copy(alpha = 0.3f))
-                    ) {
-                        // Here you would display the image thumbnail
-                        // For now, showing a placeholder
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(4.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Image",
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        }
-
-                        // Remove button
-                        IconButton(
-                            onClick = { onRemoveAttachment(uri) },
-                            modifier = Modifier
-                                .size(24.dp)
-                                .align(Alignment.TopEnd)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Remove",
-                                tint = Color.Red,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Composable
 fun TagsSection(
@@ -1053,7 +906,6 @@ fun TagsSection(
         modifier = Modifier
             .fillMaxWidth()
     ) {
-        // All content except button has padding
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1069,7 +921,6 @@ fun TagsSection(
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Show tags from backend
                 items(availableTags) { tag ->
                     Box(
                         modifier = Modifier
@@ -1094,8 +945,6 @@ fun TagsSection(
                         )
                     }
                 }
-
-                // New Tag input
                 item {
                     Box(
                         modifier = Modifier

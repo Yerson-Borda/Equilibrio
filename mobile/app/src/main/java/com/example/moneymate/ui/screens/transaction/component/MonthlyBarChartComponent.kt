@@ -40,7 +40,6 @@ import com.example.domain.transaction.model.MonthlyChartData
 import com.example.domain.transaction.model.PeriodFilter
 import kotlin.math.abs
 
-// MonthlyBarChartComponent.kt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MonthlyBarChartComponent(

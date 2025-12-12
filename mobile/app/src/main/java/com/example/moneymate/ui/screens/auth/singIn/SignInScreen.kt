@@ -219,7 +219,7 @@ fun SignInContent(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp)) // Reduced bottom spacing
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }

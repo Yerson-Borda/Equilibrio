@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,10 +44,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.domain.wallet.model.Wallet
 import com.example.moneymate.R
 import com.example.moneymate.ui.components.states.FullScreenError
 import com.example.moneymate.ui.components.states.FullScreenLoading
+import com.example.moneymate.utils.CurrencyUtils.getCurrencySymbol
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -58,6 +63,27 @@ fun WalletDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Refresh data when screen comes into focus
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> {
+                    println("🔄 DEBUG: WalletDetailScreen - Screen resumed, refreshing data...")
+                    viewModel.loadWalletDetail(walletId)
+                    viewModel.loadTransactions(walletId)
+                }
+                else -> {}
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     // Load wallet data when screen opens
     LaunchedEffect(walletId) {
@@ -234,6 +260,9 @@ private fun WalletDetailContent(
 private fun WalletCard(walletDetail: Wallet) {
     // Use balance if available, otherwise use initialBalance
     val displayBalance = walletDetail.balance ?: walletDetail.initialBalance
+    val currencySymbol = remember(walletDetail.currency) {
+        getCurrencySymbol(walletDetail.currency)
+    }
 
     // Safe color parsing with fallback
     val backgroundColor = try {
@@ -262,7 +291,7 @@ private fun WalletCard(walletDetail: Wallet) {
                 color = Color.White.copy(alpha = 0.8f)
             )
             Text(
-                text = "$$displayBalance",
+                text = "$currencySymbol$displayBalance",
                 style = MaterialTheme.typography.headlineMedium,
                 color = Color.White,
                 fontWeight = FontWeight.Bold
@@ -324,6 +353,9 @@ private fun WalletInfoCard(
     onEditWallet: (Int) -> Unit
 ) {
     val displayBalance = walletDetail.balance ?: walletDetail.initialBalance
+    val currencySymbol = remember(walletDetail.currency) {
+        getCurrencySymbol(walletDetail.currency)
+    }
 
     // Safe color parsing with fallback
     val walletColor = try {
@@ -368,7 +400,7 @@ private fun WalletInfoCard(
             }
 
             Text(
-                text = "$$displayBalance",
+                text = "$currencySymbol$displayBalance",
                 style = MaterialTheme.typography.headlineMedium,
                 color = Color(0xFF1A1A1A),
                 fontWeight = FontWeight.Bold
@@ -383,6 +415,7 @@ private fun WalletInfoCard(
             ) {
                 // Income
                 IncomeExpenseItem(
+                    currency = currencySymbol,
                     amount = income,
                     isIncome = true,
                     modifier = Modifier.weight(1f)
@@ -390,6 +423,7 @@ private fun WalletInfoCard(
 
                 // Expense
                 IncomeExpenseItem(
+                    currency = currencySymbol,
                     amount = expense,
                     isIncome = false,
                     modifier = Modifier.weight(1f)
@@ -417,6 +451,7 @@ private fun WalletInfoCard(
 
 @Composable
 private fun IncomeExpenseItem(
+    currency:String,
     amount: Double,
     isIncome: Boolean,
     modifier: Modifier = Modifier
@@ -438,7 +473,7 @@ private fun IncomeExpenseItem(
             )
         }
         Text(
-            text = "$${String.format("%.2f", amount)}",
+            text = "$currency${String.format("%.2f", amount)}",
             style = MaterialTheme.typography.bodyMedium,
             color = if (isIncome) Color(0xFF10B981) else Color(0xFFEF4444),
             fontWeight = FontWeight.Bold

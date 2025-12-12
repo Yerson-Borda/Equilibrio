@@ -12,6 +12,7 @@ import com.example.domain.wallet.usecase.DeleteWalletUseCase
 import com.example.domain.wallet.usecase.GetWalletDetailUseCase
 import com.example.domain.wallet.usecase.GetWalletsUseCase
 import com.example.domain.wallet.usecase.UpdateWalletUseCase
+import com.example.moneymate.utils.DataSyncManager
 import com.example.moneymate.utils.ScreenState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +34,52 @@ class WalletViewModel(
     init {
         println("DEBUG: WalletViewModel init - loading wallets")
         loadWallets()
+
+        // Listen for data change events
+        setupDataChangeListener()
+    }
+
+    private fun setupDataChangeListener() {
+        viewModelScope.launch {
+            // Listen for data change events
+            DataSyncManager.dataChangeEvents.collect { event ->
+                when (event) {
+                    is DataSyncManager.DataChangeEvent.TransactionsUpdated -> {
+                        println("🔄 DEBUG: WalletViewModel - Transaction update detected, refreshing transactions...")
+                        // Refresh transactions for currently selected wallet
+                        uiState.value.selectedWallet?.id?.let { walletId ->
+                            loadTransactions(walletId)
+                        }
+                    }
+                    is DataSyncManager.DataChangeEvent.WalletsUpdated -> {
+                        println("🔄 DEBUG: WalletViewModel - Wallet update detected, refreshing wallets...")
+                        loadWallets()
+                    }
+                    is DataSyncManager.DataChangeEvent.WalletSpecificUpdated -> {
+                        println("🔄 DEBUG: WalletViewModel - Specific wallet update detected, refreshing wallet detail...")
+                        uiState.value.selectedWallet?.id?.let { walletId ->
+                            loadWalletDetail(walletId)
+                            loadTransactions(walletId)
+                        }
+                    }
+                    else -> {
+                        // Handle other events if needed
+                    }
+                }
+            }
+        }
+    }
+
+    // Add refresh function for screen focus
+    fun refreshOnScreenFocus() {
+        viewModelScope.launch {
+            println("🔄 DEBUG: WalletViewModel - Screen focused, refreshing data...")
+            loadWallets()
+            // Also refresh transactions for selected wallet if any
+            uiState.value.selectedWallet?.id?.let { walletId ->
+                loadTransactions(walletId)
+            }
+        }
     }
 
     fun loadWallets() {
@@ -87,6 +134,11 @@ class WalletViewModel(
                     )
                     println("DEBUG: Wallet created successfully")
                     loadWallets() // Reload wallets to include the new one
+
+                    // Notify other screens about wallet update
+                    DataSyncManager.notifyDataChanged(DataSyncManager.DataChangeEvent.WalletsUpdated)
+                    // Also notify about user data update for HomeScreen balance refresh
+                    DataSyncManager.notifyDataChanged(DataSyncManager.DataChangeEvent.UserDataUpdated)
                 } else {
                     val exception = result.exceptionOrNull() ?: Exception("Failed to create wallet")
                     _uiState.value = _uiState.value.copy(
@@ -187,6 +239,11 @@ class WalletViewModel(
                     )
                     println("DEBUG: Wallet deleted successfully")
                     loadWallets() // Reload wallets to reflect deletion
+
+                    // Notify other screens about wallet update
+                    DataSyncManager.notifyDataChanged(DataSyncManager.DataChangeEvent.WalletsUpdated)
+                    // Also notify about user data update for HomeScreen balance refresh
+                    DataSyncManager.notifyDataChanged(DataSyncManager.DataChangeEvent.UserDataUpdated)
                 } else {
                     val exception = result.exceptionOrNull() ?: Exception("Failed to delete wallet")
                     _uiState.value = _uiState.value.copy(
@@ -224,6 +281,12 @@ class WalletViewModel(
                     println("DEBUG: Wallet updated successfully")
                     loadWallets() // Reload wallets to reflect changes
                     loadWalletDetail(walletId) // Reload the wallet detail
+
+                    // Notify other screens about wallet update
+                    DataSyncManager.notifyDataChanged(DataSyncManager.DataChangeEvent.WalletsUpdated)
+                    DataSyncManager.notifyDataChanged(DataSyncManager.DataChangeEvent.WalletSpecificUpdated)
+                    // Also notify about user data update for HomeScreen balance refresh
+                    DataSyncManager.notifyDataChanged(DataSyncManager.DataChangeEvent.UserDataUpdated)
                 } else {
                     val exception = result.exceptionOrNull() ?: Exception("Failed to update wallet")
                     _uiState.value = _uiState.value.copy(

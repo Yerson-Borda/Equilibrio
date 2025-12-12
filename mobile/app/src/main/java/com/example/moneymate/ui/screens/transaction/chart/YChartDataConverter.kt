@@ -1,4 +1,3 @@
-// ui/screens/transaction/chart/YChartDataConverter.kt
 package com.example.moneymate.ui.screens.transaction.chart
 
 import androidx.compose.ui.graphics.Color
@@ -12,13 +11,13 @@ object YChartDataConverter {
     fun convertToBarData(
         months: List<MonthlyData>,
         selectedFilter: ChartFilter,
-        incomeColor: Color = Color(0xFF4ECDC4), // Green
-        expenseColor: Color = Color(0xFFFF6B6B) // Red
+        incomeColor: Color = Color(0xFF4ECDC4),
+        expenseColor: Color = Color(0xFFFF6B6B)
     ): List<BarData> {
         return months.mapIndexed { index, monthlyData ->
             BarData(
                 point = Point(
-                    x = index.toFloat(), // X position index
+                    x = index.toFloat(),
                     y = when (selectedFilter) {
                         ChartFilter.INCOME -> monthlyData.income.toFloat()
                         ChartFilter.EXPENSES -> monthlyData.expenses.toFloat()

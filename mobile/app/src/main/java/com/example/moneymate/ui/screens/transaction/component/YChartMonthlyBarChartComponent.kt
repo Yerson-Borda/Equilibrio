@@ -15,7 +15,6 @@ import androidx.compose.ui.unit.sp
 import co.yml.charts.axis.AxisData
 import co.yml.charts.ui.barchart.BarChart
 import co.yml.charts.ui.barchart.models.BarChartData
-import co.yml.charts.ui.barchart.models.BarData
 import co.yml.charts.ui.barchart.models.BarStyle
 import co.yml.charts.ui.barchart.models.SelectionHighlightData
 import com.example.domain.transaction.model.ChartFilter
@@ -36,7 +35,6 @@ fun YChartMonthlyBarChartComponent(
     val months = monthlyChartData.months
     val selectedFilter = monthlyChartData.selectedFilter
 
-    // Calculate totals for summary
     val totalIncome = remember(months) { months.sumOf { it.income } }
     val totalExpenses = remember(months) { months.sumOf { it.expenses } }
     val selectedTotal = when (selectedFilter) {
@@ -48,7 +46,6 @@ fun YChartMonthlyBarChartComponent(
     Column(
         modifier = modifier.fillMaxWidth()
     ) {
-        // Header with title and filters (unchanged)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -72,8 +69,6 @@ fun YChartMonthlyBarChartComponent(
         }
 
         Spacer(modifier = Modifier.height(12.dp))
-
-        // Income/Expenses Toggle Switch (unchanged)
         IncomeExpenseToggle(
             selectedFilter = selectedFilter,
             onFilterChanged = onFilterChanged,
@@ -81,8 +76,6 @@ fun YChartMonthlyBarChartComponent(
         )
 
         Spacer(modifier = Modifier.height(20.dp))
-
-        // YCharts Bar Chart
         if (months.isNotEmpty()) {
             BarChartWithYCharts(
                 months = months,
@@ -107,8 +100,6 @@ fun YChartMonthlyBarChartComponent(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
-        // Summary section (unchanged)
         Column {
             Text(
                 text = "Total ${selectedFilter.name.lowercase().replaceFirstChar { it.uppercase() }}: $${String.format("%,.0f", selectedTotal)}",
@@ -145,27 +136,20 @@ fun BarChartWithYCharts(
     selectedFilter: ChartFilter,
     modifier: Modifier = Modifier
 ) {
-    // Convert your data to YCharts BarData format
     val barData = YChartDataConverter.convertToBarData(months, selectedFilter)
-
-    // Calculate max value for Y-axis scaling
     val maxValue = barData.maxOfOrNull { it.point.y } ?: 100000f
-
-    // Configure Y-axis steps (rounded up to nearest nice number)
     val yMax = calculateNiceMaxValue(maxValue)
     val yStepSize = calculateStepCount(yMax)
 
-    // Build X-axis data
     val xAxisData = AxisData.Builder()
         .axisStepSize(30.dp)
         .steps(barData.size - 1)
         .bottomPadding(40.dp)
-        .axisLabelAngle(if (barData.size > 6) 45f else 0f) // Angle labels if many bars
+        .axisLabelAngle(if (barData.size > 6) 45f else 0f)
         .startDrawPadding(48.dp)
         .labelData { index -> barData[index].label }
         .build()
 
-    // Build Y-axis data
     val yAxisData = AxisData.Builder()
         .steps(yStepSize)
         .labelAndAxisLinePadding(20.dp)
@@ -177,7 +161,6 @@ fun BarChartWithYCharts(
         }
         .build()
 
-    // Configure bar chart data
     val barChartData = BarChartData(
         chartData = barData,
         xAxisData = xAxisData,
@@ -206,7 +189,6 @@ fun BarChartWithYCharts(
         horizontalExtraSpace = 10.dp
     )
 
-    // Render the chart
     BarChart(
         modifier = modifier,
         barChartData = barChartData
@@ -216,7 +198,6 @@ fun BarChartWithYCharts(
 private fun calculateNiceMaxValue(maxValue: Float): Float {
     if (maxValue <= 0) return 100f
 
-    // Round up to nearest 100, 1000, 10000 etc based on magnitude
     return when {
         maxValue < 100 -> ceil(maxValue / 10f) * 10f
         maxValue < 1000 -> ceil(maxValue / 100f) * 100f
@@ -226,7 +207,6 @@ private fun calculateNiceMaxValue(maxValue: Float): Float {
     }
 }
 
-// Helper function to calculate step count
 private fun calculateStepCount(maxValue: Float): Int {
     return when {
         maxValue <= 1000 -> 5

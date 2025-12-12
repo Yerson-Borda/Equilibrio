@@ -46,10 +46,11 @@ import com.example.moneymate.R
 @Composable
 private fun TransactionItem(
     transaction: TransactionEntity,
-    currencySymbol: String = "$"
+    currencySymbol: String = "$",
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
@@ -117,7 +118,8 @@ fun TransactionsSection(
     currencySymbol: String = "$",
     availableTags: List<String> = emptyList(),
     onSeeAll: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isInLazyColumn: Boolean = false // NEW PARAMETER
 ) {
     var searchText by remember { mutableStateOf("") }
     var isSearchExpanded by remember { mutableStateOf(false) }
@@ -224,12 +226,30 @@ fun TransactionsSection(
                 }
             )
         } else {
-            LazyColumn(
-                modifier = Modifier.heightIn(max = 300.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(filteredTransactions) { transaction ->
-                    TransactionItem(transaction = transaction, currencySymbol = currencySymbol)
+            if (isInLazyColumn) {
+                // When inside a LazyColumn, use Column instead of LazyColumn
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    filteredTransactions.forEach { transaction ->
+                        TransactionItem(
+                            transaction = transaction,
+                            currencySymbol = currencySymbol,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            } else {
+                // When used standalone (not in LazyColumn), use LazyColumn
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(filteredTransactions) { transaction ->
+                        TransactionItem(
+                            transaction = transaction,
+                            currencySymbol = currencySymbol
+                        )
+                    }
                 }
             }
         }

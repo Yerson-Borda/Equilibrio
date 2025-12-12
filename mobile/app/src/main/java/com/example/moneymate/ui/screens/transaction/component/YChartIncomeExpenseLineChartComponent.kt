@@ -1,4 +1,3 @@
-// ui/screens/transaction/component/YChartIncomeExpenseLineChartComponent.kt
 package com.example.moneymate.ui.screens.transaction.component
 
 import androidx.compose.foundation.background
@@ -13,14 +12,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.yml.charts.axis.AxisData
-import co.yml.charts.common.extensions.formatToSinglePrecision
-import co.yml.charts.common.model.Point
 import co.yml.charts.ui.linechart.LineChart
 import co.yml.charts.ui.linechart.model.*
 import com.example.domain.transaction.model.DateRange
 import com.example.domain.transaction.model.MonthlyChartData
 import com.example.moneymate.ui.screens.transaction.chart.YChartLineDataConverter
-import kotlin.math.ceil
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,7 +53,6 @@ fun YChartIncomeExpenseLineChartComponent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // From and To date pickers (keep your existing DatePickerDropdown)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -79,8 +74,6 @@ fun YChartIncomeExpenseLineChartComponent(
                     modifier = Modifier.width(120.dp)
                 )
             }
-
-            // To Date Picker
             Column {
                 Text(
                     text = "To",
@@ -100,7 +93,6 @@ fun YChartIncomeExpenseLineChartComponent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // YCharts Line Chart
         if (days.isNotEmpty() && days.any { it.income > 0 || it.expenses > 0 }) {
             DualLineChartWithYCharts(
                 days = days,
@@ -125,8 +117,6 @@ fun YChartIncomeExpenseLineChartComponent(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
-        // Legend for income and expense lines
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
@@ -151,7 +141,6 @@ fun YChartIncomeExpenseLineChartComponent(
 
             Spacer(modifier = Modifier.width(24.dp))
 
-            // Expense legend
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -171,7 +160,6 @@ fun YChartIncomeExpenseLineChartComponent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Summary
         Column {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -236,12 +224,10 @@ fun DualLineChartWithYCharts(
     days: List<com.example.domain.transaction.model.DailyData>,
     modifier: Modifier = Modifier
 ) {
-    // Convert your data to YCharts format
     val incomePoints = YChartLineDataConverter.convertToIncomePoints(days)
     val expensePoints = YChartLineDataConverter.convertToExpensePoints(days)
     val dayLabels = YChartLineDataConverter.getDayLabels(days)
 
-    // Build X-axis data with better spacing
     val xAxisData = AxisData.Builder()
         .axisStepSize(30.dp)
         .steps(days.size - 1)
@@ -253,19 +239,17 @@ fun DualLineChartWithYCharts(
         }
         .build()
 
-    // Build Y-axis data
     val yAxisData = AxisData.Builder()
         .steps(5)
         .labelAndAxisLinePadding(25.dp)
         .axisOffset(25.dp)
         .topPadding(60.dp)
         .labelData { index ->
-            val value = index * 100  // 100, 200, 300, 400, 500
+            val value = index * 100
             "$$value"
         }
         .build()
 
-    // Create Income line with simple tooltip
     val incomeLine = Line(
         dataPoints = incomePoints,
         lineStyle = LineStyle(
@@ -274,16 +258,13 @@ fun DualLineChartWithYCharts(
         selectionHighlightPopUp = SelectionHighlightPopUp(
             popUpLabel = { xIndex, yValue ->
                 val index = kotlin.math.round(xIndex).toInt()
-                val dayLabel = if (index < dayLabels.size) dayLabels[index] else ""
                 val actualIncome = if (index < days.size) days[index].income else yValue.toDouble()
 
-                // Simple tooltip - just show value and type
                 if (actualIncome > 0) "$${actualIncome.toInt()} Income" else ""
             }
         )
     )
 
-    // Create Expense line with simple tooltip
     val expenseLine = Line(
         dataPoints = expensePoints,
         lineStyle = LineStyle(
@@ -292,50 +273,31 @@ fun DualLineChartWithYCharts(
         selectionHighlightPopUp = SelectionHighlightPopUp(
             popUpLabel = { xIndex, yValue ->
                 val index = kotlin.math.round(xIndex).toInt()
-                val dayLabel = if (index < dayLabels.size) dayLabels[index] else ""
                 val actualExpense = if (index < days.size) days[index].expenses else yValue.toDouble()
-
-                // Simple tooltip - just show value and type
                 if (actualExpense > 0) "$${actualExpense.toInt()} Expense" else ""
             }
         )
     )
 
-    // Create line plot data
     val linePlotData = LinePlotData(
         lines = listOf(incomeLine, expenseLine)
     )
 
-    // Configure line chart data
     val lineChartData = LineChartData(
         linePlotData = linePlotData,
         xAxisData = xAxisData,
         yAxisData = yAxisData
     )
 
-    // Render the chart with padding to prevent cutting
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(300.dp)
-            .padding(horizontal = 8.dp)  // Add horizontal padding to container
+            .padding(horizontal = 8.dp)
     ) {
         LineChart(
             modifier = Modifier.fillMaxSize(),
             lineChartData = lineChartData
         )
-    }
-}
-
-private fun calculateNiceMaxValue(maxValue: Float): Float {
-    if (maxValue <= 0) return 100f
-
-    // Round up to nearest nice number
-    return when {
-        maxValue < 100 -> ceil(maxValue / 10f) * 10f
-        maxValue < 1000 -> ceil(maxValue / 100f) * 100f
-        maxValue < 10000 -> ceil(maxValue / 1000f) * 1000f
-        maxValue < 100000 -> ceil(maxValue / 10000f) * 10000f
-        else -> ceil(maxValue / 100000f) * 100000f
     }
 }

@@ -1,6 +1,7 @@
 package com.example.moneymate.ui.screens.home
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -8,19 +9,23 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.domain.user.model.UserDetailedData
 import com.example.moneymate.R
 import com.example.moneymate.ui.components.states.FullScreenError
@@ -36,7 +41,6 @@ fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
     onProfileClick: () -> Unit = {},
     onAddRecord: () -> Unit = {},
-    onAddWallet: () -> Unit = {},
     onSeeAllBudget: () -> Unit = {},
     onSeeAllTransactions: () -> Unit = {},
     currentScreen: String = "home",
@@ -44,131 +48,141 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val scrollState = rememberScrollState()
 
-    // Extract currency symbol from user data
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> {
+                    println("🔄 DEBUG: HomeScreen - Screen resumed, refreshing data...")
+                    viewModel.refreshOnScreenFocus()
+                }
+                else -> {}
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     val currencySymbol = remember(uiState.userDataState) {
         when (uiState.userDataState) {
             is ScreenState.Success -> {
                 extractCurrencySymbol((uiState.userDataState as ScreenState.Success<UserDetailedData>).data.user.defaultCurrency)
             }
-            else -> "$" // Default to USD
+            else -> "$"
         }
     }
 
-    // Handle errors via Toast
     LaunchedEffect(uiState.userDataState) {
-        if (uiState.userDataState is com.example.moneymate.utils.ScreenState.Error) {
-            val error = (uiState.userDataState as com.example.moneymate.utils.ScreenState.Error).error
+        if (uiState.userDataState is ScreenState.Error) {
+            val error = (uiState.userDataState as ScreenState.Error).error
             Toast.makeText(context, error.getUserFriendlyMessage(), Toast.LENGTH_LONG).show()
         }
     }
 
     LaunchedEffect(uiState.balanceState) {
-        if (uiState.balanceState is com.example.moneymate.utils.ScreenState.Error) {
-            val error = (uiState.balanceState as com.example.moneymate.utils.ScreenState.Error).error
+        if (uiState.balanceState is ScreenState.Error) {
+            val error = (uiState.balanceState as ScreenState.Error).error
             Toast.makeText(context, error.getUserFriendlyMessage(), Toast.LENGTH_LONG).show()
         }
     }
 
-    // Add budget error handling
     LaunchedEffect(uiState.budgetState) {
-        if (uiState.budgetState is com.example.moneymate.utils.ScreenState.Error) {
-            val error = (uiState.budgetState as com.example.moneymate.utils.ScreenState.Error).error
+        if (uiState.budgetState is ScreenState.Error) {
+            val error = (uiState.budgetState as ScreenState.Error).error
             Toast.makeText(context, error.getUserFriendlyMessage(), Toast.LENGTH_LONG).show()
         }
     }
 
-    // Main content with state management
     when {
-        // Show full screen loading if critical data is loading
-        uiState.userDataState is com.example.moneymate.utils.ScreenState.Loading -> {
+        uiState.userDataState is ScreenState.Loading -> {
             FullScreenLoading(message = "Loading home data...")
         }
-        // Show full screen error if user data failed to load (critical data)
-        uiState.userDataState is com.example.moneymate.utils.ScreenState.Error -> {
+        uiState.userDataState is ScreenState.Error -> {
             FullScreenError(
-                error = (uiState.userDataState as com.example.moneymate.utils.ScreenState.Error).error,
+                error = (uiState.userDataState as ScreenState.Error).error,
                 onRetry = { viewModel.loadAllData() }
             )
         }
-        // Show normal content
         else -> {
             Box(
                 modifier = Modifier.fillMaxSize()
             ) {
-                Column(
+                LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(scrollState)
+                        .background(Color.White)
                         .statusBarsPadding()
                 ) {
-                    // User data section with state management
-                    SectionStateManager(
-                        state = uiState.userDataState,
-                        onRetry = { viewModel.loadUserData() }
-                    ) { userData ->
-                        TopAppBarSection(
-                            userName = userData.user.fullName ?: "User",
-                            profileImage = userData.user.avatarUrl?.let { avatarUrl ->
-                                Config.buildImageUrl(avatarUrl)
-                            },
-                            onProfileClick = onProfileClick
-                        )
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        // Balance section with state management
+                    item {
                         SectionStateManager(
-                            state = uiState.balanceState,
-                            onRetry = { viewModel.loadTotalBalance() }
-                        ) { balance ->
-                            WalletBalanceCard(
-                                totalBalance = balance?.totalBalance,
-                                currencySymbol = currencySymbol,
-                                isLoading = uiState.isTotalBalanceLoading
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Financial Overview section with state management
-                        SectionStateManager(
-                            state = uiState.financialOverviewState,
-                            onRetry = { viewModel.loadFinancialOverview() }
-                        ) { financialData ->
-                            FinancialOverviewCard(
-                                totalIncome = financialData.totalIncome,
-                                totalExpense = financialData.totalExpense,
-                                currencySymbol = currencySymbol
-                            )
-                        }
-
-                        // Only show FirstLoginContent if there are no wallets AND no transactions
-                        if (userData.stats.walletCount == 0 && userData.stats.totalTransactions == 0) {
-                            FirstLoginContent(
-                                onAddRecord = onAddRecord,
-                                onAddWallet = onAddWallet
-                            )
-                        } else {
-                            // Budget section with state management
-                            SectionStateManager(
-                                state = uiState.budgetState,
-                                onRetry = { viewModel.loadBudgetData() }
-                            ) { budgetData ->
-                                RegularHomeContent(
-                                    stats = userData.stats,
-                                    recentTransactions = uiState.recentTransactions,
-                                    budgetData = budgetData, // Pass budget data
-                                    currencySymbol = currencySymbol,
-                                    onSeeAllBudget = onSeeAllBudget,
-                                    onSeeAllTransactions = onSeeAllTransactions
+                            state = uiState.userDataState,
+                            onRetry = { viewModel.loadUserData() }
+                        ) { userData ->
+                            Column {
+                                TopAppBarSection(
+                                    userName = userData.user.fullName ?: "User",
+                                    profileImage = userData.user.avatarUrl?.let { avatarUrl ->
+                                        Config.buildImageUrl(avatarUrl)
+                                    },
+                                    onProfileClick = onProfileClick
                                 )
+
+                                Spacer(modifier = Modifier.height(14.dp))
+                                SectionStateManager(
+                                    state = uiState.balanceState,
+                                    onRetry = { viewModel.loadTotalBalance() }
+                                ) { balance ->
+                                    WalletBalanceCard(
+                                        totalBalance = balance?.totalBalance,
+                                        currencySymbol = currencySymbol,
+                                        isLoading = uiState.isTotalBalanceLoading
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                // Financial Overview section with state management
+                                SectionStateManager(
+                                    state = uiState.financialOverviewState,
+                                    onRetry = { viewModel.loadFinancialOverview() }
+                                ) { financialData ->
+                                    FinancialOverviewCard(
+                                        totalIncome = financialData.totalIncome,
+                                        totalExpense = financialData.totalExpense,
+                                        currencySymbol = currencySymbol
+                                    )
+                                }
+
+                                if (userData.stats.walletCount == 0 && userData.stats.totalTransactions == 0) {
+                                    FirstLoginContent()
+                                } else {
+                                    SectionStateManager(
+                                        state = uiState.budgetState,
+                                        onRetry = { viewModel.loadBudgetData() }
+                                    ) { budgetData ->
+                                        RegularHomeContent(
+                                            recentTransactions = uiState.recentTransactions,
+                                            budgetData = budgetData,
+                                            currencySymbol = currencySymbol,
+                                            onSeeAllBudget = onSeeAllBudget,
+                                            onSeeAllTransactions = onSeeAllTransactions,
+                                            isInLazyColumn = true
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(80.dp))
+                    item {
+                        Spacer(modifier = Modifier.height(80.dp))
+                    }
                 }
 
                 AddRecordButton(
@@ -191,14 +205,11 @@ fun HomeScreen(
     }
 }
 
-// Helper function to extract currency symbol
 private fun extractCurrencySymbol(currencyString: String?): String {
-    // First check if it's a display format like "USD - $"
     if (currencyString?.contains(" - ") == true) {
         return currencyString.split(" - ").last().trim()
     }
 
-    // If it's just a currency code, map it to symbol
     return when (currencyString?.uppercase()) {
         "USD" -> "$"
         "EUR" -> "€"
@@ -213,7 +224,7 @@ private fun extractCurrencySymbol(currencyString: String?): String {
         "BRL" -> "R$"
         "MXN" -> "$"
         "KRW" -> "₩"
-        else -> "$" // Default fallback
+        else -> "$"
     }
 }
 

@@ -15,6 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.moneymate.ui.screens.auth.signUp.SignUpScreen
 import com.example.moneymate.ui.screens.auth.singIn.SignInScreen
+import com.example.moneymate.ui.screens.goal.GoalScreen
 import com.example.moneymate.ui.screens.home.HomeScreen
 import com.example.moneymate.ui.screens.profile.editprofile.EditProfileScreen
 import com.example.moneymate.ui.screens.profile.profileoptions.ProfileOptionsScreen
@@ -102,9 +103,6 @@ fun AppNavHost(
                 },
                 onAddRecord = {
                     navController.navigate(NavigationItem.AddTransaction.route)
-                },
-                onAddWallet = {
-                    navController.navigate(NavigationItem.CreateWallet.route)
                 },
                 onSeeAllBudget = {
                     // Handle see all budget action
@@ -199,7 +197,7 @@ fun AppNavHost(
         }
 
         composable(NavigationItem.Goals.route) {
-            HomeScreen(
+            GoalScreen(
                 currentScreen = "goals",
                 onNavigationItemSelected = { route ->
                     when (route) {
@@ -207,21 +205,6 @@ fun AppNavHost(
                         "transactions" -> navController.navigate(NavigationItem.Transactions.route)
                         "wallets" -> navController.navigate(NavigationItem.Wallets.route)
                     }
-                },
-                onAddRecord = {
-                    navController.navigate(NavigationItem.AddTransaction.route)
-                },
-                onAddWallet = {
-                    navController.navigate(NavigationItem.CreateWallet.route)
-                },
-                onSeeAllBudget = {
-                    // Handle see all budget action
-                },
-                onSeeAllTransactions = {
-                    navController.navigate(NavigationItem.Transactions.route)
-                },
-                onProfileClick = {
-                    navController.navigate(NavigationItem.Profile.route)
                 }
             )
         }

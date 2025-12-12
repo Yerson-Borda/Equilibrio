@@ -30,7 +30,6 @@ fun CategoryPieChartComponent(
     categorySummaryData: CategorySummaryData,
     modifier: Modifier = Modifier
 ) {
-    // Use only expenses data (remove income toggle)
     val categories = categorySummaryData.expenses
     val totalAmount = categorySummaryData.totalExpenses
 
@@ -39,7 +38,6 @@ fun CategoryPieChartComponent(
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-        // Header - Expense Distribution
         Text(
             text = "Expense Distribution",
             fontSize = 18.sp,
@@ -48,13 +46,11 @@ fun CategoryPieChartComponent(
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // Chart and Category List
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(300.dp)
         ) {
-            // Pie Chart - Left side
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -68,7 +64,6 @@ fun CategoryPieChartComponent(
                         modifier = Modifier.size(180.dp)
                     )
 
-                    // Center text showing total expenses
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -92,8 +87,6 @@ fun CategoryPieChartComponent(
                     )
                 }
             }
-
-            // Category List - Right side
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -124,12 +117,11 @@ private fun PieChart(
     Canvas(modifier = modifier) {
         val center = Offset(size.width / 2, size.height / 2)
         val radius = size.minDimension / 2
-        var startAngle = -90f // Start from top
+        var startAngle = -90f
 
         categories.forEachIndexed { index, category ->
             val sweepAngle = (category.totalAmount / totalAmount * 360).toFloat()
 
-            // Draw pie segment
             drawArc(
                 color = getCategoryColor(index),
                 startAngle = startAngle,
@@ -144,7 +136,7 @@ private fun PieChart(
 
         drawCircle(
             color = Color.White,
-            radius = radius * 0.5f, // Smaller hole for better visibility
+            radius = radius * 0.5f,
             center = center
         )
     }
@@ -167,7 +159,6 @@ private fun CategoryListItem(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Color indicator - circle
         Box(
             modifier = Modifier
                 .size(16.dp)
@@ -175,8 +166,6 @@ private fun CategoryListItem(
         )
 
         Spacer(modifier = Modifier.width(12.dp))
-
-        // Category name and percentage
         Column(
             modifier = Modifier.weight(1f)
         ) {
@@ -188,7 +177,6 @@ private fun CategoryListItem(
             )
         }
 
-        // Percentage on the right
         Text(
             text = "${String.format("%.0f", percentage)}%",
             fontSize = 14.sp,
@@ -198,7 +186,6 @@ private fun CategoryListItem(
     }
 }
 
-// Updated color palette to match your design better
 private fun getCategoryColor(index: Int): Color {
     val colors = listOf(
         Color(0xFF4ECDC4), // Teal - Bills & Utilities

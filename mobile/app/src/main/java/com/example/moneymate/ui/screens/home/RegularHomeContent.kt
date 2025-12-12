@@ -16,24 +16,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.budget.model.Budget
 import com.example.domain.transaction.model.TransactionEntity
-import com.example.domain.user.model.StatsData
 import com.example.moneymate.ui.components.TransactionsSection
 
 @Composable
 fun RegularHomeContent(
-    stats: StatsData,
     recentTransactions: List<TransactionEntity>? = null,
     budgetData: Budget? = null,
     currencySymbol: String = "$",
     onSeeAllBudget: () -> Unit,
-    onSeeAllTransactions: () -> Unit
+    onSeeAllTransactions: () -> Unit,
+    isInLazyColumn: Boolean = false
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
     ) {
-        // Budget vs Expense Section
         BudgetExpenseSection(
             budget = budgetData,
             currencySymbol = currencySymbol,
@@ -42,20 +40,19 @@ fun RegularHomeContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Savings Goals Section
         SavingsGoalsSection(
             currencySymbol = currencySymbol,
-            onSeeAllSavings = onSeeAllBudget // You can create a separate callback if needed
+            onSeeAllSavings = onSeeAllBudget
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Recent Transactions Section
         TransactionsSection(
             transactions = recentTransactions ?: emptyList(),
             currencySymbol = currencySymbol,
             modifier = Modifier.fillMaxWidth(),
-            onSeeAll = onSeeAllTransactions
+            onSeeAll = onSeeAllTransactions,
+            isInLazyColumn = isInLazyColumn
         )
     }
 }
@@ -72,7 +69,6 @@ fun SavingsGoalsSection(
         )
     ){
         Column {
-            // Header with See All
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -96,14 +92,11 @@ fun SavingsGoalsSection(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Savings goals grid - 2 columns
             Column {
-                // First row - 2 cards
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // iPhone 13 Mini card
                     SavingsGoalCard(
                         goalName = "iPhone 13 Mini",
                         savedAmount = 699.0,
@@ -112,7 +105,6 @@ fun SavingsGoalsSection(
                         modifier = Modifier.weight(1f)
                     )
 
-                    // Car card
                     SavingsGoalCard(
                         goalName = "Car",
                         savedAmount = 20000.0,
@@ -124,12 +116,10 @@ fun SavingsGoalsSection(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Second row - 2 cards
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Macbook Pro M1 card
                     SavingsGoalCard(
                         goalName = "Macbook Pro M1",
                         savedAmount = 1200.0,
@@ -138,7 +128,6 @@ fun SavingsGoalsSection(
                         modifier = Modifier.weight(1f)
                     )
 
-                    // House card
                     SavingsGoalCard(
                         goalName = "House",
                         savedAmount = 15000.0,
@@ -173,7 +162,6 @@ fun SavingsGoalCard(
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Goal name
             Text(
                 text = goalName,
                 color = Color.Black,
@@ -182,8 +170,6 @@ fun SavingsGoalCard(
             )
 
             Spacer(modifier = Modifier.height(8.dp))
-
-            // Saved amount
             Text(
                 text = "$currencySymbol${"%.0f".format(savedAmount)}",
                 color = Color(0xFF2196F3),
@@ -192,8 +178,6 @@ fun SavingsGoalCard(
             )
 
             Spacer(modifier = Modifier.height(8.dp))
-
-            // Progress bar
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -208,7 +192,7 @@ fun SavingsGoalCard(
                         .fillMaxWidth(progress.toFloat())
                         .height(6.dp)
                         .background(
-                            color = Color(0xFF4D6BFA), // Green for savings
+                            color = Color(0xFF4D6BFA),
                             shape = RoundedCornerShape(3.dp)
                         )
                 )
@@ -216,7 +200,6 @@ fun SavingsGoalCard(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Target amount
             Text(
                 text = "Target: $currencySymbol${"%.0f".format(targetAmount)}",
                 color = Color(0xFF666666),
@@ -224,7 +207,6 @@ fun SavingsGoalCard(
                 fontWeight = FontWeight.Medium
             )
 
-            // Progress percentage
             Text(
                 text = "${(progress * 100).toInt()}%",
                 color = Color(0xFF666666),
@@ -235,7 +217,6 @@ fun SavingsGoalCard(
     }
 }
 
-// The rest of your existing code remains the same...
 @Composable
 fun BudgetExpenseSection(
     budget: Budget?,
@@ -243,7 +224,6 @@ fun BudgetExpenseSection(
     onSeeAll: () -> Unit
 ) {
     Column {
-        // Header with See All
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -267,77 +247,28 @@ fun BudgetExpenseSection(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Main content box - changed to white background
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    color = Color.White, // Changed to white
+                    color = Color.White,
                     shape = RoundedCornerShape(12.dp)
                 )
                 .padding(16.dp)
         ) {
             if (budget != null) {
-                ActualBudgetContent(budget, currencySymbol, onSeeAll)
+                ActualBudgetContent(budget, currencySymbol)
             } else {
-                // Show exact design from image with hardcoded values
-                DesignBudgetContent(currencySymbol, onSeeAll)
+                DesignBudgetContent(currencySymbol)
             }
         }
     }
 }
-
-@Composable
-fun BudgetProgressRow(
-    spent: Double,
-    total: Double,
-    currencySymbol: String
-) {
-    val progress = (spent / total).coerceIn(0.0, 1.0)
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        // Small progress bar on the left
-        Box(
-            modifier = Modifier
-                .width(40.dp) // Small fixed width
-                .height(4.dp)
-                .background(
-                    color = Color(0xFFE0E0E0), // Light gray background
-                    shape = RoundedCornerShape(2.dp)
-                )
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(progress.toFloat())
-                    .height(4.dp)
-                    .background(
-                        color = Color(0xFF2196F3), // Blue progress
-                        shape = RoundedCornerShape(2.dp)
-                    )
-            )
-        }
-
-        // Progress text on the right
-        Text(
-            text = "$currencySymbol${"%.0f".format(spent)}/$currencySymbol${"%.0f".format(total)}",
-            color = Color.Black,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
 @Composable
 fun ActualBudgetContent(
     budget: Budget,
     currencySymbol: String,
-    onSeeAll: () -> Unit
 ) {
-    // Debug logging
     println("DEBUG: monthlyProgress = ${budget.monthlyProgress}")
     println("DEBUG: monthlySpent = ${budget.monthlySpent}, monthlyLimit = ${budget.monthlyLimit}")
 
@@ -353,14 +284,10 @@ fun ActualBudgetContent(
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Check if budget limit is set (non-zero)
             val hasBudgetLimit = budget.monthlyLimit > 0
-
             if (hasBudgetLimit) {
-                // Show normal budget content when limit is set
                 BudgetWithLimitContent(budget, currencySymbol)
             } else {
-                // Show no budget set content
                 NoBudgetLimitContent(budget, currencySymbol)
             }
         }
@@ -375,7 +302,6 @@ fun BudgetWithLimitContent(
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-        // Use the computed properties from your Budget model
         val budgetRemaining = budget.monthlyRemaining
         val isOverBudget = budget.isMonthlyExceeded
 
@@ -397,8 +323,6 @@ fun BudgetWithLimitContent(
             )
 
             Spacer(modifier = Modifier.width(8.dp))
-
-            // Status indicator based on budget usage
             val statusText = when {
                 budget.monthlyProgress < 0.7 -> "Normal >"
                 budget.monthlyProgress < 0.9 -> "Warning >"
@@ -406,9 +330,9 @@ fun BudgetWithLimitContent(
             }
 
             val statusColor = when {
-                budget.monthlyProgress < 0.7 -> Color(0xFF4CAF50) // Green
-                budget.monthlyProgress < 0.9 -> Color(0xFFFF9800) // Orange
-                else -> Color(0xFFF44336) // Red
+                budget.monthlyProgress < 0.7 -> Color(0xFF4CAF50)
+                budget.monthlyProgress < 0.9 -> Color(0xFFFF9800)
+                else -> Color(0xFFF44336)
             }
 
             Text(
@@ -420,25 +344,19 @@ fun BudgetWithLimitContent(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
-        // Budget usage row with circular progress and text column
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Circular progress indicator
             CircularBudgetProgress(
                 progress = budget.monthlyProgress,
-                spent = budget.monthlySpent,
                 total = budget.monthlyLimit,
-                currencySymbol = currencySymbol
             )
 
             Column(
                 horizontalAlignment = Alignment.End
             ) {
-                // Month's Budget Usage text
                 Text(
                     text = "${getMonthName(budget.month)}'s Budget Usage",
                     color = Color.Black,
@@ -446,7 +364,6 @@ fun BudgetWithLimitContent(
                     fontWeight = FontWeight.Medium
                 )
 
-                // Budget amount text
                 Text(
                     text = "$currencySymbol${"%.0f".format(budget.monthlySpent)}/$currencySymbol${"%.0f".format(budget.monthlyLimit)}",
                     color = Color.Black,
@@ -466,7 +383,6 @@ fun NoBudgetLimitContent(
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-        // Show spending without budget limit
         Text(
             text = "You've spent $currencySymbol${"%.2f".format(budget.monthlySpent)} this month",
             color = Color.Black,
@@ -476,7 +392,6 @@ fun NoBudgetLimitContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Status - always show "No Budget Set" when limit is 0
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -484,7 +399,7 @@ fun NoBudgetLimitContent(
         ) {
             Text(
                 text = "No Budget Set >",
-                color = Color(0xFF666666), // Gray for no budget
+                color = Color(0xFF666666),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -492,32 +407,25 @@ fun NoBudgetLimitContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Budget usage row with circular progress showing 100% (full circle)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Circular progress indicator - show full circle when no limit
             CircularBudgetProgress(
-                progress = 1f, // Full circle
-                spent = budget.monthlySpent,
-                total = 0.0, // No limit
-                currencySymbol = currencySymbol
+                progress = 1f,
+                total = 0.0
             )
 
             Column(
                 horizontalAlignment = Alignment.End
             ) {
-                // Month's Budget Usage text
                 Text(
                     text = "${getMonthName(budget.month)}'s Spending",
                     color = Color.Black,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
                 )
-
-                // Spending amount text (no limit)
                 Text(
                     text = "$currencySymbol${"%.0f".format(budget.monthlySpent)} spent",
                     color = Color.Black,
@@ -529,11 +437,9 @@ fun NoBudgetLimitContent(
     }
 }
 
-// Also update the DesignBudgetContent to match
 @Composable
 fun DesignBudgetContent(
-    currencySymbol: String,
-    onSeeAll: () -> Unit
+    currencySymbol: String
 ) {
     Box(
         modifier = Modifier
@@ -544,7 +450,6 @@ fun DesignBudgetContent(
             )
             .padding(16.dp)
     ) {
-        // Since your actual data shows no budget limit, let's show that scenario
         NoBudgetLimitContent(
             budget = Budget(
                 id = 1,
@@ -565,11 +470,8 @@ fun DesignBudgetContent(
 @Composable
 fun CircularBudgetProgress(
     progress: Float,
-    spent: Double,
-    total: Double,
-    currencySymbol: String
+    total: Double
 ) {
-    // Handle zero total (no budget limit)
     val hasLimit = total > 0
     val displayProgress = if (hasLimit) progress.coerceIn(0f, 1f) else 1f
     val displayText = if (hasLimit) "${(displayProgress * 100).toInt()}%" else "∞"
@@ -578,7 +480,6 @@ fun CircularBudgetProgress(
         contentAlignment = Alignment.Center,
         modifier = Modifier.size(48.dp)
     ) {
-        // Background circle
         androidx.compose.foundation.Canvas(
             modifier = Modifier.size(48.dp)
         ) {
@@ -586,10 +487,8 @@ fun CircularBudgetProgress(
                 color = Color(0xFFE0E0E0),
                 radius = size.minDimension / 2 - 4
             )
-
-            // Progress arc
             drawArc(
-                color = if (hasLimit) Color(0xFF4D6BFA) else Color(0xFF666666), // Blue for budget, Gray for no limit
+                color = if (hasLimit) Color(0xFF4D6BFA) else Color(0xFF666666),
                 startAngle = -90f,
                 sweepAngle = 360f * displayProgress,
                 useCenter = false,
@@ -600,18 +499,15 @@ fun CircularBudgetProgress(
                 )
             )
         }
-
-        // Progress text in center
         Text(
             text = displayText,
             color = Color.Black,
-            fontSize = if (hasLimit) 10.sp else 8.sp, // Smaller font for infinity symbol
+            fontSize = if (hasLimit) 10.sp else 8.sp,
             fontWeight = FontWeight.Bold
         )
     }
 }
 
-// Helper function to get month name
 private fun getMonthName(month: Int): String {
     return when (month) {
         1 -> "January"
@@ -627,25 +523,5 @@ private fun getMonthName(month: Int): String {
         11 -> "November"
         12 -> "December"
         else -> "This Month"
-    }
-}
-
-@Composable
-fun NoBudgetContent() {
-    Column {
-        Text(
-            text = "No budget set for this month",
-            color = Color.Black, // Changed to black for white background
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Set a budget to track your spending",
-            color = Color(0xFF666666), // Darker gray for white background
-            fontSize = 14.sp
-        )
     }
 }

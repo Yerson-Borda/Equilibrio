@@ -61,7 +61,6 @@ fun <T> SectionStateManager(
             )
         }
         is ScreenState.Empty -> {
-            // For sections, you might want to show nothing or a small indicator
             Box(modifier = Modifier.fillMaxWidth().height(1.dp))
         }
         is ScreenState.Success -> {

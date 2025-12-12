@@ -34,7 +34,6 @@ fun WalletBalanceCard(
             )
     ) {
         if (isLoading) {
-            // Loading state
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -54,7 +53,7 @@ fun WalletBalanceCard(
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "$currencySymbol${"%.2f".format(totalBalance ?: 0.0)}", // Use dynamic symbol
+                    text = "$currencySymbol${"%.2f".format(totalBalance ?: 0.0)}",
                     color = Color.White,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold
@@ -97,7 +96,7 @@ fun WalletBalanceCard(
 fun FinancialOverviewCard(
     totalIncome: Double?,
     totalExpense: Double?,
-    currencySymbol: String = "$" // Add currency symbol parameter
+    currencySymbol: String = "$"
 ) {
     Row(
         modifier = Modifier
@@ -161,7 +160,7 @@ fun FinancialOverviewCard(
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "$currencySymbol${"%.2f".format(totalExpense ?: 0.0)}", // Format with currency
+                    text = "$currencySymbol${"%.2f".format(totalExpense ?: 0.0)}",
                     color = Color(0xFFFFFFFF),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold

@@ -16,6 +16,7 @@ import com.example.domain.transaction.usecase.CreateTransferUseCase
 import com.example.domain.wallet.model.Wallet
 import com.example.domain.wallet.usecase.GetWalletsUseCase
 import com.example.moneymate.utils.AppError
+import com.example.moneymate.utils.DataSyncManager
 import com.example.moneymate.utils.ErrorHandler
 import com.example.moneymate.utils.ScreenState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,7 +62,6 @@ class AddTransactionViewModel(
                     _uiState.value = _uiState.value.copy(
                         walletsState = ScreenState.Success(wallets)
                     )
-                    // Set the first wallet as default selection if available
                     val firstWallet = wallets.firstOrNull()
                     if (firstWallet != null) {
                         _uiState.value = _uiState.value.copy(
@@ -107,7 +107,6 @@ class AddTransactionViewModel(
                     _uiState.value = _uiState.value.copy(
                         categoriesState = ScreenState.Success(categories)
                     )
-                    // Set the first category as default selection if available
                     val firstCategory = categories.firstOrNull()
                     if (firstCategory != null) {
                         _uiState.value = _uiState.value.copy(
@@ -169,13 +168,8 @@ class AddTransactionViewModel(
 
     fun onTransactionTypeSelected(type: TransactionType) {
         _uiState.value = _uiState.value.copy(selectedType = type)
-        loadCategories() // Reload categories when type changes
+        loadCategories()
     }
-
-    fun onAmountChanged(amount: String) {
-        _uiState.value = _uiState.value.copy(amount = amount)
-    }
-
     fun onWalletSelected(walletId: Int, walletName: String) {
         _uiState.value = _uiState.value.copy(
             selectedWalletId = walletId,
@@ -204,8 +198,6 @@ class AddTransactionViewModel(
     fun onNoteChanged(note: String) {
         _uiState.value = _uiState.value.copy(note = note)
     }
-
-    // UPDATED: Change from String to Int for tag IDs
     fun onTagSelected(tagId: Int) {
         val currentTags = _uiState.value.selectedTagIds.toMutableList()
         if (currentTags.contains(tagId)) {
@@ -215,33 +207,25 @@ class AddTransactionViewModel(
         }
         _uiState.value = _uiState.value.copy(selectedTagIds = currentTags)
     }
-
-    // NEW: Method to create a new tag
     fun onCreateTag(name: String) {
         viewModelScope.launch {
-            // Remove # if user included it
             val tagName = name.trim().removePrefix("#")
 
             if (tagName.isBlank()) {
-                // Show error - tag name cannot be empty
                 return@launch
             }
 
             val result = createTagUseCase(tagName)
             if (result.isSuccess) {
                 val newTag = result.getOrThrow()
-                // Add to available tags and select it
                 val currentTags = _uiState.value.availableTags.toMutableList()
                 currentTags.add(newTag)
                 _uiState.value = _uiState.value.copy(
                     availableTags = currentTags
                 )
-                // Automatically select the newly created tag
                 onTagSelected(newTag.id)
             } else {
-                // Handle error - could show a toast or update UI state
                 val exception = result.exceptionOrNull() ?: Exception("Failed to create tag")
-                // You might want to show this error to the user
                 println("Failed to create tag: ${exception.message}")
             }
         }
@@ -328,6 +312,54 @@ class AddTransactionViewModel(
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
+    private suspend fun handleTransactionCreation() {
+        val createTransaction = CreateTransaction(
+            name = _uiState.value.name,
+            amount = _uiState.value.amount,
+            note = _uiState.value.note,
+            type = _uiState.value.selectedType.apiValue,
+            transactionDate = LocalDate.now().toString(),
+            walletId = _uiState.value.selectedWalletId,
+            categoryId = _uiState.value.selectedCategoryId,
+            tags = _uiState.value.selectedTagIds
+        )
+
+        val result = createTransactionUseCase(createTransaction)
+
+        if (result.isSuccess) {
+            _uiState.value = _uiState.value.copy(transactionState = ScreenState.Success(Unit))
+
+            DataSyncManager.notifyDataChangedFromVM(
+                DataSyncManager.DataChangeEvent.TransactionsUpdated
+            ) { error ->
+                println("⚠️ DEBUG: Failed to notify transaction update: ${error.message}")
+            }
+            when (_uiState.value.selectedType) {
+                TransactionType.INCOME, TransactionType.EXPENSE -> {
+                    DataSyncManager.notifyDataChangedFromVM(
+                        DataSyncManager.DataChangeEvent.WalletsUpdated
+                    )
+                }
+                TransactionType.TRANSFER -> {
+                    DataSyncManager.notifyDataChangedFromVM(
+                        DataSyncManager.DataChangeEvent.WalletsUpdated
+                    )
+                }
+            }
+
+            _navigationEvent.value = NavigationEvent.NavigateHome
+        } else {
+            val exception = result.exceptionOrNull() ?: Exception("Failed to create transaction")
+            _uiState.value = _uiState.value.copy(
+                transactionState = ScreenState.Error(
+                    ErrorHandler.mapExceptionToAppError(exception),
+                    retryAction = { createTransaction() }
+                )
+            )
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun handleTransferCreation() {
         if (_uiState.value.selectedWalletId == _uiState.value.destinationWalletId) {
             _uiState.value = _uiState.value.copy(
@@ -347,40 +379,16 @@ class AddTransactionViewModel(
 
         if (result.isSuccess) {
             _uiState.value = _uiState.value.copy(transactionState = ScreenState.Success(Unit))
+            DataSyncManager.notifyDataChangedFromVM(
+                DataSyncManager.DataChangeEvent.TransactionsUpdated
+            )
+            DataSyncManager.notifyDataChangedFromVM(
+                DataSyncManager.DataChangeEvent.WalletsUpdated
+            )
+
             _navigationEvent.value = NavigationEvent.NavigateHome
         } else {
             val exception = result.exceptionOrNull() ?: Exception("Failed to create transfer")
-            _uiState.value = _uiState.value.copy(
-                transactionState = ScreenState.Error(
-                    ErrorHandler.mapExceptionToAppError(exception),
-                    retryAction = { createTransaction() }
-                )
-            )
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private suspend fun handleTransactionCreation() {
-        // Create the CreateTransaction domain model with selected tag IDs
-        val createTransaction = CreateTransaction(
-            name = _uiState.value.name,
-            amount = _uiState.value.amount,
-            note = _uiState.value.note,
-            type = _uiState.value.selectedType.apiValue,
-            transactionDate = LocalDate.now().toString(),
-            walletId = _uiState.value.selectedWalletId,
-            categoryId = _uiState.value.selectedCategoryId,
-            tags = _uiState.value.selectedTagIds // Use selected tag IDs
-        )
-
-        // Call the use case with the CreateTransaction object
-        val result = createTransactionUseCase(createTransaction)
-
-        if (result.isSuccess) {
-            _uiState.value = _uiState.value.copy(transactionState = ScreenState.Success(Unit))
-            _navigationEvent.value = NavigationEvent.NavigateHome
-        } else {
-            val exception = result.exceptionOrNull() ?: Exception("Failed to create transaction")
             _uiState.value = _uiState.value.copy(
                 transactionState = ScreenState.Error(
                     ErrorHandler.mapExceptionToAppError(exception),
@@ -409,8 +417,6 @@ class AddTransactionViewModel(
             )
             return false
         }
-
-        // For transfers, check destination wallet
         if (_uiState.value.selectedType == TransactionType.TRANSFER) {
             if (_uiState.value.destinationWalletId == 0) {
                 _uiState.value = _uiState.value.copy(
@@ -442,21 +448,6 @@ class AddTransactionViewModel(
     fun clearNavigationEvent() {
         _navigationEvent.value = null
     }
-
-    // Helper functions to get data from screen states
-    fun getWallets(): List<Wallet> {
-        return when (val state = _uiState.value.walletsState) {
-            is ScreenState.Success -> state.data
-            else -> emptyList()
-        }
-    }
-
-    fun getCategories(): List<Category> {
-        return when (val state = _uiState.value.categoriesState) {
-            is ScreenState.Success -> state.data
-            else -> emptyList()
-        }
-    }
 }
 
 sealed class NavigationEvent {
@@ -474,14 +465,12 @@ data class AddTransactionState(
     val selectedCategoryName: String = "Foods & Drinks",
     val name: String = "",
     val note: String = "",
-    val selectedTagIds: List<Int> = emptyList(), // Changed from List<String> to List<Int>
-    val availableTags: List<Tag> = emptyList(), // Add this to store available tags
+    val selectedTagIds: List<Int> = emptyList(),
+    val availableTags: List<Tag> = emptyList(),
     val attachments: List<String> = emptyList(),
-
-    // Screen states for loading and error handling
     val walletsState: ScreenState<List<Wallet>> = ScreenState.Loading,
     val categoriesState: ScreenState<List<Category>> = ScreenState.Loading,
-    val tagsState: ScreenState<List<Tag>> = ScreenState.Loading, // Add this
+    val tagsState: ScreenState<List<Tag>> = ScreenState.Loading,
     val transactionState: ScreenState<Unit> = ScreenState.Empty
 )
 

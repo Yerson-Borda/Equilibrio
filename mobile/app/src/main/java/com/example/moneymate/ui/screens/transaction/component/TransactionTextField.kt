@@ -1,6 +1,5 @@
 package com.example.moneymate.ui.screens.transaction.component
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,7 +40,7 @@ fun TransactionTextField(
             onValueChange = onValueChanged,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp) // Fixed height to match attachment button
+                .height(56.dp)
                 .clip(RoundedCornerShape(10.dp))
                 .border(
                     width = 1.dp,

@@ -15,6 +15,7 @@ import com.example.domain.transaction.usecase.GetCategorySummaryUseCase
 import com.example.domain.transaction.usecase.GetMonthlyChartDataUseCase
 import com.example.domain.transaction.usecase.GetMonthlyComparisonUseCase
 import com.example.domain.transaction.usecase.GetRecentTransactionsUseCase
+import com.example.moneymate.utils.DataSyncManager
 import com.example.moneymate.utils.ScreenState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,17 +33,75 @@ class TransactionScreenViewModel(
     val uiState: StateFlow<TransactionScreenState> = _uiState.asStateFlow()
 
     init {
-        println("DEBUG: ViewModel init - loading data")
+        println("DEBUG: TransactionScreenViewModel init - loading data")
         loadData()
+
+        // Listen for data change events
+        setupDataChangeListener()
     }
 
-    fun refreshData() {
-        loadData()
+    private fun setupDataChangeListener() {
+        viewModelScope.launch {
+            // Listen for transaction updates
+            DataSyncManager.dataChangeEvents.collect { event ->
+                when (event) {
+                    is DataSyncManager.DataChangeEvent.TransactionsUpdated -> {
+                        println("🔄 DEBUG: TransactionScreenViewModel - Transaction update detected, refreshing...")
+                        refreshTransactionData()
+                    }
+                    is DataSyncManager.DataChangeEvent.WalletsUpdated -> {
+                        println("🔄 DEBUG: TransactionScreenViewModel - Wallet update detected, may affect transactions...")
+                        // If transactions are wallet-specific, refresh them
+                        refreshTransactionData()
+                    }
+                    is DataSyncManager.DataChangeEvent.CategoriesUpdated -> {
+                        println("🔄 DEBUG: TransactionScreenViewModel - Category update detected, refreshing charts...")
+                        refreshChartData()
+                    }
+                    is DataSyncManager.DataChangeEvent.BudgetUpdated -> {
+                        println("🔄 DEBUG: TransactionScreenViewModel - Budget update detected, may affect charts...")
+                        // Budget changes might affect transaction analysis
+                        refreshChartData()
+                    }
+                    else -> {
+                        // Handle other events if needed
+                    }
+                }
+            }
+        }
     }
 
+    // Add refresh functions
+    fun refreshTransactionData() {
+        viewModelScope.launch {
+            println("🔄 DEBUG: TransactionScreenViewModel - Refreshing transaction data...")
+            loadRecentTransactions()
+            loadAllChartData()
+        }
+    }
+
+    fun refreshChartData() {
+        viewModelScope.launch {
+            println("🔄 DEBUG: TransactionScreenViewModel - Refreshing chart data...")
+            loadAllChartData()
+        }
+    }
+
+    // Add refresh on screen focus
+    fun refreshOnScreenFocus() {
+        viewModelScope.launch {
+            println("🔄 DEBUG: TransactionScreenViewModel - Screen focused, refreshing data...")
+            loadData()
+        }
+    }
+
+    // Also update your existing loadData() function to be more efficient:
     fun loadData() {
-        loadAllChartData()
-        loadRecentTransactions()
+        // Load both in parallel for better performance
+        viewModelScope.launch {
+            launch { loadAllChartData() }
+            launch { loadRecentTransactions() }
+        }
     }
 
     fun loadAllChartData() {

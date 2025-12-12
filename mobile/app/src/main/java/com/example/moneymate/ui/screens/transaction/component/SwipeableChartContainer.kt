@@ -40,8 +40,8 @@ fun SwipeableChartContainer(
     onChartTypeChanged: (ChartType) -> Unit,
     onFilterChanged: (ChartFilter) -> Unit = {},
     onPeriodChanged: (PeriodFilter) -> Unit = {},
-    onDateRangeChanged: (DateRange) -> Unit = {}, // ADD THIS
-    viewModel: TransactionScreenViewModel, // ADD THIS
+    onDateRangeChanged: (DateRange) -> Unit = {},
+    viewModel: TransactionScreenViewModel,
     modifier: Modifier = Modifier
 ) {
     println("📱 DEBUG: SwipeableChartContainer - currentChartType: $currentChartType")
@@ -65,7 +65,6 @@ fun SwipeableChartContainer(
                     .fillMaxSize()
                     .pointerInput(Unit) {
                         detectHorizontalDragGestures { change, dragAmount ->
-                            // Optional: You can add custom swipe logic here if needed
                         }
                     }
             ) {
@@ -101,7 +100,6 @@ fun SwipeableChartContainer(
             }
         }
 
-        // Swipe Indicator Dots only
         ChartSwipeIndicator(
             currentPage = pagerState.currentPage,
             totalPages = chartTypes.size,
