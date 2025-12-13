@@ -1,0 +1,217 @@
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.modal-box {
+    background: white;
+    width: 450px;
+    border-radius: 20px;
+    padding: 20px;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 15px;
+}
+
+.tab {
+    padding-bottom: 6px;
+    opacity: 0.5;
+    font-size: 15px;
+}
+
+.tab.active {
+    opacity: 1;
+    border-bottom: 2px solid #4C6FFF;
+    font-weight: 600;
+}
+
+/* Amount */
+.amount-container {
+    text-align: center;
+    margin-top: 10px;
+}
+
+.amount-display {
+    font-size: 48px;
+    font-weight: 700;
+    color: #3b4556;
+}
+
+.amount-subtext {
+    font-size: 11px;
+    opacity: 0.5;
+}
+
+.hidden-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Form */
+.form-content {
+    margin-top: 20px;
+}
+
+.label {
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.input {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.textarea {
+    height: 80px;
+}
+
+.dropdown {
+    width: 100%;
+    padding: 10px 12px;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+}
+
+/* Category panel grid */
+.category-panel {
+    position: absolute;
+    top: 48px;
+    left: 0;
+    width: 100%;
+    max-height: 260px;
+    overflow-y: auto;
+    background: white;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    border-radius: 14px;
+    padding: 10px;
+    z-index: 300;
+}
+
+.category-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.category-item:hover {
+    background: #f5f6f8;
+}
+
+.category-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 12px;
+}
+
+.icon-img {
+    width: 22px;
+    height: 22px;
+}
+
+.category-name {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Attachments */
+.attachment-btn {
+    width: 100%;
+    margin-top: 10px;
+    background: #edf2f7;
+    border-radius: 10px;
+    text-align: center;
+    padding: 10px;
+}
+
+/* Tags */
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.tag {
+    background: #f1f5f9;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.tag-active {
+    background: #4C6FFF;
+    color: white;
+}
+
+.tag-new {
+    background: #e2e8f0;
+    padding: 6px 12px;
+    border-radius: 8px;
+}
+
+/* Buttons */
+.actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 25px;
+}
+
+.btn-cancel {
+    background: #F87171;
+    padding: 10px 20px;
+    color: white;
+    border-radius: 10px;
+}
+
+.btn-confirm {
+    background: #16A34A;
+    padding: 10px 20px;
+    color: white;
+    border-radius: 10px;
+}
+
+/* Tag modal */
+.tag-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.tag-box {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    width: 300px;
+}
+
+.tag-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+}

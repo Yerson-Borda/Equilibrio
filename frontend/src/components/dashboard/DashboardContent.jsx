@@ -6,10 +6,10 @@ import balanceIcon from '../../assets/icons/balance-icon.png';
 import spendingIcon from '../../assets/icons/spending-icon.png';
 import savedIcon from '../../assets/icons/saved-icon.png';
 
-// Card icons
+// Card assets – copied from MyWalletsContent design
+import mastercardIcon from '../../assets/icons/mastercard-icon.png';
 import chipIcon from '../../assets/icons/chip-icon.png';
 import nfcIcon from '../../assets/icons/nfc-icon.png';
-import mastercardIcon from '../../assets/icons/mastercard-icon.png';
 
 import DualLineChart from '../charts/DualLineChart.jsx';
 import BudgetGauge from '../budget/BudgetGauge.jsx';
@@ -78,6 +78,31 @@ const DashboardContent = ({ wallets = [], userStats }) => {
             })();
         }
     }, [wallets]);
+
+    // Ensure selectedWallet is always one of the dashboardWallets
+    useEffect(() => {
+        if (dashboardWallets.length === 0) {
+            setSelectedWallet(null);
+            setSelectedWalletIndex(0);
+            return;
+        }
+
+        if (!selectedWallet) {
+            setSelectedWallet(dashboardWallets[0]);
+            setSelectedWalletIndex(0);
+            return;
+        }
+
+        const idx = dashboardWallets.findIndex(
+            (w) => w.id === selectedWallet.id
+        );
+        if (idx === -1) {
+            setSelectedWallet(dashboardWallets[0]);
+            setSelectedWalletIndex(0);
+        } else {
+            setSelectedWalletIndex(idx);
+        }
+    }, [dashboardWallets, selectedWallet]);
 
     // ----- chart helpers -----
     const buildIncomeExpenseSeries = (transactions, days) => {
@@ -223,52 +248,19 @@ const DashboardContent = ({ wallets = [], userStats }) => {
     };
 
     const formatCardNumber = (number) => {
-        if (!number) return '**** **** **** ****';
-        const cleaned = String(number).replace(/\D/g, '').slice(0, 16);
-        const chunks = cleaned.match(/.{1,4}/g);
-        return chunks ? chunks.join(' ') : cleaned;
+        if (!number) return '•••• •••• •••• ••••';
+        const digits = String(number).replace(/\D/g, '');
+        const lastFour = digits.slice(-4) || '••••';
+        return `•••• •••• •••• ${lastFour}`;
     };
 
-    // stack animation like MyWallets
-    const visibleWallets = dashboardWallets.slice(0, 3);
-    const stackHeight = visibleWallets.length
-        ? 260 + (visibleWallets.length - 1) * 40
-        : 160;
-
-    const getStackStyles = (index) => {
-        const offset = index - selectedWalletIndex;
-        const translateY = offset * 26;
-        const scale = 1 - Math.abs(offset) * 0.04;
-        const zIndex = visibleWallets.length - Math.abs(offset);
-
-        return {
-            transform: `translateY(${translateY}px) scale(${scale})`,
-            zIndex,
-        };
-    };
-
-    const handleWalletCardClick = (index, wallet) => {
-        // only one wallet -> open directly
-        if (visibleWallets.length === 1) {
-            setSelectedWalletIndex(0);
-            setSelectedWallet(wallet);
-            setIsWalletDialogOpen(true);
-            return;
-        }
-
-        // click different wallet: bring to front
-        if (index !== selectedWalletIndex) {
-            setSelectedWalletIndex(index);
-            setSelectedWallet(wallet);
-            setIsWalletDialogOpen(false);
-            return;
-        }
-
-        // click same (front) wallet again: open dialog
-        if (!isWalletDialogOpen) {
-            setSelectedWallet(wallet);
-            setIsWalletDialogOpen(true);
-        }
+    // Single-click opens Card Overview dialog for that wallet
+    const openWalletDialog = (wallet) => {
+        if (!wallet) return;
+        const idx = dashboardWallets.findIndex((w) => w.id === wallet.id);
+        if (idx >= 0) setSelectedWalletIndex(idx);
+        setSelectedWallet(wallet);
+        setIsWalletDialogOpen(true);
     };
 
     const handleAddTransactionFromDialog = () => {
@@ -278,7 +270,7 @@ const DashboardContent = ({ wallets = [], userStats }) => {
         });
     };
 
-    // ------- Wallet detail dialog (card + white details) -------
+    // ------- Wallet detail dialog (Card Shortcut 3.2) -------
     const WalletDetailDialog = () => {
         if (!isWalletDialogOpen || !selectedWallet) return null;
 
@@ -290,33 +282,38 @@ const DashboardContent = ({ wallets = [], userStats }) => {
         return (
             <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
                 <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
-                    {/* TOP CARD: same structure as MyWallets layout */}
-                    <div className="bg-gradient-to-r from-[#1E1E2F] via-[#252B3F] to-[#1E1E2F] text-white p-6">
+                    {/* TOP CARD – SOLID WALLET COLOR */}
+                    <div
+                        className="text-white p-6"
+                        style={{
+                            backgroundColor:
+                                selectedWallet.color || '#111827',
+                        }}
+                    >
                         <div className="flex justify-between items-start mb-4">
                             <p className="text-sm font-semibold">
                                 {selectedWallet.name || 'Wallet'}
                             </p>
                             <button
                                 onClick={() => setIsWalletDialogOpen(false)}
-                                className="text-gray-300 hover:text-white text-lg leading-none"
+                                className="text-gray-200 hover:text-white text-lg leading-none"
                             >
                                 ✕
                             </button>
                         </div>
 
-                        {/* chip + total balance + NFC + brand */}
                         <div className="flex justify-between items-center mb-6">
-                            <div className="flex items-center space-x-3">
+                            <div className="flex items-start space-x-3">
                                 <img
                                     src={chipIcon}
                                     alt="Chip"
-                                    className="h-6"
+                                    className="h-8 w-10 object-contain mt-4"
                                 />
                                 <div>
-                                    <p className="text-xs opacity-80 mb-1">
+                                    <p className="text-xs opacity-80 mb-1 ml-6 mt-3">
                                         Total Balance
                                     </p>
-                                    <p className="text-3xl font-bold">
+                                    <p className="text-3xl font-bold ml-6">
                                         {walletSymbol}
                                         {balance.toLocaleString(undefined, {
                                             minimumFractionDigits: 2,
@@ -329,28 +326,26 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                                 <img
                                     src={nfcIcon}
                                     alt="NFC"
-                                    className="h-5 opacity-80"
+                                    className="h-5 opacity-80 mt-2"
                                 />
                                 <img
                                     src={mastercardIcon}
                                     alt="Mastercard"
-                                    className="h-7"
+                                    className="h-7 opacity-90"
                                 />
                             </div>
                         </div>
 
-                        {/* card number + expiry ON THE LEFT (stacked) */}
                         <div className="flex flex-col items-start text-xs opacity-80 mt-2">
                             <span className="tracking-widest font-mono text-sm mb-1">
                                 {formatCardNumber(selectedWallet.card_number)}
                             </span>
-                            <span>{selectedWallet.expiry_date || '09/30'}</span>
+                            <span>{selectedWallet.expiry || '09/30'}</span>
                         </div>
                     </div>
 
-                    {/* WHITE SECTION (Your Balance, Currency, Status, Add Tx) */}
+                    {/* WHITE SECTION */}
                     <div className="bg-white p-6">
-                        {/* Your Balance row */}
                         <div className="mb-4">
                             <p className="text-sm text-metallic-gray mb-1">
                                 Your Balance
@@ -378,7 +373,6 @@ const DashboardContent = ({ wallets = [], userStats }) => {
 
                         <hr className="border-strokes mb-4" />
 
-                        {/* Currency + Status row */}
                         <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                             <div>
                                 <p className="text-metallic-gray mb-1">
@@ -398,7 +392,6 @@ const DashboardContent = ({ wallets = [], userStats }) => {
 
                         <hr className="border-strokes mb-2" />
 
-                        {/* Add transaction link (centered green text) */}
                         <button
                             type="button"
                             onClick={handleAddTransactionFromDialog}
@@ -415,19 +408,19 @@ const DashboardContent = ({ wallets = [], userStats }) => {
     // ----- render -----
     return (
         <div className="space-y-6">
-            {/* top stat cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Total balance */}
-                <div className="bg-[#111827] rounded-xl shadow-sm p-5 flex items-center space-x-4">
-                    <div className="w-10 h-10 rounded-full bg-[#1F2937] flex items-center justify-center">
-                        <img
-                            src={balanceIcon}
-                            alt="Balance"
-                            className="w-5 h-5 invert"
-                        />
-                    </div>
-                    <div>
-                        <p className="text-sm text-gray-300">Total balance</p>
+            {/* TOP STAT CARDS — EXACT LIKE EmptyState */}
+            <div className="flex flex-row gap-[15px] mb-6">
+                {/* Total Balance - Dark Background */}
+                <div className="bg-[#363A3F] flex flex-row items-center w-[222px] h-[110px] rounded-[10px] shadow-sm border border-strokes pt-6 pr-5 pb-6 pl-5 gap-[15px]">
+                    <img
+                        src={balanceIcon}
+                        alt="Balance"
+                        className="w-10 h-10"
+                    />
+                    <div className="flex-1 text-center">
+                        <h3 className="text-sm font-medium text-[#9c9c9c] mb-1">
+                            Total balance
+                        </h3>
                         <p className="text-2xl font-bold text-white">
                             {currencySymbol}
                             {Number(userStats?.totalBalance || 0).toFixed(2)}
@@ -435,19 +428,17 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                     </div>
                 </div>
 
-                {/* spending */}
-                <div className="bg-white rounded-xl shadow-sm border border-strokes p-5 flex items-center space-x-4">
-                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-                        <img
-                            src={spendingIcon}
-                            alt="Spending"
-                            className="w-5 h-5"
-                        />
-                    </div>
-                    <div>
-                        <p className="text-sm text-metallic-gray">
+                {/* Total Spending */}
+                <div className="bg-white flex flex-row items-center w-[222px] h-[110px] rounded-[10px] shadow-sm border border-strokes pt-6 pr-5 pb-6 pl-5 gap-[15px]">
+                    <img
+                        src={spendingIcon}
+                        alt="Spending"
+                        className="w-10 h-10"
+                    />
+                    <div className="flex-1 text-center">
+                        <h3 className="text-sm font-medium text-metallic-gray mb-1">
                             Total spending
-                        </p>
+                        </h3>
                         <p className="text-2xl font-bold text-text">
                             {currencySymbol}
                             {Number(userStats?.totalSpending || 0).toFixed(2)}
@@ -455,13 +446,13 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                     </div>
                 </div>
 
-                {/* saved */}
-                <div className="bg-white rounded-xl shadow-sm border border-strokes p-5 flex items-center space-x-4">
-                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-                        <img src={savedIcon} alt="Saved" className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <p className="text-sm text-metallic-gray">Total saved</p>
+                {/* Total Saved */}
+                <div className="bg-white flex flex-row items-center w-[222px] h-[110px] rounded-[10px] shadow-sm border border-strokes pt-6 pr-5 pb-6 pl-5 gap-[15px]">
+                    <img src={savedIcon} alt="Saved" className="w-10 h-10" />
+                    <div className="flex-1 text-center">
+                        <h3 className="text-sm font-medium text-metallic-gray mb-1">
+                            Total saved
+                        </h3>
                         <p className="text-2xl font-bold text-text">
                             {currencySymbol}
                             {Number(userStats?.totalSaved || 0).toFixed(2)}
@@ -470,9 +461,9 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                 </div>
             </div>
 
-            {/* main grid */}
+            {/* Main grid */}
             <div className="grid grid-cols-1 xl:grid-cols-[2.1fr,1.2fr] gap-6">
-                {/* left column: chart + recent tx */}
+                {/* Left column: chart + recent tx */}
                 <div className="space-y-6">
                     {/* Working Capital */}
                     <div className="bg-white rounded-xl shadow-sm border border-strokes p-6">
@@ -525,7 +516,7 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                         </div>
                     </div>
 
-                    {/* Recent transactions */}
+                    {/* Recent Transaction */}
                     <div className="bg-white rounded-xl shadow-sm border border-strokes p-6">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-lg font-semibold text-text">
@@ -587,8 +578,7 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                                             <td className="py-3 pr-4 text-sm">
                                                     <span
                                                         className={
-                                                            t.type ===
-                                                            'income'
+                                                            t.type === 'income'
                                                                 ? 'text-green-600'
                                                                 : 'text-red-600'
                                                         }
@@ -625,9 +615,9 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                     </div>
                 </div>
 
-                {/* right column: wallet + budget */}
+                {/* Right column: wallet + budget */}
                 <div className="space-y-6">
-                    {/* Wallet stack */}
+                    {/* Wallet block with stacked cards (dynamic height) */}
                     <div className="bg-white rounded-xl shadow-sm border border-strokes p-6">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-lg font-semibold text-text">
@@ -641,111 +631,159 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                             </button>
                         </div>
 
-                        {visibleWallets.length === 0 ? (
+                        {dashboardWallets.length === 0 ? (
                             <div className="text-sm text-metallic-gray py-4">
                                 No wallets yet. Create a wallet to see it here.
                             </div>
                         ) : (
                             <div
-                                className="relative"
-                                style={{ height: stackHeight }}
+                                className="relative mt-2 mx-auto mb-4 overflow-hidden"
+                                style={{
+                                    width: '100%',
+                                    maxWidth: '380px',
+                                    height:
+                                        250 +
+                                        (dashboardWallets.length - 1) * 70,
+                                }}
                             >
-                                {visibleWallets.map((wallet, index) => {
-                                    const styles = getStackStyles(index);
-                                    const walletSymbol = getCurrencySymbol(
+                                {dashboardWallets.map((wallet, index) => {
+                                    const isSelected =
+                                        selectedWallet?.id === wallet.id ||
+                                        (!selectedWallet &&
+                                            index === selectedWalletIndex);
+
+                                    const symbol = getCurrencySymbol(
                                         wallet.currency
                                     );
-                                    const isSelected =
-                                        index === selectedWalletIndex;
 
                                     return (
-                                        <button
+                                        <div
                                             key={wallet.id}
-                                            type="button"
-                                            onClick={() =>
-                                                handleWalletCardClick(
-                                                    index,
-                                                    wallet
-                                                )
-                                            }
-                                            className={`absolute left-0 right-0 rounded-2xl text-left text-white transition-all duration-300 ${
-                                                isSelected
-                                                    ? 'shadow-2xl'
-                                                    : 'shadow-md opacity-90'
-                                            }`}
-                                            style={styles}
+                                            onClick={() => {
+                                                setSelectedWallet(wallet);
+                                                setSelectedWalletIndex(index);
+                                                openWalletDialog(wallet);
+                                            }}
+                                            className="absolute left-0 w-full h-[250px] rounded-xl cursor-pointer transition-all duration-300"
+                                            style={{
+                                                top: index * 70,
+                                                zIndex: isSelected
+                                                    ? 40
+                                                    : 20 - index,
+                                                backgroundColor: isSelected
+                                                    ? wallet.color || '#6FBAFC'
+                                                    : 'transparent',
+                                                backdropFilter: isSelected
+                                                    ? 'none'
+                                                    : 'blur(8px)',
+                                                border: isSelected
+                                                    ? 'none'
+                                                    : '1px solid hsla(0, 0%, 100%, 0.30)',
+                                                transform: isSelected
+                                                    ? 'scale(1)'
+                                                    : 'scale(0.97)',
+                                                boxShadow: isSelected
+                                                    ? '0 12px 30px rgba(0,0,0,0.35)'
+                                                    : '0 4px 10px rgba(0,0,0,0.08)',
+                                            }}
                                         >
-                                            {/* CARD LAYOUT matching MyWallets */}
-                                            <div className="rounded-2xl p-6 h-56 bg-gradient-to-r from-[#1E1E2F] via-[#252B3F] to-[#1E1E2F] flex flex-col justify-between">
-                                                {/* name */}
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <p className="text-sm font-semibold">
-                                                        {wallet.name || 'Wallet'}
-                                                    </p>
-                                                </div>
+                                            <div className="p-6 flex flex-col justify-between h-full">
+                                                {/* Wallet Name */}
+                                                <h3
+                                                    className={`text-base font-semibold ${
+                                                        isSelected
+                                                            ? 'text-white'
+                                                            : 'text-text'
+                                                    }`}
+                                                >
+                                                    {wallet.name}
+                                                </h3>
 
-                                                {/* chip + total balance + NFC/brand */}
-                                                <div className="flex justify-between items-center">
-                                                    <div className="flex items-center space-x-3">
+                                                {/* Chip + Balance + NFC */}
+                                                <div className="flex justify-between items-start mb-6">
+                                                    <div className="flex items-start space-x-3">
                                                         <img
                                                             src={chipIcon}
                                                             alt="Chip"
-                                                            className="h-6"
+                                                            className="w-10 h-8 object-contain mt-4"
                                                         />
                                                         <div>
-                                                            <p className="text-xs opacity-80 mb-1">
+                                                            <p
+                                                                className={`text-xs font-bold leading-none ml-6 mt-3 ${
+                                                                    isSelected
+                                                                        ? 'text-white/80'
+                                                                        : 'text-metallic-gray'
+                                                                }`}
+                                                            >
                                                                 Total Balance
                                                             </p>
-                                                            <p className="text-2xl font-bold">
-                                                                {walletSymbol}
-                                                                {parseNumber(
+                                                            <p
+                                                                className={`text-xl font-bold leading-tight ml-6 ${
+                                                                    isSelected
+                                                                        ? 'text-white'
+                                                                        : 'text-text'
+                                                                }`}
+                                                            >
+                                                                {symbol}
+                                                                {Number(
                                                                     wallet.balance ||
                                                                     0
-                                                                ).toLocaleString(
-                                                                    undefined,
-                                                                    {
-                                                                        minimumFractionDigits: 2,
-                                                                        maximumFractionDigits: 2,
-                                                                    }
-                                                                )}
+                                                                ).toFixed(2)}
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    <div className="flex flex-col items-end space-y-2">
-                                                        <img
-                                                            src={nfcIcon}
-                                                            alt="NFC"
-                                                            className="h-5 opacity-80"
-                                                        />
-                                                        <img
-                                                            src={mastercardIcon}
-                                                            alt="Mastercard"
-                                                            className="h-7"
-                                                        />
-                                                    </div>
+                                                    <img
+                                                        src={nfcIcon}
+                                                        alt="NFC"
+                                                        className="w-8 h-7 object-contain mt-3"
+                                                    />
                                                 </div>
 
-                                                {/* card number + expiry ON THE LEFT (stacked) */}
-                                                <div className="flex flex-col items-start text-xs opacity-80 mt-4">
-                                                    <span className="tracking-widest font-mono text-sm mb-1">
-                                                        {formatCardNumber(
-                                                            wallet.card_number
-                                                        )}
-                                                    </span>
-                                                    <span>
-                                                        {wallet.expiry_date ||
+                                                {/* Card Number */}
+                                                <p
+                                                    className={`mt-4 text-lg font-mono tracking-wider ${
+                                                        isSelected
+                                                            ? 'text-white'
+                                                            : 'text-text'
+                                                    }`}
+                                                >
+                                                    {formatCardNumber(
+                                                        wallet.card_number
+                                                    )}
+                                                </p>
+
+                                                {/* Footer */}
+                                                <div className="flex justify-between items-center mt-4">
+                                                    <span
+                                                        className={`${
+                                                            isSelected
+                                                                ? 'text-white/70'
+                                                                : 'text-metallic-gray'
+                                                        } text-sm`}
+                                                    >
+                                                        {wallet.expiry ||
                                                             '09/30'}
                                                     </span>
+
+                                                    <img
+                                                        src={mastercardIcon}
+                                                        alt="MASTERCARD"
+                                                        className={`h-8 ${
+                                                            isSelected
+                                                                ? 'opacity-90'
+                                                                : 'opacity-70'
+                                                        }`}
+                                                    />
                                                 </div>
                                             </div>
-                                        </button>
+                                        </div>
                                     );
                                 })}
                             </div>
                         )}
                     </div>
 
-                    {/* Budget vs Expense */}
+                    {/* Budget vs Expense gauge */}
                     <BudgetGauge
                         budget={budgetData.budget}
                         spent={budgetData.spent}

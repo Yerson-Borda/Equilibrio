@@ -1,271 +1,427 @@
-import React, { useEffect, useState } from 'react';
-import Modal from '../ui/Modal';
-import Button from '../ui/Button';
-import Input from '../ui/Input';
-import Select from '../ui/Select';
+import React, { useEffect, useMemo, useState } from "react";
+import { apiService } from "../../services/api";
+import { getCategoryIcon } from "../../utils/categoryIcons";
+import "./AddTransactionModal.css";
 
-const transactionTypes = [
-    { value: 'expense', label: 'Expense' },
-    { value: 'income', label: 'Income' },
-    { value: 'transfer', label: 'Transfer' },
-];
+export default function AddTransactionModal({
+                                                isOpen,
+                                                onClose,
+                                                wallets = [],
+                                                refreshData,
+                                                defaultWalletId = null,
+                                            }) {
+    const [tab, setTab] = useState("expense"); // expense | income | transfer
+    const [amount, setAmount] = useState("");
+    const [walletId, setWalletId] = useState(defaultWalletId);
+    const [fromWallet, setFromWallet] = useState(defaultWalletId);
+    const [toWallet, setToWallet] = useState("");
+    const [categoryId, setCategoryId] = useState(null);
 
-const AddTransactionModal = ({
-                                 isOpen,
-                                 onClose,
-                                 onSubmit,
-                                 isLoading,
-                                 wallets = [],
-                                 selectedWallet,
-                             }) => {
-    const [formData, setFormData] = useState({
-        type: 'expense',
-        amount: '',
-        wallet_id: selectedWallet?.id || '',
-        source_wallet_id: selectedWallet?.id || '',
-        destination_wallet_id: '',
-        category_id: '',
-        note: '',
-        attachments: '',
-    });
+    const [title, setTitle] = useState("");
+    const [note, setNote] = useState("");
+    const [attachments, setAttachments] = useState([]);
 
-    const [errors, setErrors] = useState({});
+    // tags from backend (TagResponse: {id,name,...})
+    const [availableTags, setAvailableTags] = useState([]);
+    const [selectedTagIds, setSelectedTagIds] = useState([]);
 
-    // Sync with selectedWallet when it changes
+    const [showCategoryPanel, setShowCategoryPanel] = useState(false);
+    const [showTagCreator, setShowTagCreator] = useState(false);
+    const [newTagName, setNewTagName] = useState("");
+
+    // categories from backend
+    const [incomeCategories, setIncomeCategories] = useState([]);
+    const [expenseCategories, setExpenseCategories] = useState([]);
+
+    // ---------- load data ----------
     useEffect(() => {
-        setFormData((prev) => ({
-            ...prev,
-            wallet_id: selectedWallet?.id || prev.wallet_id || '',
-            source_wallet_id: selectedWallet?.id || prev.source_wallet_id || '',
-        }));
-    }, [selectedWallet]);
+        if (!isOpen) return;
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
+        // default wallet
+        const fallbackWalletId = defaultWalletId ?? wallets?.[0]?.id ?? "";
+        setWalletId((prev) => (prev ?? fallbackWalletId));
+        setFromWallet((prev) => (prev ?? fallbackWalletId));
 
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
+        // load categories + tags
+        (async () => {
+            try {
+                const [income, expense, tags] = await Promise.all([
+                    apiService.getIncomeCategories(),   // /api/categories/income
+                    apiService.getExpenseCategories(),  // /api/categories/expense
+                    apiService.getTags(),               // /api/tags/
+                ]);
 
-        if (errors[name]) {
-            setErrors((prev) => ({ ...prev, [name]: '' }));
+                setIncomeCategories(Array.isArray(income) ? income : []);
+                setExpenseCategories(Array.isArray(expense) ? expense : []);
+                setAvailableTags(Array.isArray(tags) ? tags : []);
+            } catch (e) {
+                console.error("Failed to load modal data:", e);
+                setIncomeCategories([]);
+                setExpenseCategories([]);
+                setAvailableTags([]);
+            }
+        })();
+    }, [isOpen, defaultWalletId, wallets]);
+
+    // when switching tab, close the category panel and reset category if needed
+    useEffect(() => {
+        setShowCategoryPanel(false);
+
+        if (tab === "income") {
+            const first = incomeCategories?.[0]?.id ?? null;
+            setCategoryId((prev) => prev ?? first);
+        }
+        if (tab === "expense") {
+            const first = expenseCategories?.[0]?.id ?? null;
+            setCategoryId((prev) => prev ?? first);
+        }
+        if (tab === "transfer") {
+            setCategoryId(null);
+        }
+    }, [tab, incomeCategories, expenseCategories]);
+
+    const categoriesForTab = useMemo(() => {
+        if (tab === "income") return incomeCategories;
+        if (tab === "expense") return expenseCategories;
+        return [];
+    }, [tab, incomeCategories, expenseCategories]);
+
+    if (!isOpen) return null;
+
+    // ---------- handlers ----------
+    const handleAttachment = (e) => {
+        const files = Array.from(e.target.files || []);
+        setAttachments((prev) => [...prev, ...files]);
+    };
+
+    const toggleTag = (tagId) => {
+        setSelectedTagIds((prev) =>
+            prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+        );
+    };
+
+    const createTag = async () => {
+        const name = newTagName.trim();
+        if (!name) return;
+
+        try {
+            const created = await apiService.createTag({ name }); // POST /api/tags/
+            // created is TagResponse
+            if (created?.id) {
+                setAvailableTags((prev) => [...prev, created]);
+                setSelectedTagIds((prev) => [...prev, created.id]);
+            }
+            setNewTagName("");
+            setShowTagCreator(false);
+        } catch (e) {
+            console.error("Create tag failed:", e);
+            alert("Failed to create tag");
         }
     };
 
-    const handleTypeChange = (type) => {
-        setFormData((prev) => ({
-            ...prev,
-            type,
-        }));
-        setErrors({});
-    };
+    const submit = async () => {
+        if (!amount) return;
 
-    const validate = () => {
-        const newErrors = {};
+        try {
+            // TRANSFER uses dedicated endpoint
+            if (tab === "transfer") {
+                if (!fromWallet || !toWallet) {
+                    alert("Please select both wallets.");
+                    return;
+                }
+                await apiService.createTransfer({
+                    source_wallet_id: Number(fromWallet),
+                    destination_wallet_id: Number(toWallet),
+                    amount: Number(amount),
+                    note: note || "",
+                });
+            } else {
+                if (!walletId) {
+                    alert("Please select a wallet.");
+                    return;
+                }
+                if (!categoryId) {
+                    alert("Please select a category.");
+                    return;
+                }
 
-        if (!formData.type) {
-            newErrors.type = 'Transaction type is required';
+                // Backend TransactionCreate requires: name, amount, type, transaction_date, wallet_id, category_id, tags[]
+                await apiService.createTransaction({
+                    name: title?.trim() || (tab === "income" ? "Income" : "Expense"),
+                    amount: Number(amount),
+                    note: note || "",
+                    type: tab,
+                    transaction_date: new Date().toISOString().split("T")[0],
+                    wallet_id: Number(walletId),
+                    category_id: Number(categoryId),
+                    tags: selectedTagIds, // IMPORTANT: IDs (not names)
+                });
+            }
+
+            refreshData?.();
+            onClose?.();
+        } catch (e) {
+            console.error("Create transaction failed:", e);
+            alert(e?.message || "Failed to create transaction");
         }
-
-        if (!formData.amount || Number(formData.amount) <= 0) {
-            newErrors.amount = 'Amount must be greater than 0';
-        }
-
-        if (formData.type === 'transfer') {
-            if (!formData.source_wallet_id) {
-                newErrors.source_wallet_id = 'Source wallet is required';
-            }
-            if (!formData.destination_wallet_id) {
-                newErrors.destination_wallet_id = 'Destination wallet is required';
-            }
-            if (
-                formData.source_wallet_id &&
-                formData.destination_wallet_id &&
-                formData.source_wallet_id === formData.destination_wallet_id
-            ) {
-                newErrors.destination_wallet_id =
-                    'Source and destination wallets must be different';
-            }
-        } else {
-            if (!formData.wallet_id) {
-                newErrors.wallet_id = 'Wallet is required';
-            }
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (!validate()) return;
+    // ---------- UI helpers ----------
+    const renderAmount = () => {
+        const prefix = tab === "expense" ? "-" : tab === "income" ? "+" : "";
+        return (
+            <div className="amount-container">
+                <div className="amount-display">
+                    {prefix}${amount ? Number(amount).toFixed(2) : "0.00"}
+                </div>
 
-        const payload = {
-            ...formData,
-            amount: parseFloat(formData.amount),
-        };
-
-        onSubmit(payload);
+                <input
+                    type="number"
+                    className="hidden-input"
+                    onChange={(e) => setAmount(e.target.value)}
+                    value={amount}
+                />
+            </div>
+        );
     };
 
-    const handleClose = () => {
-        setErrors({});
-        onClose();
-    };
+    const renderCategoryPanel = () => (
+        <div className="category-panel">
+            {categoriesForTab.map((cat) => {
+                const icon = getCategoryIcon(cat.icon || cat.name);
+                return (
+                    <div
+                        key={cat.id}
+                        className="category-item"
+                        onClick={() => {
+                            setCategoryId(cat.id);
+                            setShowCategoryPanel(false);
+                        }}
+                    >
+                        <div
+                            className="category-icon"
+                            style={{ backgroundColor: cat.color || "#E5E7EB" }}
+                        >
+                            <img src={icon} alt={cat.name} className="icon-img" />
+                        </div>
+                        <span className="category-name">{cat.name}</span>
+                    </div>
+                );
+            })}
+        </div>
+    );
 
-    const isTransfer = formData.type === 'transfer';
+    const renderExpenseIncome = () => (
+        <>
+            {/* WALLET */}
+            <label className="label">Wallet</label>
+            <select
+                className="dropdown"
+                value={walletId ?? ""}
+                onChange={(e) => setWalletId(Number(e.target.value))}
+            >
+                {wallets.map((w) => (
+                    <option key={w.id} value={w.id}>
+                        {w.name}
+                    </option>
+                ))}
+            </select>
+
+            {/* CATEGORY (CUSTOM PANEL LIKE DESIGN) */}
+            <label className="label">Category</label>
+            <div className="relative">
+                <div className="dropdown" onClick={() => setShowCategoryPanel((p) => !p)}>
+                    {categoryId
+                        ? categoriesForTab.find((c) => c.id === categoryId)?.name
+                        : "Select Category"}
+                </div>
+                {showCategoryPanel && renderCategoryPanel()}
+            </div>
+
+            {/* TITLE */}
+            <label className="label">{tab === "expense" ? "Expense title" : "Income title"}</label>
+            <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="input"
+                placeholder={tab === "expense" ? "Expense title" : "Income title"}
+            />
+
+            {/* NOTE */}
+            <label className="label">Note</label>
+            <textarea
+                className="input textarea"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Note"
+            />
+
+            {/* ATTACHMENTS (UI ONLY) */}
+            <button
+                className="attachment-btn"
+                onClick={() => document.getElementById("att-upload").click()}
+                type="button"
+            >
+                Add Attachments
+            </button>
+            <input
+                id="att-upload"
+                type="file"
+                className="hidden"
+                multiple
+                onChange={handleAttachment}
+            />
+
+            {/* TAGS (REAL BACKEND) */}
+            <div className="tags-container">
+                {availableTags.map((t) => (
+                    <button
+                        key={t.id}
+                        type="button"
+                        className={`tag ${selectedTagIds.includes(t.id) ? "tag-active" : ""}`}
+                        onClick={() => toggleTag(t.id)}
+                    >
+                        #{t.name}
+                    </button>
+                ))}
+                <button type="button" className="tag-new" onClick={() => setShowTagCreator(true)}>
+                    New Tag
+                </button>
+            </div>
+        </>
+    );
+
+    const renderTransfer = () => (
+        <>
+            <label className="label">From Wallet</label>
+            <select
+                className="dropdown"
+                value={fromWallet ?? ""}
+                onChange={(e) => setFromWallet(Number(e.target.value))}
+            >
+                {wallets.map((w) => (
+                    <option key={w.id} value={w.id}>
+                        {w.name}
+                    </option>
+                ))}
+            </select>
+
+            <label className="label">To Wallet</label>
+            <select
+                className="dropdown"
+                value={toWallet ?? ""}
+                onChange={(e) => setToWallet(Number(e.target.value))}
+            >
+                <option value="">Select Wallet</option>
+                {wallets
+                    .filter((w) => String(w.id) !== String(fromWallet))
+                    .map((w) => (
+                        <option key={w.id} value={w.id}>
+                            {w.name}
+                        </option>
+                    ))}
+            </select>
+
+            <label className="label">Note</label>
+            <textarea
+                className="input textarea"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Note"
+            />
+
+            <button
+                className="attachment-btn"
+                onClick={() => document.getElementById("att-upload").click()}
+                type="button"
+            >
+                Add Attachments
+            </button>
+            <input
+                id="att-upload"
+                type="file"
+                className="hidden"
+                multiple
+                onChange={handleAttachment}
+            />
+        </>
+    );
 
     return (
-        <Modal
-            isOpen={isOpen}
-            onClose={handleClose}
-            title="Add Transaction"
-            size="lg"
-        >
-            <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Type Switcher */}
-                <div>
-                    <p className="block text-sm font-medium text-text mb-2">
-                        Transaction Type
-                    </p>
-                    <div className="flex space-x-2">
-                        {transactionTypes.map((t) => (
-                            <button
-                                key={t.value}
-                                type="button"
-                                onClick={() => handleTypeChange(t.value)}
-                                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border ${
-                                    formData.type === t.value
-                                        ? 'bg-blue text-white border-blue'
-                                        : 'bg-white text-text border-strokes hover:bg-soft-gray'
-                                }`}
-                            >
-                                {t.label}
-                            </button>
-                        ))}
-                    </div>
-                    {errors.type && (
-                        <p className="text-xs text-red-500 mt-1">{errors.type}</p>
-                    )}
-                </div>
-
-                {/* Amount */}
-                <Input
-                    label="Amount"
-                    name="amount"
-                    type="number"
-                    value={formData.amount}
-                    onChange={handleChange}
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0"
-                    error={errors.amount}
-                />
-
-                {/* Wallet selection */}
-                {!isTransfer ? (
-                    <Select
-                        label="Wallet"
-                        name="wallet_id"
-                        value={formData.wallet_id}
-                        onChange={handleChange}
-                        error={errors.wallet_id}
-                    >
-                        <option value="">Select wallet</option>
-                        {wallets.map((wallet) => (
-                            <option key={wallet.id} value={wallet.id}>
-                                {wallet.name} ({wallet.currency})
-                            </option>
-                        ))}
-                    </Select>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Select
-                            label="From Wallet"
-                            name="source_wallet_id"
-                            value={formData.source_wallet_id}
-                            onChange={handleChange}
-                            error={errors.source_wallet_id}
-                        >
-                            <option value="">Select source</option>
-                            {wallets.map((wallet) => (
-                                <option key={wallet.id} value={wallet.id}>
-                                    {wallet.name} ({wallet.currency})
-                                </option>
-                            ))}
-                        </Select>
-
-                        <Select
-                            label="To Wallet"
-                            name="destination_wallet_id"
-                            value={formData.destination_wallet_id}
-                            onChange={handleChange}
-                            error={errors.destination_wallet_id}
-                        >
-                            <option value="">Select destination</option>
-                            {wallets.map((wallet) => (
-                                <option key={wallet.id} value={wallet.id}>
-                                    {wallet.name} ({wallet.currency})
-                                </option>
-                            ))}
-                        </Select>
-                    </div>
-                )}
-
-                {/* Category (for income/expense only) */}
-                {!isTransfer && (
-                    <Input
-                        label="Category (optional)"
-                        name="category_id"
-                        value={formData.category_id}
-                        onChange={handleChange}
-                        placeholder="e.g. Food, Salary, Rent..."
-                        error={errors.category_id}
-                    />
-                )}
-
-                {/* Note */}
-                <Input
-                    label="Note (optional)"
-                    name="note"
-                    value={formData.note}
-                    onChange={handleChange}
-                    placeholder="Add a note..."
-                />
-
-                {/* Attachments (placeholder text field) */}
-                <Input
-                    label="Attachments (optional)"
-                    name="attachments"
-                    value={formData.attachments}
-                    onChange={handleChange}
-                    placeholder="Link or description of attachments"
-                />
-
-                {/* Actions */}
-                <div className="flex space-x-3 pt-2">
-                    <Button
-                        type="submit"
-                        variant="primary"
-                        className="flex-1 py-3"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? 'Adding...' : 'Confirm Transaction'}
-                    </Button>
-                    <Button
+        <div className="modal-overlay">
+            <div className="modal-box">
+                {/* TABS */}
+                <div className="tabs">
+                    <button
                         type="button"
-                        variant="secondary"
-                        className="flex-1 py-3"
-                        onClick={handleClose}
-                        disabled={isLoading}
+                        className={`tab ${tab === "income" ? "active" : ""}`}
+                        onClick={() => setTab("income")}
                     >
-                        Cancel
-                    </Button>
+                        Income
+                    </button>
+                    <button
+                        type="button"
+                        className={`tab ${tab === "expense" ? "active" : ""}`}
+                        onClick={() => setTab("expense")}
+                    >
+                        Expense
+                    </button>
+                    <button
+                        type="button"
+                        className={`tab ${tab === "transfer" ? "active" : ""}`}
+                        onClick={() => setTab("transfer")}
+                    >
+                        Transfer
+                    </button>
                 </div>
-            </form>
-        </Modal>
-    );
-};
 
-export default AddTransactionModal;
+                {/* AMOUNT */}
+                {renderAmount()}
+
+                <div className="form-content">
+                    {tab === "transfer" ? renderTransfer() : renderExpenseIncome()}
+                </div>
+
+                {/* BUTTONS */}
+                <div className="actions">
+                    <button type="button" className="btn-cancel" onClick={onClose}>
+                        Cancel
+                    </button>
+                    <button type="button" className="btn-confirm" onClick={submit}>
+                        Confirm Transaction
+                    </button>
+                </div>
+            </div>
+
+            {/* NEW TAG MODAL */}
+            {showTagCreator && (
+                <div className="tag-modal">
+                    <div className="tag-box">
+                        <input
+                            type="text"
+                            className="input"
+                            placeholder="Tag title (max 8 chars)"
+                            maxLength={8}
+                            value={newTagName}
+                            onChange={(e) => setNewTagName(e.target.value)}
+                        />
+
+                        <div className="tag-actions">
+                            <button type="button" className="btn-confirm" onClick={createTag}>
+                                Confirm
+                            </button>
+                            <button
+                                type="button"
+                                className="btn-cancel"
+                                onClick={() => setShowTagCreator(false)}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
