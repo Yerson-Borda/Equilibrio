@@ -1,6 +1,6 @@
 package com.example.moneymate.ui.screens.wallet
 
-import com.example.domain.wallet.model.Transaction
+import com.example.domain.transaction.model.TransactionEntity
 
 // Format card number
 fun formatCardNumber(cardNumber: String?): String {
@@ -62,7 +62,7 @@ fun formatCreatedDate(createdAt: String): String {
 }
 
 // Calculate income and expense totals from transactions
-fun calculateIncomeExpense(transactions: List<Transaction>): Pair<Double, Double> {
+fun calculateIncomeExpense(transactions: List<TransactionEntity>): Pair<Double, Double> {
     var income = 0.0
     var expense = 0.0
 
@@ -71,6 +71,7 @@ fun calculateIncomeExpense(transactions: List<Transaction>): Pair<Double, Double
         when (transaction.type) {
             "income" -> income += amount
             "expense" -> expense += amount
+            // Note: transfer transactions might need special handling
         }
     }
 

@@ -2,7 +2,7 @@ package com.example.data.network.wallet
 
 
 import com.example.data.network.wallet.model.TotalBalanceResponse
-import com.example.data.network.wallet.model.TransactionResponse
+import com.example.data.network.wallet.model.WalletBalanceResponse
 import com.example.data.network.wallet.model.WalletCreateRequest
 import com.example.data.network.wallet.model.WalletResponse
 import com.example.data.network.wallet.model.WalletUpdateRequest
@@ -15,25 +15,26 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface WalletApi {
-    @GET("api/v1/wallets/")
+    @GET("api/wallets/")
     suspend fun getWallets(): List<WalletResponse>
 
-    @POST("api/v1/wallets/")
+    @POST("api/wallets/")
     suspend fun createWallet(@Body request: WalletCreateRequest): WalletResponse
 
-    @GET("api/v1/transactions/wallet/{wallet_id}")
-    suspend fun getWalletTransactions(@Path("wallet_id") walletId: Int): List<TransactionResponse>
-    @GET("api/v1/wallets/user/total")
+    @GET("api/wallets/user/total")
     suspend fun getTotalBalance(): TotalBalanceResponse
 
-    @GET("api/v1/wallets/{wallet_id}")
+    @GET("api/wallets/{wallet_id}")
     suspend fun getWalletDetail(@Path("wallet_id") walletId: Int): WalletResponse
 
-    @DELETE("api/v1/wallets/{wallet_id}")
+    @DELETE("api/wallets/{wallet_id}")
     suspend fun deleteWallet(@Path("wallet_id") walletId: Int): Response<Unit>
 
-    @PUT("api/v1/wallets/{wallet_id}") suspend fun updateWallet(
+    @PUT("api/wallets/{wallet_id}") suspend fun updateWallet(
         @Path("wallet_id") walletId: Int,
         @Body walletRequest: WalletUpdateRequest
     ): Response<WalletResponse>
+
+    @GET("api/wallets/{wallet_id}/balance")
+    suspend fun getWalletBalance(@Path("wallet_id") walletId: Int): WalletBalanceResponse
 }

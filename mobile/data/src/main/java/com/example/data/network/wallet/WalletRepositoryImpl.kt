@@ -5,8 +5,8 @@ import com.example.data.network.wallet.model.toDomain
 import com.example.data.network.wallet.model.WalletUpdateRequest as DataWalletUpdateRequest
 import com.example.domain.wallet.WalletRepository
 import com.example.domain.wallet.model.TotalBalance
-import com.example.domain.wallet.model.Transaction
 import com.example.domain.wallet.model.Wallet
+import com.example.domain.wallet.model.WalletBalance
 import com.example.domain.wallet.model.WalletCreateRequest
 import com.example.domain.wallet.model.WalletUpdateRequest as DomainWalletUpdateRequest
 import kotlinx.coroutines.flow.Flow
@@ -62,19 +62,6 @@ class WalletRepositoryImpl(
         }
     }
 
-    override suspend fun getWalletTransactions(walletId: Int): Result<List<Transaction>> {
-        return try {
-            println("🔄 [Repository] Starting getWalletTransactions(walletId=$walletId)")
-            val response = walletApi.getWalletTransactions(walletId)
-            println("✅ [Repository] Got ${response.size} transactions for wallet $walletId")
-            Result.success(response.map { it.toDomain() })
-        } catch (e: Exception) {
-            println("❌ [Repository] EXCEPTION in getWalletTransactions(): ${e.message}")
-            e.printStackTrace()
-            Result.failure(e)
-        }
-    }
-
     override suspend fun getTotalBalance(): Result<TotalBalance> {
         return try {
             val response = walletApi.getTotalBalance()
@@ -115,7 +102,7 @@ class WalletRepositoryImpl(
             println("🔄 [Repository] Domain request: name=${walletRequest.name}, type=${walletRequest.walletType}, balance=${walletRequest.initialBalance}")
 
             val dataRequest = DataWalletUpdateRequest.fromDomain(walletRequest)
-            println("🔄 [Repository] Data request: name=${dataRequest.name}, wallet_type=${dataRequest.walletType}, initial_balance=${dataRequest.initialBalance}")
+            println("🔄 [Repository] Data request: name=${dataRequest.name}, wallet_type=${dataRequest.walletType}, initial_balance=${dataRequest.balance}")
 
             val response = walletApi.updateWallet(walletId, dataRequest)
 
@@ -134,6 +121,19 @@ class WalletRepositoryImpl(
             }
         } catch (e: Exception) {
             println("❌ [Repository] EXCEPTION in updateWallet(): ${e.message}")
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getWalletBalance(walletId: Int): Result<WalletBalance> {
+        return try {
+            println("🔄 [Repository] Starting getWalletBalance(walletId=$walletId)")
+            val response = walletApi.getWalletBalance(walletId)
+            println("✅ [Repository] Got wallet balance: ${response.balance}")
+            Result.success(WalletBalance(response.balance))
+        } catch (e: Exception) {
+            println("❌ [Repository] EXCEPTION in getWalletBalance(): ${e.message}")
             e.printStackTrace()
             Result.failure(e)
         }

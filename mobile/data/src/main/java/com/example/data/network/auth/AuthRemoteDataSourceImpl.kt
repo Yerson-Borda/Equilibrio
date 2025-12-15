@@ -1,6 +1,5 @@
 package com.example.data.network.auth
 
-import com.example.data.network.auth.model.SignInRequest
 import com.example.data.network.auth.model.SignUpRequest
 import com.example.domain.auth.dataSource.AuthRemoteDataSource
 import com.example.domain.auth.dataSource.model.AccessToken
@@ -13,19 +12,29 @@ class AuthRemoteDataSourceImpl(
     override suspend fun signUp(
         fullName: String?,
         email: String,
-        password: String
-    ): UserData { // Change return type to UserData
+        password: String,
+        phoneNumber: String?,
+        dateOfBirth: String?,
+        avatarUrl: String?,
+        defaultCurrency: String
+    ): UserData {
         val request = SignUpRequest(
-            full_name = fullName ?: "",
             email = email,
-            password = password,
-            default_currency = "USD" // Add default currency
+            full_name = fullName,
+            phone_number = phoneNumber,
+            date_of_birth = dateOfBirth,
+            avatar_url = avatarUrl,
+            default_currency = defaultCurrency,
+            password = password
         )
         val response = authApi.signUp(request)
         return UserData(
             id = response.id,
             email = response.email,
             fullName = response.full_name,
+            phoneNumber = response.phone_number,
+            dateOfBirth = response.date_of_birth,
+            avatarUrl = response.avatar_url,
             defaultCurrency = response.default_currency,
             isActive = response.is_active,
             createdAt = response.created_at
@@ -35,6 +44,6 @@ class AuthRemoteDataSourceImpl(
     override suspend fun signIn(email: String, password: String): AccessToken {
         // Directly pass email and password as query parameters
         val response = authApi.signIn(email = email, password = password)
-        return AccessToken(response.accessToken , response.tokenType)
+        return AccessToken(response.accessToken, response.tokenType)
     }
 }

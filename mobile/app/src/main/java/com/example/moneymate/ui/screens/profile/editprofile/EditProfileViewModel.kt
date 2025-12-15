@@ -44,12 +44,17 @@ class EditProfileViewModel(
                 if (result.isSuccess) {
                     val user = result.getOrThrow()
                     originalAvatarUrl = user.avatarUrl
+
+                    // Convert backend currency code to display format
+                    val displayCurrency = convertCurrencyToDisplayFormat(user.defaultCurrency ?: "USD")
+
                     _uiState.value = _uiState.value.copy(
                         user = user,
                         fullName = user.fullName ?: "",
                         email = user.email,
                         phoneNumber = user.phoneNumber ?: "",
                         birthDate = user.dateOfBirth ?: "",
+                        defaultCurrency = displayCurrency, // Set the display format
                         isLoading = false,
                         originalUser = user
                     )
@@ -110,11 +115,15 @@ class EditProfileViewModel(
             try {
                 val currentUser = _uiState.value.user
                 if (currentUser != null) {
+                    // Convert display format back to currency code for backend
+                    val currencyCode = extractCurrencyCode(_uiState.value.defaultCurrency)
+
                     val updatedUser = currentUser.copy(
                         fullName = _uiState.value.fullName.ifEmpty { null },
                         email = _uiState.value.email,
                         phoneNumber = _uiState.value.phoneNumber.ifEmpty { null },
-                        dateOfBirth = _uiState.value.birthDate.ifEmpty { null }
+                        dateOfBirth = _uiState.value.birthDate.ifEmpty { null },
+                        defaultCurrency = currencyCode // Send only the code to backend
                     )
 
                     val result = updateUserUseCase(updatedUser)
@@ -239,6 +248,11 @@ class EditProfileViewModel(
         return phonePattern.matches(phoneNumber.replace("\\s".toRegex(), ""))
     }
 
+    fun updateDefaultCurrency(currency: String) {
+        _uiState.value = _uiState.value.copy(defaultCurrency = currency)
+        checkForChanges()
+    }
+
     private fun checkForChanges() {
         val state = _uiState.value
         val original = state.originalUser
@@ -248,9 +262,9 @@ class EditProfileViewModel(
                     state.email != originalUser.email ||
                     state.phoneNumber != (originalUser.phoneNumber ?: "") ||
                     state.birthDate != (originalUser.dateOfBirth ?: "") ||
+                    state.defaultCurrency != (originalUser.defaultCurrency ?: "USD - $") ||
                     state.newPassword.isNotBlank() ||
                     state.confirmPassword.isNotBlank() ||
-                    // Check if avatar has changed
                     state.user?.avatarUrl != originalAvatarUrl
         } ?: true
 
@@ -264,19 +278,58 @@ class EditProfileViewModel(
     fun clearNavigationEvent() {
         _navigationEvent.value = null
     }
+
+    private fun convertCurrencyToDisplayFormat(currencyCode: String): String {
+        return when (currencyCode.uppercase()) {
+            "USD" -> "USD - $"
+            "EUR" -> "EUR - €"
+            "GBP" -> "GBP - £"
+            "JPY" -> "JPY - ¥"
+            "CAD" -> "CAD - C$"
+            "AUD" -> "AUD - A$"
+            "CHF" -> "CHF - CHF"
+            "CNY" -> "CNY - ¥"
+            "INR" -> "INR - ₹"
+            "RUB" -> "RUB - ₽"
+            "BRL" -> "BRL - R$"
+            "MXN" -> "MXN - $"
+            "KRW" -> "KRW - ₩"
+            else -> "USD - $" // Default fallback
+        }
+    }
+
+    private fun extractCurrencyCode(displayCurrency: String): String {
+        return when {
+            displayCurrency.contains("USD") -> "USD"
+            displayCurrency.contains("EUR") -> "EUR"
+            displayCurrency.contains("GBP") -> "GBP"
+            displayCurrency.contains("JPY") -> "JPY"
+            displayCurrency.contains("CAD") -> "CAD"
+            displayCurrency.contains("AUD") -> "AUD"
+            displayCurrency.contains("CHF") -> "CHF"
+            displayCurrency.contains("CNY") -> "CNY"
+            displayCurrency.contains("INR") -> "INR"
+            displayCurrency.contains("RUB") -> "RUB"
+            displayCurrency.contains("BRL") -> "BRL"
+            displayCurrency.contains("MXN") -> "MXN"
+            displayCurrency.contains("KRW") -> "KRW"
+            else -> "USD" // Default fallback
+        }
+    }
 }
 
 data class EditProfileState(
     val user: User? = null,
-    val originalUser: User? = null, // To track changes
+    val originalUser: User? = null,
     val fullName: String = "",
     val email: String = "",
     val phoneNumber: String = "",
     val birthDate: String = "",
+    val defaultCurrency: String = "USD - $", // Add this
     val newPassword: String = "",
     val confirmPassword: String = "",
     val isLoading: Boolean = false,
-    val hasChanges: Boolean = false // To enable/disable update button
+    val hasChanges: Boolean = false
 )
 
 sealed class NavigationEvent {

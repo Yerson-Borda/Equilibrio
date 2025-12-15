@@ -1,4 +1,3 @@
-// Add this file: com.example.moneymate.ui.screens.home.TopAppBarSection.kt
 package com.example.moneymate.ui.screens.home
 
 import androidx.compose.foundation.background
@@ -40,7 +39,6 @@ fun TopAppBarSection(
                 .clickable(onClick = onProfileClick),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar Image
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -63,7 +61,6 @@ fun TopAppBarSection(
                         )
                     )
                 } else {
-                    // Display user initials if no avatar
                     val initials = userName.split(" ")
                         .take(2)
                         .joinToString("") { it.firstOrNull()?.toString() ?: "" }
@@ -81,7 +78,6 @@ fun TopAppBarSection(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // User Greeting
             Column {
                 Text(
                     text = "Hello,",
@@ -97,9 +93,8 @@ fun TopAppBarSection(
             }
         }
 
-        // Notification Icon
         IconButton(
-            onClick = { /* Handle notification click */ }
+            onClick = {}
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_notification),

@@ -27,17 +27,42 @@ class SignUpViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
+    // Original method for backward compatibility
     fun signUp(fullName: String, email: String, password: String) {
+        signUp(
+            fullName = fullName,
+            email = email,
+            password = password,
+            phoneNumber = null,
+            dateOfBirth = null,
+            avatarUrl = null
+        )
+    }
+
+    // New method with all optional fields
+    fun signUp(
+        fullName: String,
+        email: String,
+        password: String,
+        phoneNumber: String? = null,
+        dateOfBirth: String? = null,
+        avatarUrl: String? = null,
+        defaultCurrency: String = "USD"
+    ) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                validateInput(fullName, email, password)
+                validateInput(fullName, email, password, phoneNumber, dateOfBirth)
 
                 signUpUseCase(
                     SignUpInfo(
                         fullName = fullName,
                         email = email,
-                        password = password
+                        password = password,
+                        phoneNumber = phoneNumber,
+                        dateOfBirth = dateOfBirth,
+                        avatarUrl = avatarUrl,
+                        defaultCurrency = defaultCurrency
                     )
                 ).also {
                     _navigateToProfile.emit(Unit)
@@ -50,9 +75,15 @@ class SignUpViewModel(
         }
     }
 
-    private fun validateInput(fullName: String, email: String, password: String) {
+    private fun validateInput(
+        fullName: String,
+        email: String,
+        password: String,
+        phoneNumber: String? = null,
+        dateOfBirth: String? = null
+    ) {
         if (fullName.isBlank() || email.isBlank() || password.isBlank()) {
-            throw IllegalArgumentException("Please fill in all fields")
+            throw IllegalArgumentException("Please fill in all required fields")
         }
 
         if (!isValidEmail(email)) {
@@ -61,6 +92,20 @@ class SignUpViewModel(
 
         if (password.length < 6) {
             throw IllegalArgumentException("Password should be at least 6 characters")
+        }
+
+        // Optional: Add phone number validation if provided
+        phoneNumber?.let { phone ->
+            if (phone.isNotBlank() && !isValidPhoneNumber(phone)) {
+                throw IllegalArgumentException("Please enter a valid phone number")
+            }
+        }
+
+        // Optional: Add date of birth validation if provided
+        dateOfBirth?.let { dob ->
+            if (dob.isNotBlank() && !isValidDateOfBirth(dob)) {
+                throw IllegalArgumentException("Please enter a valid date of birth")
+            }
         }
     }
 
@@ -75,5 +120,15 @@ class SignUpViewModel(
 
     private fun isValidEmail(email: String): Boolean {
         return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
+
+    private fun isValidPhoneNumber(phone: String): Boolean {
+        // Basic phone number validation - customize as needed
+        return phone.matches(Regex("^[+]?[0-9]{10,15}\$"))
+    }
+
+    private fun isValidDateOfBirth(dob: String): Boolean {
+        // Basic date validation - customize as needed
+        return dob.matches(Regex("^\\d{4}-\\d{2}-\\d{2}\$"))
     }
 }

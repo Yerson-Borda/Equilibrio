@@ -6,24 +6,23 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class WalletResponse(
-    val id: Int? = null,
+    val id: Int,
     val name: String,
-    val currency: String = "USD",
+    val currency: String,
     val wallet_type: String,
-    val initial_balance: String = "0.00",
     val card_number: String? = null,
-    val color: String = "#3B82F6",
-    val balance: String? = null,
-    val user_id: Int? = null,
-    val created_at: String? = null
+    val color: String,
+    val balance: String, // Changed from nullable to non-nullable
+    val user_id: Int,
+    val created_at: String
 ) {
     fun toDomain(): Wallet {
         return Wallet(
-            id = id ?: throw IllegalArgumentException("Wallet ID cannot be null"), // This will throw if ID is null
+            id = id,
             name = name,
             currency = currency,
             walletType = wallet_type,
-            initialBalance = initial_balance,
+            initialBalance = balance, // Map balance to initialBalance
             cardNumber = card_number,
             color = color,
             balance = balance,

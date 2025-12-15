@@ -28,22 +28,34 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
-import com.example.domain.wallet.model.Transaction
+import com.example.domain.transaction.model.TransactionEntity
 import com.example.domain.wallet.model.Wallet
 import com.example.moneymate.R
+import com.example.moneymate.ui.components.TransactionsSection
+import com.example.moneymate.ui.components.states.FullScreenError
+import com.example.moneymate.ui.components.states.FullScreenLoading
+import com.example.moneymate.ui.components.states.SectionStateManager
 import com.example.moneymate.ui.navigation.BottomNavigationBar
 import com.example.moneymate.ui.screens.home.AddRecordButton
+import com.example.moneymate.utils.CurrencyUtils.getCurrencySymbol
+import com.example.moneymate.utils.ScreenState
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -56,100 +68,167 @@ fun WalletScreen(
     onBackClick: () -> Unit,
     onAddRecord: () -> Unit,
 ) {
-    val wallets by viewModel.wallets.collectAsState()
-    val transactions by viewModel.transactions.collectAsState()
-    val selectedWallet by viewModel.selectedWallet.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    LaunchedEffect(Unit) {
-        viewModel.loadWallets()
-    }
-Box (modifier = Modifier.fillMaxSize()){
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF8F9FA))
-            .padding(16.dp)
-            .statusBarsPadding()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier.size(24.dp)
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_back_arrow),
-                    contentDescription = "Wallets",
-                    tint = Color.Black,
-                    modifier = Modifier.size(21.dp)
-                )
+    // Refresh data when screen comes into focus
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> {
+                    println("🔄 DEBUG: WalletScreen - Screen resumed, refreshing data...")
+                    viewModel.refreshOnScreenFocus()
+                }
+                else -> {}
             }
-            Spacer(modifier = Modifier.width(105.dp))
-            Text(
-                text = "Wallets",
-                color = Color.Black,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        // Clean up when the composable leaves the composition
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    // Handle operation success states
+    LaunchedEffect(uiState.createWalletState) {
+        if (uiState.createWalletState is ScreenState.Success) {
+            viewModel.resetCreateWalletState()
+        }
+    }
+
+    // Extract unique tags from all transactions
+    val availableTags = remember(uiState.transactionsState) {
+        when (val state = uiState.transactionsState) {
+            is ScreenState.Success -> {
+                state.data.flatMap { it.tags }.distinct().sorted()
+            }
+            else -> emptyList()
+        }
+    }
+
+    // Main content with state management
+    when {
+        // Show full screen loading if wallets are loading
+        uiState.walletsState is ScreenState.Loading -> {
+            FullScreenLoading(message = "Loading wallets...")
+        }
+        // Show full screen error if wallets failed to load
+        uiState.walletsState is ScreenState.Error -> {
+            FullScreenError(
+                error = (uiState.walletsState as ScreenState.Error).error,
+                onRetry = { viewModel.loadWallets() }
             )
         }
-        Spacer(modifier = Modifier.height(24.dp))
+        // Show normal content
+        else -> {
+            Box(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFFF8F9FA))
+                        .statusBarsPadding()
+                ) {
+                    item {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            // Top bar
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(
+                                    onClick = onBackClick,
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_back_arrow),
+                                        contentDescription = "Wallets",
+                                        tint = Color.Black,
+                                        modifier = Modifier.size(21.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(105.dp))
+                                Text(
+                                    text = "Wallets",
+                                    color = Color.Black,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(24.dp))
 
-        // Wallets Cards Section
-        WalletsCardsSection(
-            wallets = wallets,
-            selectedWallet = selectedWallet,
-            onWalletSelected = viewModel::selectWallet,
-            onWalletDetail = { wallet ->
-                wallet.id?.let { walletId ->
-                    onNavigateToWalletDetail(walletId)
+                            // Wallets Cards Section with state management
+                            SectionStateManager(
+                                state = uiState.walletsState,
+                                onRetry = { viewModel.loadWallets() }
+                            ) { wallets ->
+                                WalletsCardsSection(
+                                    wallets = wallets,
+                                    selectedWallet = uiState.selectedWallet,
+                                    onWalletSelected = viewModel::selectWallet,
+                                    onWalletDetail = { wallet ->
+                                        wallet.id?.let { walletId ->
+                                            onNavigateToWalletDetail(walletId)
+                                        }
+                                    },
+                                    onCreateNewWallet = onNavigateToWalletCreation,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                    }
+
+                    item {
+                        // Transactions Section - PASS isInLazyColumn = true
+                        SectionStateManager(
+                            state = uiState.transactionsState,
+                            onRetry = {
+                                uiState.selectedWallet?.id?.let { walletId ->
+                                    viewModel.loadTransactions(walletId)
+                                }
+                            }
+                        ) { transactions ->
+                            TransactionsSection(
+                                transactions = transactions,
+                                availableTags = availableTags,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                onSeeAll = { /* Handle see all if needed */ },
+                                isInLazyColumn = true // PASS THIS
+                            )
+                        }
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(80.dp))
+                    }
                 }
-            },
-            onCreateNewWallet = onNavigateToWalletCreation,
-            modifier = Modifier.fillMaxWidth()
-        )
 
-        Spacer(modifier = Modifier.height(24.dp))
+                AddRecordButton(
+                    onClick = onAddRecord,
+                    iconRes = R.drawable.add_outline,
+                    contentDescription = "Add Record",
+                    size = 48,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 110.dp)
+                )
 
-        // Transactions Section
-        TransactionsSection(
-            transactions = transactions,
-            modifier = Modifier.weight(1f)
-        )
-
-        if (isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = Color(0xFF4D6BFA))
+                BottomNavigationBar(
+                    currentScreen = currentScreen,
+                    onNavigationItemSelected = onNavigationItemSelected,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
             }
         }
-
-
     }
-    AddRecordButton(
-        onClick = onAddRecord,
-        iconRes = R.drawable.add_outline,
-        contentDescription = "Add Record",
-        size = 48,
-        modifier = Modifier
-            .align(Alignment.BottomCenter)
-            .padding(bottom = 110.dp)
-    )
-    BottomNavigationBar(
-        currentScreen = currentScreen,
-        onNavigationItemSelected = onNavigationItemSelected,
-        modifier = Modifier.align(Alignment.BottomCenter)
-    )
-}
 }
 @Composable
 private fun WalletsCardsSection(
@@ -230,6 +309,9 @@ private fun WalletCardItem(
     } catch (e: Exception) {
         Color(0xFF4D6BFA) // Fallback color
     }
+    val currencySymbol = remember(wallet.currency) {
+        getCurrencySymbol(wallet.currency)
+    }
 
     Card(
         modifier = Modifier
@@ -266,7 +348,7 @@ private fun WalletCardItem(
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "$${wallet.balance ?: "0.00"}",
+                    text = "$currencySymbol${wallet.balance ?: "0.00"}",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color(0xFF1A1A1A),
                     fontWeight = FontWeight.Bold
@@ -297,91 +379,5 @@ private fun WalletCardItem(
                 )
             }
         }
-    }
-}
-
-
-
-@Composable
-private fun TransactionsSection(
-    transactions: List<Transaction>,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        Text(
-            text = "Transactions",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF1A1A1A)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (transactions.isEmpty()) {
-            EmptyTransactionsState()
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(transactions) { transaction ->
-                    TransactionItem(transaction = transaction)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TransactionItem(transaction: Transaction) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = transaction.title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF1A1A1A),
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = transaction.category,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF666666)
-                )
-            }
-
-            Text(
-                text = if (transaction.type == "income") "+$${transaction.amount}" else "-$${transaction.amount}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (transaction.type == "income") Color(0xFF10B981) else Color(0xFFEF4444),
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
-
-@Composable
-private fun EmptyTransactionsState() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "No transactions yet",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF666666)
-        )
     }
 }

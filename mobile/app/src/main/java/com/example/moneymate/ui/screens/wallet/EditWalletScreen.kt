@@ -1,11 +1,15 @@
 package com.example.moneymate.ui.screens.wallet
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -16,9 +20,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.domain.wallet.model.Wallet
 import com.example.domain.wallet.model.WalletUpdateRequest
+import com.example.moneymate.ui.components.states.FullScreenError
+import com.example.moneymate.ui.components.states.FullScreenLoading
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -27,10 +34,8 @@ fun EditWalletScreen(
     onBackClick: () -> Unit,
     viewModel: WalletViewModel = koinViewModel()
 ) {
-    val walletDetail by viewModel.walletDetail.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val walletUpdated by viewModel.walletUpdated.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     // Load wallet data when screen opens
     LaunchedEffect(walletId) {
@@ -38,10 +43,18 @@ fun EditWalletScreen(
     }
 
     // Navigate back when wallet is successfully updated
-    LaunchedEffect(walletUpdated) {
-        if (walletUpdated) {
-            viewModel.resetWalletUpdated()
+    LaunchedEffect(uiState.updateWalletState) {
+        if (uiState.updateWalletState is com.example.moneymate.utils.ScreenState.Success) {
+            viewModel.resetUpdateWalletState()
             onBackClick()
+        }
+    }
+
+    // Handle update errors with Toast
+    LaunchedEffect(uiState.updateWalletState) {
+        if (uiState.updateWalletState is com.example.moneymate.utils.ScreenState.Error) {
+            val error = (uiState.updateWalletState as com.example.moneymate.utils.ScreenState.Error).error
+            Toast.makeText(context, error.getUserFriendlyMessage(), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -53,26 +66,58 @@ fun EditWalletScreen(
             )
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(Color(0xFFF8F9FA))
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = Color(0xFF4D6BFA)
+        // Main content with state management
+        when {
+            // Show loading if wallet detail is loading
+            uiState.walletDetailState is com.example.moneymate.utils.ScreenState.Loading -> {
+                FullScreenLoading(message = "Loading wallet details...")
+            }
+            // Show error if wallet detail failed to load
+            uiState.walletDetailState is com.example.moneymate.utils.ScreenState.Error -> {
+                FullScreenError(
+                    error = (uiState.walletDetailState as com.example.moneymate.utils.ScreenState.Error).error,
+                    onRetry = { viewModel.loadWalletDetail(walletId) }
                 )
-            } else if (walletDetail != null) {
-                EditWalletFormContent(
-                    walletDetail = walletDetail!!,
-                    onUpdateWallet = viewModel::updateWallet,
-                    onCancel = onBackClick,
+            }
+            // Show normal content
+            else -> {
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp)
-                )
+                        .padding(paddingValues)
+                        .background(Color(0xFFF8F9FA))
+                ) {
+                    when (val walletDetailState = uiState.walletDetailState) {
+                        is com.example.moneymate.utils.ScreenState.Success -> {
+                            EditWalletFormContent(
+                                walletDetail = walletDetailState.data,
+                                onUpdateWallet = viewModel::updateWallet,
+                                onCancel = onBackClick,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp)
+                            )
+                        }
+                        else -> {
+                            // This should not happen due to the when condition above
+                            Column(
+                                modifier = Modifier.align(Alignment.Center),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "No wallet data found",
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                                Button(
+                                    onClick = { viewModel.loadWalletDetail(walletId) }
+                                ) {
+                                    Text("Retry")
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

@@ -20,6 +20,7 @@ import com.example.moneymate.R
 @Composable
 fun WalletBalanceCard(
     totalBalance: Double?,
+    currencySymbol: String = "$",
     isLoading: Boolean = false
 ) {
     Box(
@@ -33,7 +34,6 @@ fun WalletBalanceCard(
             )
     ) {
         if (isLoading) {
-            // Loading state
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -53,7 +53,7 @@ fun WalletBalanceCard(
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "$${"%.2f".format(totalBalance ?: 0.0)}",
+                    text = "$currencySymbol${"%.2f".format(totalBalance ?: 0.0)}",
                     color = Color.White,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold
@@ -94,8 +94,9 @@ fun WalletBalanceCard(
 
 @Composable
 fun FinancialOverviewCard(
-    expenseCount: Int,
-    incomeCount: Int
+    totalIncome: Double?,
+    totalExpense: Double?,
+    currencySymbol: String = "$"
 ) {
     Row(
         modifier = Modifier
@@ -120,12 +121,12 @@ fun FinancialOverviewCard(
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
-                    text = "Income",
+                    text = "Saving",
                     color = Color(0xFFF3F3F3),
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "$incomeCount",
+                    text = "$currencySymbol${"%.2f".format(totalIncome ?: 0.0)}",
                     color = Color(0xFFFFFFFF),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold
@@ -154,12 +155,12 @@ fun FinancialOverviewCard(
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
-                    text = "Expenses",
+                    text = "Spending",
                     color = Color(0xFFF3F3F3),
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "$expenseCount",
+                    text = "$currencySymbol${"%.2f".format(totalExpense ?: 0.0)}",
                     color = Color(0xFFFFFFFF),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold
