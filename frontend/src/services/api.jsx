@@ -132,6 +132,7 @@ class ApiService {
             method: 'GET',
             headers: this.getAuthHeaders(),
         });
+
         return this.handleResponse(response);
     }
 
@@ -191,6 +192,19 @@ class ApiService {
             method: 'GET',
             headers: this.getAuthHeaders(),
         });
+
+        return this.handleResponse(response);
+    }
+
+    /**
+     * GET /api/wallets/{wallet_id}
+     */
+    async getWallet(walletId) {
+        const response = await fetch(`${API_BASE_URL}/wallets/${walletId}`, {
+            method: 'GET',
+            headers: this.getAuthHeaders(),
+        });
+
         return this.handleResponse(response);
     }
 
@@ -223,6 +237,7 @@ class ApiService {
             headers: this.getAuthHeaders(),
             body: JSON.stringify(payload),
         });
+
         return this.handleResponse(response);
     }
 
