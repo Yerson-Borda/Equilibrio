@@ -159,26 +159,30 @@ const Sidebar = ({ activeItem }) => {
 
             {/* Logout Confirmation Modal */}
             {isLogoutConfirmOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
-                        <h2 className="text-lg font-semibold text-text mb-4">
-                            Logout
-                        </h2>
-                        <p className="text-sm text-metallic-gray mb-6">
+                <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[620px] px-10 py-8">
+                        <h2 className="text-3xl font-extrabold text-text text-center">
                             Are you sure you want to log out?
+                        </h2>
+                        <p className="text-center text-metallic-gray mt-2">
+                            You will be redirect to log in page
                         </p>
-                        <div className="flex justify-end space-x-3">
+
+                        <div className="mt-10 flex items-center justify-center gap-6">
                             <button
-                                className="px-4 py-2 text-sm rounded-lg border border-strokes text-text hover:bg-gray-50"
+                                type="button"
+                                className="min-w-[220px] h-[56px] rounded-xl border border-strokes bg-white text-text font-semibold hover:bg-gray-50 transition"
                                 onClick={() => setIsLogoutConfirmOpen(false)}
                             >
                                 Cancel
                             </button>
+
                             <button
-                                className="px-4 py-2 text-sm rounded-lg bg-blue text-white hover:bg-blue/90"
+                                type="button"
+                                className="min-w-[220px] h-[56px] rounded-xl bg-[#FF5A72] text-white font-semibold hover:opacity-90 transition"
                                 onClick={handleLogout}
                             >
-                                Logout
+                                Log out
                             </button>
                         </div>
                     </div>
