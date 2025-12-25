@@ -158,7 +158,7 @@ fun HomeScreen(
                                         currencySymbol = currencySymbol
                                     )
                                 }
-
+                                Spacer(modifier = Modifier.height(16.dp))
                                 if (userData.stats.walletCount == 0 && userData.stats.totalTransactions == 0) {
                                     FirstLoginContent()
                                 } else {
