@@ -1,27 +1,36 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from app.database import engine
-from app.models import models
-from app.api.v1 import users, wallets
+from app.database import Base
+from .routes import register_routers
+from app.core.seed import seed_categories
+from contextlib import asynccontextmanager
 
-# Create database tables
-models.Base.metadata.create_all(bind=engine)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    seed_categories()
+    yield
 
 app = FastAPI(
     title="Personal Finance Tracker API",
     description="Backend API for personal finance management application",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
-# Include routers
-app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
-app.include_router(wallets.router, prefix="/api/v1/wallets", tags=["wallets"])
+Base.metadata.create_all(bind=engine)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+register_routers(app)
 
 @app.get("/")
 def root():
     return {
-        "message": "Personal Finance Tracker API",
+        "message": "Equilibrio API",
         "version": "1.0.0",
-        "docs": "/docs"
+        "docs": "/docs",
+        "redoc": "/redoc"
     }
 
 @app.get("/health")
