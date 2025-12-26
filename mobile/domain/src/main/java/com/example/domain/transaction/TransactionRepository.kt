@@ -1,11 +1,14 @@
 package com.example.domain.transaction
 
 
+import com.example.domain.transaction.model.AverageSpendingData
 import com.example.domain.transaction.model.CategorySummaryData
 import com.example.domain.transaction.model.ComparisonCategoryData
 import com.example.domain.transaction.model.CreateTransaction
 import com.example.domain.transaction.model.DailyData
+import com.example.domain.transaction.model.PeriodFilter
 import com.example.domain.transaction.model.SpendingTrendData
+import com.example.domain.transaction.model.TopCategoryData
 import com.example.domain.transaction.model.TransactionEntity
 import com.example.domain.transaction.model.TransferEntity
 
@@ -48,4 +51,8 @@ interface TransactionRepository {
         startDate: String,
         endDate: String
     ): Result<List<TransactionEntity>>
+
+    suspend fun getTopCategoriesCurrentMonth(): Result<List<TopCategoryData>>
+
+    suspend fun getAverageSpending(period: PeriodFilter): Result<List<AverageSpendingData>>
 }

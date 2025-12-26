@@ -52,12 +52,12 @@ fun SwipeableChartContainer(
     val coroutineScope = rememberCoroutineScope()
 
     Column(modifier = modifier) {
-        // Swipeable Chart Area - FIXED: Remove background and adjust height
+        // Swipeable Chart Area
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(380.dp) // Reduced from 400dp to account for padding
+                .height(380.dp)
         ) { page ->
             val chartType = chartTypes[page]
 
@@ -70,8 +70,8 @@ fun SwipeableChartContainer(
                         modifier = Modifier.fillMaxSize()
                     )
                 }
+                // Add new chart type for comparison line chart
                 ChartType.CATEGORY_BREAKDOWN -> {
-                    // FIXED: Remove padding here, let chart handle its own spacing
                     YChartIncomeExpenseLineChartComponent(
                         monthlyChartData = chartsData.monthlyChart,
                         onDateRangeChanged = onDateRangeChanged,
@@ -81,6 +81,29 @@ fun SwipeableChartContainer(
                 ChartType.MONTHLY_COMPARISON -> {
                     CategoryPieChartComponent(
                         categorySummaryData = chartsData.categorySummary,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                ChartType.TOP_CATEGORIES -> {
+                    // This is now the new category breakdown donut chart
+                    ExpensesBreakdownDonutChart(
+                        topCategories = chartsData.topCategories,
+                        averageSpending = chartsData.averageSpending,
+                        period = chartsData.currentPeriod,
+                        onPeriodChanged = { newPeriod ->
+                            viewModel.loadAverageSpending(newPeriod)
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                ChartType.AVERAGE_SPENDING -> {
+                    AverageSpendingChart(
+                        averageSpendingData = chartsData.averageSpending,
+                        period = chartsData.currentPeriod,
+                        onPeriodChanged = { newPeriod ->
+                            viewModel.updatePeriodFilter(newPeriod)
+                        },
+                        isLoading = false,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
