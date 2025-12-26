@@ -2,8 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import AppLayout from '../components/layout/AppLayout';
 import DualLineChart from '../components/charts/DualLineChart';
 import MonthlyBarChart from '../components/charts/MonthlyBarChart';
-import ExpenseDistributionChart from '../components/charts/ExpenseDistributionChart';
 import { apiService } from '../services/api';
+
+// ✅ embedded widgets shown INSIDE the carousel box
+import Top3CategoriesWidget from '../components/charts/Top3CategoriesWidget';
+import AverageSpendingWidget from '../components/charts/AverageSpendingWidget';
 
 const formatDateLabel = (dateStr) => {
     const d = new Date(dateStr);
@@ -28,75 +31,32 @@ const TransactionsPage = () => {
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // chart carousel: 0 = monthly bar, 1 = dual line, 2 = expense distro
+    // ✅ carousel slides (now includes average)
+    // 0 monthly bar, 1 daily dual line, 2 expense breakdown (top3), 3 average spending
     const [chartIndex, setChartIndex] = useState(0);
-    const chartViews = ['monthly', 'daily', 'distribution'];
+    const chartViews = ['monthly', 'daily', 'expense_breakdown', 'average_spending'];
 
-    // which series to show in monthly bar chart
+    // monthly bar series
     const [barSeriesType, setBarSeriesType] = useState('expense'); // income | expense
 
-    // date range for 2nd diagram (dual line)
+    // daily date range
     const [fromDate, setFromDate] = useState(sevenDaysAgoISO());
     const [toDate, setToDate] = useState(todayISO());
 
-    useEffect(() => {
-        const load = async () => {
-            try {
-                setIsLoading(true);
-                setError(null);
+    // ✅ API data for embedded slides
+    const [topCategories, setTopCategories] = useState([]); // top 3
+    const [avgPeriod, setAvgPeriod] = useState('year'); // day | month | year
+    const [avgSpending, setAvgSpending] = useState([]);
 
-                const [txData, cats] = await Promise.all([
-                    apiService.getTransactions(),
-                    apiService.getCategories(),
-                ]);
+    const currentChartType = chartViews[chartIndex];
 
-                const txList = txData || [];
-                setTransactions(txList);
-                setCategories(cats || []);
-
-                // set default from/to to full data range so daily chart has data
-                if (txList.length > 0) {
-                    let minDate = null;
-                    let maxDate = null;
-
-                    txList.forEach((t) => {
-                        const raw = t.transaction_date || t.created_at;
-                        const d = new Date(raw);
-                        if (Number.isNaN(d.getTime())) return;
-                        if (!minDate || d < minDate) minDate = d;
-                        if (!maxDate || d > maxDate) maxDate = d;
-                    });
-
-                    if (minDate && maxDate) {
-                        setFromDate(minDate.toISOString().split('T')[0]);
-                        setToDate(maxDate.toISOString().split('T')[0]);
-                    }
-                }
-            } catch (err) {
-                console.error('Error loading transactions page:', err);
-                setError(
-                    err?.message ||
-                    'Failed to load transactions. Please try again.'
-                );
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        load();
-    }, []);
-
-    // handlers for arrows
     const handlePrevChart = () => {
-        setChartIndex(
-            (prev) => (prev - 1 + chartViews.length) % chartViews.length
-        );
+        setChartIndex((prev) => (prev - 1 + chartViews.length) % chartViews.length);
     };
-
     const handleNextChart = () => {
         setChartIndex((prev) => (prev + 1) % chartViews.length);
     };
 
-    // Map of category_id -> name
     const categoryMap = useMemo(() => {
         const m = {};
         (categories || []).forEach((c) => {
@@ -111,7 +71,7 @@ const TransactionsPage = () => {
         return Number.isNaN(d.getTime()) ? null : d;
     };
 
-    // Filtered + searched transactions (for charts + table)
+    // Filtered + searched transactions
     const filteredTransactions = useMemo(() => {
         let base = transactions;
         if (filterType !== 'all') {
@@ -142,12 +102,11 @@ const TransactionsPage = () => {
                 return 90;
             case '365d':
             default:
-                return 365; // Year
+                return 365;
         }
     };
 
-    // DAILY dual-line chart data (Income vs Expense) – uses from/to;
-    // if from/to invalid, fall back to full data span
+    // DAILY dual-line chart data
     const dailyChartData = useMemo(() => {
         let start = parseISO(fromDate);
         let end = parseISO(toDate);
@@ -170,18 +129,11 @@ const TransactionsPage = () => {
 
             const key = d.toISOString().split('T')[0];
             if (!map.has(key)) {
-                map.set(key, {
-                    date: key,
-                    income: 0,
-                    expense: 0,
-                });
+                map.set(key, { date: key, income: 0, expense: 0 });
             }
             const entry = map.get(key);
-            if (type === 'income') {
-                entry.income += Number(amount || 0);
-            } else if (type === 'expense') {
-                entry.expense += Number(amount || 0);
-            }
+            if (type === 'income') entry.income += Number(amount || 0);
+            if (type === 'expense') entry.expense += Number(amount || 0);
         };
 
         filteredTransactions.forEach((t) =>
@@ -192,11 +144,7 @@ const TransactionsPage = () => {
         const cursor = new Date(start);
         while (cursor <= end) {
             const key = cursor.toISOString().split('T')[0];
-            const entry = map.get(key) || {
-                date: key,
-                income: 0,
-                expense: 0,
-            };
+            const entry = map.get(key) || { date: key, income: 0, expense: 0 };
             result.push({
                 label: formatDateLabel(key),
                 income: entry.income,
@@ -208,7 +156,7 @@ const TransactionsPage = () => {
         return result;
     }, [filteredTransactions, fromDate, toDate]);
 
-    // MONTHLY bar chart data (view 0) – respects selected range
+    // MONTHLY bar data
     const monthlyChartData = useMemo(() => {
         const days = getDaysForRange(range);
         const now = new Date();
@@ -229,62 +177,88 @@ const TransactionsPage = () => {
             const d = new Date(dateStr);
             if (Number.isNaN(d.getTime())) return;
             if (d < start || d > now) return;
+
             const m = d.getMonth();
             if (m < 0 || m > 11) return;
 
             const amt = Number(t.amount || 0);
-            if (t.type === 'income') {
-                months[m].income += amt;
-            } else if (t.type === 'expense') {
-                months[m].expense += amt;
-            }
+            if (t.type === 'income') months[m].income += amt;
+            if (t.type === 'expense') months[m].expense += amt;
         });
 
         return months;
     }, [filteredTransactions, range]);
 
-    // EXPENSE distribution data (view 2) – respects selected range & only expense
-    const expenseDistributionData = useMemo(() => {
-        const days = getDaysForRange(range);
-        const now = new Date();
-        const start = new Date(now);
-        start.setDate(now.getDate() - (days - 1));
+    // ✅ Load base page + top3 once
+    useEffect(() => {
+        const load = async () => {
+            try {
+                setIsLoading(true);
+                setError(null);
 
-        const map = new Map();
+                const [txData, cats, top3] = await Promise.all([
+                    apiService.getTransactions(),
+                    apiService.getCategories(),
+                    apiService.getTopCategoriesCurrentMonth(), // ✅ TOP 3 for breakdown slide
+                ]);
 
-        filteredTransactions
-            .filter((t) => t.type === 'expense')
-            .forEach((t) => {
-                const dateStr = t.transaction_date || t.created_at;
-                const d = new Date(dateStr);
-                if (Number.isNaN(d.getTime())) return;
-                if (d < start || d > now) return;
+                const txList = txData || [];
+                setTransactions(txList);
+                setCategories(cats || []);
+                setTopCategories(Array.isArray(top3) ? top3 : []);
 
-                const name =
-                    categoryMap[t.category_id] ||
-                    t.category?.name ||
-                    t.category_name ||
-                    t.category ||
-                    'Other';
-                const key = String(name);
-                const amt = Math.abs(Number(t.amount || 0));
-                map.set(key, (map.get(key) || 0) + amt);
-            });
+                // good default date range for daily chart
+                if (txList.length > 0) {
+                    let minDate = null;
+                    let maxDate = null;
 
-        return Array.from(map.entries()).map(([name, value]) => ({
-            name,
-            value,
-        }));
-    }, [filteredTransactions, range, categoryMap]);
+                    txList.forEach((t) => {
+                        const raw = t.transaction_date || t.created_at;
+                        const d = new Date(raw);
+                        if (Number.isNaN(d.getTime())) return;
+                        if (!minDate || d < minDate) minDate = d;
+                        if (!maxDate || d > maxDate) maxDate = d;
+                    });
 
-    const currentChartType = chartViews[chartIndex];
+                    if (minDate && maxDate) {
+                        setFromDate(minDate.toISOString().split('T')[0]);
+                        setToDate(maxDate.toISOString().split('T')[0]);
+                    }
+                }
+            } catch (err) {
+                console.error('Error loading transactions page:', err);
+                setError(err?.message || 'Failed to load transactions. Please try again.');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        load();
+    }, []);
+
+    // ✅ Load avg spending (when period changes OR when user reaches avg slide)
+    useEffect(() => {
+        const loadAvg = async () => {
+            try {
+                const data = await apiService.getAverageSpending(avgPeriod);
+                setAvgSpending(Array.isArray(data) ? data : []);
+            } catch (e) {
+                console.error('Error loading avg spending:', e);
+                setAvgSpending([]);
+            }
+        };
+
+        // load always on period change; also ensures data ready when slide opens
+        loadAvg();
+    }, [avgPeriod]);
 
     const chartTitle =
         currentChartType === 'monthly'
             ? 'Transactions Overview'
             : currentChartType === 'daily'
                 ? 'Income vs Expense'
-                : 'Expense Distribution';
+                : currentChartType === 'expense_breakdown'
+                    ? 'Expense Distribution'
+                    : 'Average spending per category';
 
     return (
         <AppLayout activeItem="transactions">
@@ -304,33 +278,25 @@ const TransactionsPage = () => {
                     {/* HEADER + SEARCH + FILTER TABS */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <h1 className="text-2xl font-bold text-text">
-                                Transactions
-                            </h1>
+                            <h1 className="text-2xl font-bold text-text">Transactions</h1>
                             <div className="flex items-center space-x-4 text-metallic-gray">
-                                <button className="p-2 rounded-full hover:bg-gray-100">
-                                    🔍
-                                </button>
-                                <button className="p-2 rounded-full hover:bg-gray-100">
-                                    🔔
-                                </button>
+                                <button className="p-2 rounded-full hover:bg-gray-100">🔍</button>
+                                <button className="p-2 rounded-full hover:bg-gray-100">🔔</button>
                             </div>
                         </div>
 
                         {/* Search bar */}
                         <div className="w-full">
                             <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-metallic-gray">
-                                    🔍
-                                </span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-metallic-gray">
+                  🔍
+                </span>
                                 <input
                                     type="text"
                                     placeholder="Search anything on Transactions"
                                     className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-strokes text-sm focus:outline-none focus:ring-2 focus:ring-blue/40"
                                     value={searchQuery}
-                                    onChange={(e) =>
-                                        setSearchQuery(e.target.value)
-                                    }
+                                    onChange={(e) => setSearchQuery(e.target.value)}
                                 />
                             </div>
                         </div>
@@ -347,32 +313,24 @@ const TransactionsPage = () => {
                                             : 'border-transparent text-metallic-gray'
                                     }`}
                                 >
-                                    {t === 'all'
-                                        ? 'All'
-                                        : t === 'income'
-                                            ? 'Income'
-                                            : 'Expenses'}
+                                    {t === 'all' ? 'All' : t === 'income' ? 'Income' : 'Expenses'}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    {/* MAIN CHART CARD (carousel) */}
+                    {/* ✅ MAIN CHART CARD (carousel) */}
                     <div className="bg-white rounded-xl shadow-sm border border-strokes p-6">
                         {/* Header row with title + filters */}
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold text-text">
-                                {chartTitle}
-                            </h2>
+                            <h2 className="text-lg font-semibold text-text">{chartTitle}</h2>
 
                             {/* Right side controls by chart type */}
                             {currentChartType === 'monthly' && (
                                 <div className="flex items-center space-x-3 text-xs">
                                     <div className="bg-gray-100 rounded-full p-1 flex">
                                         <button
-                                            onClick={() =>
-                                                setBarSeriesType('income')
-                                            }
+                                            onClick={() => setBarSeriesType('income')}
                                             className={`px-3 py-1 rounded-full ${
                                                 barSeriesType === 'income'
                                                     ? 'bg-black text-white'
@@ -382,9 +340,7 @@ const TransactionsPage = () => {
                                             Income
                                         </button>
                                         <button
-                                            onClick={() =>
-                                                setBarSeriesType('expense')
-                                            }
+                                            onClick={() => setBarSeriesType('expense')}
                                             className={`px-3 py-1 rounded-full ${
                                                 barSeriesType === 'expense'
                                                     ? 'bg-black text-white'
@@ -398,19 +354,11 @@ const TransactionsPage = () => {
                                     <select
                                         className="border border-strokes rounded-md px-2 py-1 text-xs"
                                         value={range}
-                                        onChange={(e) =>
-                                            setRange(e.target.value)
-                                        }
+                                        onChange={(e) => setRange(e.target.value)}
                                     >
-                                        <option value="7d">
-                                            Last 7 days
-                                        </option>
-                                        <option value="30d">
-                                            Last 30 days
-                                        </option>
-                                        <option value="90d">
-                                            Last 90 days
-                                        </option>
+                                        <option value="7d">Last 7 days</option>
+                                        <option value="30d">Last 30 days</option>
+                                        <option value="90d">Last 90 days</option>
                                         <option value="365d">Year</option>
                                     </select>
                                 </div>
@@ -421,71 +369,56 @@ const TransactionsPage = () => {
                                     <div className="flex items-center space-x-3">
                                         <div className="flex items-center space-x-1">
                                             <span className="w-2 h-2 rounded-full bg-[#6366F1]" />
-                                            <span className="text-metallic-gray">
-                                                Income
-                                            </span>
+                                            <span className="text-metallic-gray">Income</span>
                                         </div>
                                         <div className="flex items-center space-x-1">
                                             <span className="w-2 h-2 rounded-full bg-[#F97316]" />
-                                            <span className="text-metallic-gray">
-                                                Expense
-                                            </span>
+                                            <span className="text-metallic-gray">Expense</span>
                                         </div>
                                     </div>
 
-                                    {/* Date range selector like "20 Mar" to "01 Apr" */}
                                     <div className="flex items-center space-x-1">
                                         <input
                                             type="date"
                                             value={fromDate}
-                                            onChange={(e) =>
-                                                setFromDate(e.target.value)
-                                            }
+                                            onChange={(e) => setFromDate(e.target.value)}
                                             className="border border-strokes rounded-md px-2 py-1 text-xs"
                                         />
-                                        <span className="text-metallic-gray">
-                                            to
-                                        </span>
+                                        <span className="text-metallic-gray">to</span>
                                         <input
                                             type="date"
                                             value={toDate}
-                                            onChange={(e) =>
-                                                setToDate(e.target.value)
-                                            }
+                                            onChange={(e) => setToDate(e.target.value)}
                                             className="border border-strokes rounded-md px-2 py-1 text-xs"
                                         />
                                     </div>
                                 </div>
                             )}
 
-                            {currentChartType === 'distribution' && (
+                            {/* ✅ Expense breakdown slide: keep range selector like old distribution */}
+                            {currentChartType === 'expense_breakdown' && (
                                 <div className="flex items-center space-x-3 text-xs">
-                                    <span className="text-metallic-gray">
-                                        Only expenses included
-                                    </span>
+                                    <span className="text-metallic-gray">Current month</span>
+                                </div>
+                            )}
+
+                            {/* ✅ Average spending slide: period selector */}
+                            {currentChartType === 'average_spending' && (
+                                <div className="flex items-center space-x-3 text-xs">
                                     <select
                                         className="border border-strokes rounded-md px-2 py-1 text-xs"
-                                        value={range}
-                                        onChange={(e) =>
-                                            setRange(e.target.value)
-                                        }
+                                        value={avgPeriod}
+                                        onChange={(e) => setAvgPeriod(e.target.value)}
                                     >
-                                        <option value="7d">
-                                            Last 7 days
-                                        </option>
-                                        <option value="30d">
-                                            Last 30 days
-                                        </option>
-                                        <option value="90d">
-                                            Last 90 days
-                                        </option>
-                                        <option value="365d">Year</option>
+                                        <option value="day">Day</option>
+                                        <option value="month">Month</option>
+                                        <option value="year">Year</option>
                                     </select>
                                 </div>
                             )}
                         </div>
 
-                        {/* Chart with arrows positioned near the diagram */}
+                        {/* ✅ Chart area with arrows */}
                         <div className="relative">
                             {/* Left arrow */}
                             <button
@@ -495,23 +428,25 @@ const TransactionsPage = () => {
                                 ‹
                             </button>
 
-                            {/* Actual chart area, padded so arrows don't overlap */}
                             <div className="px-0 sm:px-8">
+                                {/* Slide 0 */}
                                 {currentChartType === 'monthly' && (
-                                    <MonthlyBarChart
-                                        data={monthlyChartData}
-                                        activeSeries={barSeriesType}
-                                    />
+                                    <MonthlyBarChart data={monthlyChartData} activeSeries={barSeriesType} />
                                 )}
 
+                                {/* Slide 1 */}
                                 {currentChartType === 'daily' && (
                                     <DualLineChart data={dailyChartData} />
                                 )}
 
-                                {currentChartType === 'distribution' && (
-                                    <ExpenseDistributionChart
-                                        data={expenseDistributionData}
-                                    />
+                                {/* Slide 2 ✅ Replace ExpenseDistributionChart with Top3 breakdown inside this box */}
+                                {currentChartType === 'expense_breakdown' && (
+                                    <Top3CategoriesWidget items={topCategories} />
+                                )}
+
+                                {/* Slide 3 ✅ Average spending shown when clicking next arrow */}
+                                {currentChartType === 'average_spending' && (
+                                    <AverageSpendingWidget items={avgSpending} periodValue={avgPeriod} />
                                 )}
                             </div>
 
@@ -525,11 +460,9 @@ const TransactionsPage = () => {
                         </div>
                     </div>
 
-                    {/* TABLE: Transactions list (with Action column + View button) */}
+                    {/* TABLE */}
                     <div className="bg-white rounded-xl shadow-sm border border-strokes p-6">
-                        <h2 className="text-lg font-semibold text-text mb-4">
-                            Recent Transactions
-                        </h2>
+                        <h2 className="text-lg font-semibold text-text mb-4">Recent Transactions</h2>
 
                         {filteredTransactions.length === 0 ? (
                             <p className="text-metallic-gray text-sm">
@@ -540,17 +473,11 @@ const TransactionsPage = () => {
                                 <table className="min-w-full text-sm">
                                     <thead>
                                     <tr className="text-left text-metallic-gray border-b border-strokes">
-                                        <th className="py-2 pr-4">
-                                            Name / Bank Card
-                                        </th>
+                                        <th className="py-2 pr-4">Name / Bank Card</th>
                                         <th className="py-2 pr-4">Category</th>
-                                        <th className="py-2 pr-4 text-right">
-                                            Amount
-                                        </th>
+                                        <th className="py-2 pr-4 text-right">Amount</th>
                                         <th className="py-2 pr-4">Date</th>
-                                        <th className="py-2 pr-4 text-right">
-                                            Action
-                                        </th>
+                                        <th className="py-2 pr-4 text-right">Action</th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -561,35 +488,26 @@ const TransactionsPage = () => {
                                             t.category_name ||
                                             t.category ||
                                             '-';
-                                        const dateLabel = formatDateLabel(
-                                            t.transaction_date ||
-                                            t.created_at
-                                        );
+                                        const dateLabel = formatDateLabel(t.transaction_date || t.created_at);
+
                                         return (
                                             <tr
                                                 key={t.id}
                                                 className="border-b border-strokes last:border-b-0"
                                             >
                                                 <td className="py-2 pr-4">
-                                                    {t.description ||
-                                                        'Transaction'}
+                                                    {t.description || 'Transaction'}
                                                     {t.wallet_name && (
                                                         <div className="text-[11px] text-metallic-gray">
                                                             {t.wallet_name}
                                                         </div>
                                                     )}
                                                 </td>
-                                                <td className="py-2 pr-4">
-                                                    {categoryName}
-                                                </td>
+                                                <td className="py-2 pr-4">{categoryName}</td>
                                                 <td className="py-2 pr-4 text-right">
-                                                    {Number(
-                                                        t.amount || 0
-                                                    ).toFixed(2)}
+                                                    {Number(t.amount || 0).toFixed(2)}
                                                 </td>
-                                                <td className="py-2 pr-4">
-                                                    {dateLabel}
-                                                </td>
+                                                <td className="py-2 pr-4">{dateLabel}</td>
                                                 <td className="py-2 pr-4 text-right">
                                                     <button className="px-4 py-1.5 rounded-full bg-blue text-white text-xs font-semibold hover:bg-blue-600">
                                                         View
