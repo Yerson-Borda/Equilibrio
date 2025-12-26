@@ -610,7 +610,7 @@ class ApiService {
         const url = new URL(`${API_BASE_URL}/analytics/average-spending`, window.location.origin);
         url.searchParams.set('period', period);
 
-        const response = await fetch(url, {
+        const response = await fetch(url.toString(), {
             method: 'GET',
             headers: this.getAuthHeaders(),
         });
