@@ -3,6 +3,7 @@ package com.example.moneymate.di
 import com.example.data.network.auth.AuthApi
 import com.example.data.network.budget.BudgetApi
 import com.example.data.network.category.CategoryApi
+import com.example.data.network.categoryLimit.CategoryLimitApi
 import com.example.data.network.common.Network
 import com.example.data.network.tag.TagApi
 import com.example.data.network.user.UserApi
@@ -29,4 +30,5 @@ val networkModule = module {
     single<CategoryApi> {Network.getApi(get())}
     single<BudgetApi> {Network.getApi(get())}
     single<TagApi>{Network.getApi(get())}
+    single<CategoryLimitApi>{Network.getApi(get())}
 }

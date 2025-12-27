@@ -1,20 +1,25 @@
 package com.example.data.network.transaction
 
+import com.example.data.network.transaction.model.AverageSpendingResponse
 import com.example.data.network.transaction.model.CategoryResponse
 import com.example.data.network.transaction.model.CategorySummaryResponse
 import com.example.data.network.transaction.model.MonthlyComparisonResponse
 import com.example.data.network.transaction.model.MonthlySummary
+import com.example.data.network.transaction.model.TopCategoryResponse
 import com.example.data.network.transaction.model.TransactionCreateRequest
 import com.example.data.network.transaction.model.TransactionDto
 import com.example.data.network.transaction.model.TransferCreateRequest
 import com.example.data.network.transaction.model.TransferDto
 import com.example.domain.transaction.TransactionRepository
+import com.example.domain.transaction.model.AverageSpendingData
 import com.example.domain.transaction.model.CategoryData
 import com.example.domain.transaction.model.CategorySummaryData
 import com.example.domain.transaction.model.ComparisonCategoryData
 import com.example.domain.transaction.model.CreateTransaction
 import com.example.domain.transaction.model.DailyData
+import com.example.domain.transaction.model.PeriodFilter
 import com.example.domain.transaction.model.SpendingTrendData
+import com.example.domain.transaction.model.TopCategoryData
 import com.example.domain.transaction.model.TransactionEntity
 import com.example.domain.transaction.model.TransferEntity
 import retrofit2.Response
@@ -182,6 +187,61 @@ class TransactionRepositoryImpl(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    override suspend fun getTopCategoriesCurrentMonth(): Result<List<TopCategoryData>> {
+        return try {
+            val response = apiService.getTopCategoriesCurrentMonth()
+            if (response.isSuccessful) {
+                val body = response.body()
+                Result.success(body?.map { it.toDomain() } ?: emptyList())
+            } else {
+                Result.failure(Exception("Failed to fetch top categories"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getAverageSpending(period: PeriodFilter): Result<List<AverageSpendingData>> {
+        return try {
+            val periodString = when (period) {
+                PeriodFilter.DAY -> "day"
+                PeriodFilter.MONTH -> "month"
+                PeriodFilter.YEAR -> "year"
+                PeriodFilter.DAYS_7 -> "day"
+                PeriodFilter.DAYS_15 -> "day"
+                PeriodFilter.DAYS_30 -> "month"
+                PeriodFilter.DAYS_90 -> "month"
+            }
+            val response = apiService.getAverageSpending(periodString)
+            if (response.isSuccessful) {
+                val body = response.body()
+                Result.success(body?.map { it.toDomain() } ?: emptyList())
+            } else {
+                Result.failure(Exception("Failed to fetch average spending"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun TopCategoryResponse.toDomain(): TopCategoryData {
+        return TopCategoryData(
+            categoryId = category_id,
+            categoryName = category_name,
+            totalAmount = total_amount
+        )
+    }
+
+    private fun AverageSpendingResponse.toDomain(): AverageSpendingData {
+        return AverageSpendingData(
+            categoryId = category_id,
+            categoryName = category_name,
+            totalPeriodSpent = total_period_spent,
+            transactions = transactions,
+            periodType = period_type
+        )
     }
 
     private fun isDateInRange(date: String, startDate: String, endDate: String): Boolean {

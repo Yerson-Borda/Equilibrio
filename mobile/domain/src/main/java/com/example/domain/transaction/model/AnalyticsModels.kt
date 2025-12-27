@@ -1,7 +1,4 @@
-// domain/transaction/model/ChartModels.kt
 package com.example.domain.transaction.model
-
-// KEEP YOUR EXISTING MODELS - DON'T CHANGE
 data class SpendingTrendData(
     val year: Int,
     val month: Int,
@@ -10,21 +7,31 @@ data class SpendingTrendData(
     val monthName: String,
     val displayName: String
 )
+data class TopCategoryData(
+    val categoryId: Int,
+    val categoryName: String,
+    val totalAmount: Double
+)
 
-// New model for daily data
+data class AverageSpendingData(
+    val categoryId: Int,
+    val categoryName: String,
+    val totalPeriodSpent: Double,
+    val transactions: Int,
+    val periodType: String
+)
 data class DailyData(
-    val date: String, // Format: "2024-03-20"
-    val dayLabel: String, // "20 Mar", "21 Mar", etc.
+    val date: String,
+    val dayLabel: String,
     val income: Double,
     val expenses: Double
 )
 
 data class DateRange(
-    val startDate: String, // Format: "2024-03-20"
-    val endDate: String    // Format: "2024-04-15"
+    val startDate: String,
+    val endDate: String
 )
 
-// Update MonthlyChartData to include date range
 data class MonthlyChartData(
     val months: List<MonthlyData>,
     val days: List<DailyData>,
@@ -59,10 +66,10 @@ enum class ChartFilter {
 }
 
 enum class PeriodFilter {
-    YEAR, MONTH, DAYS_7, DAYS_15, DAYS_30, DAYS_90
+    YEAR, MONTH, DAYS_7, DAYS_15, DAYS_30, DAYS_90, DAY
 }
 
-// ADD NEW MODELS FOR ADDITIONAL CHARTS
+
 data class CategorySummaryData(
     val expenses: List<CategoryData>,
     val incomes: List<CategoryData>,
@@ -99,12 +106,17 @@ data class TransactionChartsData(
     val monthlyChart: MonthlyChartData,
     val categorySummary: CategorySummaryData,
     val monthlyComparison: MonthlyComparisonData,
-    val currentChartType: ChartType = ChartType.MONTHLY_TRENDS
+    val topCategories: List<TopCategoryData> = emptyList(),
+    val averageSpending: List<AverageSpendingData> = emptyList(),
+    val currentChartType: ChartType = ChartType.MONTHLY_TRENDS,
+    val currentPeriod: PeriodFilter = PeriodFilter.MONTH
 )
 
 // In domain/transaction/model/ChartModels.kt
 enum class ChartType {
     MONTHLY_TRENDS,       // Bar chart (first)
     CATEGORY_BREAKDOWN,   // Line chart (second) - renamed to be more general
-    MONTHLY_COMPARISON    // Pie chart (third)
+    MONTHLY_COMPARISON,    // Pie chart (third)
+    TOP_CATEGORIES,
+    AVERAGE_SPENDING
 }
