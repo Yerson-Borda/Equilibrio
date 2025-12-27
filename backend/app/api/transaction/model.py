@@ -5,6 +5,7 @@ from decimal import Decimal
 from app.utils.enums.transaction_type import TransactionType
 
 class TransactionBase(BaseModel):
+    name: str 
     amount: Decimal
     note: Optional[str] = None
     type: TransactionType
@@ -13,12 +14,14 @@ class TransactionBase(BaseModel):
     category_id: int
 
 class TransactionCreate(TransactionBase):
+    tags: list[int] = []
     pass
 
 class TransactionResponse(TransactionBase):
     id: int
     user_id: int
     created_at: datetime
+    tags: list[str]
 
     class Config:
         from_attributes = True

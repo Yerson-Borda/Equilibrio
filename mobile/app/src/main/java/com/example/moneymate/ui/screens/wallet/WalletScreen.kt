@@ -364,6 +364,9 @@ private fun WalletCardItem(
         val brightness = (walletColor.red * 299 + walletColor.green * 587 + walletColor.blue * 114) / 1000
         if (brightness > 0.5) Color.Black else Color.White
     }
+    val currencySymbol = remember(wallet.currency) {
+        getCurrencySymbol(wallet.currency)
+    }
 
     Card(
         modifier = Modifier

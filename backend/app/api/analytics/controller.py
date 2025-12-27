@@ -10,6 +10,8 @@ from .service import (
     get_category_summary_service,
     get_monthly_comparison_service,
     get_spending_trends_service,
+    get_top_categories_current_month_service,
+    get_average_spending_service
 )
 from ...core.auth import get_current_user
 
@@ -75,4 +77,28 @@ def get_spending_trends(
         db=db,
         current_user=current_user,
         months=months,
+    )
+
+
+@router.get("/top-categories/current-month")
+def get_top_categories_current_month(
+        current_user: User = Depends(get_current_user),
+        db: Session = Depends(get_db),
+):
+    return get_top_categories_current_month_service(
+        db=db,
+        current_user=current_user,
+    )
+
+
+@router.get("/average-spending", response_model=list)
+def get_average_spending(
+        period: str = Query(..., enum=["day", "month", "year"]),
+        current_user: User = Depends(get_current_user),
+        db: Session = Depends(get_db),
+):
+    return get_average_spending_service(
+        db=db,
+        current_user=current_user,
+        period=period,
     )

@@ -1,4 +1,3 @@
-// GoalScreenViewModel.kt (simplified)
 package com.example.moneymate.ui.screens.goal
 
 import androidx.lifecycle.ViewModel

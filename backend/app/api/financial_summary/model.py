@@ -12,6 +12,7 @@ class FinancialSummaryBase(BaseModel):
 class FinancialSummaryResponse(FinancialSummaryBase):
     id: int
     created_at: datetime
+    currency: str
 
     class Config:
         from_attributes = True

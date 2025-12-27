@@ -1,9 +1,9 @@
 from datetime import datetime, date, timedelta
+from decimal import ROUND_HALF_UP, Decimal
 from typing import List, Dict, Any
 from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from app.database import get_db
 
 from app.entities.transaction import Transaction
 from app.entities.category import Category
@@ -14,7 +14,7 @@ from .model import (
     CategorySummary,
     PeriodSummary,
     MonthlyComparison,
-    DateRange,
+    DateRange
 )
 
 
@@ -356,3 +356,122 @@ def get_spending_trends_service(
             status_code=500,
             detail=f"Internal server error while generating spending trends: {str(e)}",
         )
+    
+
+def get_top_categories_current_month_service(db: Session, current_user: User):
+    today = date.today()
+    start_date = today.replace(day=1)
+
+    # Compute end of month
+    if today.month == 12:
+        end_date = date(today.year, 12, 31)
+    else:
+        end_date = date(today.year, today.month + 1, 1) - timedelta(days=1)
+
+    results = (
+        db.query(
+            Category.id,
+            Category.name,
+            func.sum(Transaction.amount).label("total_amount")
+        )
+        .join(Transaction, Transaction.category_id == Category.id)
+        .filter(
+            Transaction.user_id == current_user.id,
+            Transaction.type == TransactionType.EXPENSE,
+            Transaction.transaction_date >= start_date,
+            Transaction.transaction_date <= end_date,
+        )
+        .group_by(Category.id, Category.name)
+        .order_by(func.sum(Transaction.amount).desc())
+        .limit(3)
+        .all()
+    )
+
+    return [
+        {
+            "category_id": r.id,
+            "category_name": r.name,
+            "total_amount": float(r.total_amount or 0),
+        }
+        for r in results
+    ]
+
+
+def get_average_spending_service(db: Session, current_user: User, period: str):
+    try:
+        if period not in ("year", "month", "day"):
+            raise HTTPException(status_code=400, detail="Invalid period. Use 'year', 'month' or 'day'")
+
+        today = date.today()
+        current_year = today.year
+
+        # get total spent per category for the current calendar year
+        results = (
+            db.query(
+                Category.id.label("category_id"),
+                Category.name.label("category_name"),
+                func.coalesce(func.sum(Transaction.amount), 0).label("total_year_spent"),
+                func.count(Transaction.id).label("txn_count")
+            )
+            .join(Transaction, Transaction.category_id == Category.id)
+            .filter(
+                Transaction.user_id == current_user.id,
+                Transaction.type == TransactionType.EXPENSE,
+                func.extract("year", Transaction.transaction_date) == current_year,
+            )
+            .group_by(Category.id, Category.name)
+            .all()
+        )
+
+        response = []
+        for r in results:
+            total_year_spent = Decimal(str(r.total_year_spent or 0))
+
+            # monthly average = total_year / 12
+            monthly_avg = (total_year_spent / Decimal("12")) if total_year_spent else Decimal("0.00")
+
+            # daily average = monthly_avg / 30
+            daily_avg = (monthly_avg / Decimal("30")) if monthly_avg else Decimal("0.00")
+
+            if period == "year":
+                item = {
+                    "category_id": int(r.category_id),
+                    "category_name": r.category_name,
+                    "total_period_spent": _to_float_round(total_year_spent, 2),
+                    "transactions": int(r.txn_count),
+                    "period_type": "year"
+                }
+            elif period == "month":
+                item = {
+                    "category_id": int(r.category_id),
+                    "category_name": r.category_name,
+                    "average_monthly_spending": _to_float_round(monthly_avg, 2),
+                    "total_period_spent": _to_float_round(total_year_spent, 2),
+                    "transactions": int(r.txn_count),
+                    "period_type": "month"
+                }
+            else:
+                item = {
+                    "category_id": int(r.category_id),
+                    "category_name": r.category_name,
+                    "average_daily_spending": _to_float_round(daily_avg, 2),
+                    "average_monthly_spending": _to_float_round(monthly_avg, 2),
+                    "total_period_spent": _to_float_round(total_year_spent, 2),
+                    "transactions": int(r.txn_count),
+                    "period_type": "day"
+                }
+
+            response.append(item)
+
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+def _to_float_round(value: Decimal | None, places: int = 2) -> float:
+    if value is None:
+        return 0.0
+    return float(Decimal(value).quantize(Decimal(f"1.{'0'*places}"), rounding=ROUND_HALF_UP))
