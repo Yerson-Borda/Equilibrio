@@ -1,5 +1,6 @@
 package com.example.moneymate.ui.screens.home
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,15 +9,26 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.budget.model.Budget
 import com.example.domain.transaction.model.TransactionEntity
+import com.example.moneymate.R
 import com.example.moneymate.ui.components.TransactionsSection
+import kotlin.math.cos
+import kotlin.math.sin
 
 @Composable
 fun RegularHomeContent(
@@ -30,7 +42,7 @@ fun RegularHomeContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 20.dp)
     ) {
         BudgetExpenseSection(
             budget = budgetData,
@@ -157,7 +169,6 @@ fun SavingsGoalCard(
                 color = Color(0xFFF8F8F8),
                 shape = RoundedCornerShape(12.dp)
             )
-            .padding(16.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
@@ -254,7 +265,6 @@ fun BudgetExpenseSection(
                     color = Color.White,
                     shape = RoundedCornerShape(12.dp)
                 )
-                .padding(16.dp)
         ) {
             if (budget != null) {
                 ActualBudgetContent(budget, currencySymbol)
@@ -277,9 +287,8 @@ fun ActualBudgetContent(
             .fillMaxWidth()
             .background(
                 color = Color(0xFFF8F8F8),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(10.dp)
             )
-            .padding(16.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
@@ -350,10 +359,10 @@ fun BudgetWithLimitContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             CircularBudgetProgress(
-                progress = budget.monthlyProgress,
-                total = budget.monthlyLimit,
+                progress = (budget.monthlySpent / budget.monthlyLimit).toFloat(),
+                limit = budget.monthlyLimit,
+                pointerIconResId = painterResource(R.drawable.pointer_ic)
             )
-
             Column(
                 horizontalAlignment = Alignment.End
             ) {
@@ -364,12 +373,21 @@ fun BudgetWithLimitContent(
                     fontWeight = FontWeight.Medium
                 )
 
-                Text(
-                    text = "$currencySymbol${"%.0f".format(budget.monthlySpent)}/$currencySymbol${"%.0f".format(budget.monthlyLimit)}",
-                    color = Color.Black,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                Row {
+                    Text(
+                        text = "$currencySymbol${"%.0f".format(budget.monthlySpent)}/",
+                        color = Color.Black,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        text = "$currencySymbol${"%.0f".format(budget.monthlyLimit)}",
+                        color = Color(0xFF4D6BFA),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }
@@ -413,10 +431,10 @@ fun NoBudgetLimitContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             CircularBudgetProgress(
-                progress = 1f,
-                total = 0.0
+                progress = (budget.monthlySpent / budget.monthlyLimit).toFloat(),
+                limit = budget.monthlyLimit,
+                pointerIconResId = painterResource(R.drawable.pointer_ic)
             )
-
             Column(
                 horizontalAlignment = Alignment.End
             ) {
@@ -446,9 +464,8 @@ fun DesignBudgetContent(
             .fillMaxWidth()
             .background(
                 color = Color(0xFFF8F8F8),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(10.dp)
             )
-            .padding(16.dp)
     ) {
         NoBudgetLimitContent(
             budget = Budget(
@@ -470,44 +487,55 @@ fun DesignBudgetContent(
 @Composable
 fun CircularBudgetProgress(
     progress: Float,
-    total: Double
+    limit: Double,
+    pointerIconResId: Painter
 ) {
-    val hasLimit = total > 0
+    val hasLimit = limit > 0
     val displayProgress = if (hasLimit) progress.coerceIn(0f, 1f) else 1f
-    val displayText = if (hasLimit) "${(displayProgress * 100).toInt()}%" else "∞"
+    val pointerAngle = (360f * displayProgress) - 90f
 
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.size(48.dp)
+        modifier = Modifier.size(64.dp)
     ) {
         androidx.compose.foundation.Canvas(
-            modifier = Modifier.size(48.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
             drawCircle(
-                color = Color(0xFFE0E0E0),
-                radius = size.minDimension / 2 - 4
+                color = Color(0xFFF2F2F7),
+                radius = size.minDimension / 2
             )
+        }
+        androidx.compose.foundation.Canvas(
+            modifier = Modifier.fillMaxSize()
+        ) {
             drawArc(
-                color = if (hasLimit) Color(0xFF4D6BFA) else Color(0xFF666666),
+                color = if (hasLimit) Color(0xFF007AFF) else Color(0xFF666666),
                 startAngle = -90f,
                 sweepAngle = 360f * displayProgress,
                 useCenter = false,
-                style = Stroke(width = 4f, cap = StrokeCap.Round),
-                size = androidx.compose.ui.geometry.Size(
-                    width = size.width - 8,
-                    height = size.height - 8
+                style = Stroke(
+                    width = 4.dp.toPx(),
+                    cap = StrokeCap.Round
+                ),
+                size = Size(
+                    width = size.width - 8.dp.toPx(),
+                    height = size.height - 8.dp.toPx()
                 )
             )
         }
-        Text(
-            text = displayText,
-            color = Color.Black,
-            fontSize = if (hasLimit) 10.sp else 8.sp,
-            fontWeight = FontWeight.Bold
+        Image(
+            painter = pointerIconResId,
+            contentDescription = "Progress pointer",
+            modifier = Modifier
+                .width(31.dp)
+                .height(24.dp)
+                .graphicsLayer {
+                    rotationZ = -pointerAngle - 40f
+                }
         )
     }
 }
-
 private fun getMonthName(month: Int): String {
     return when (month) {
         1 -> "January"

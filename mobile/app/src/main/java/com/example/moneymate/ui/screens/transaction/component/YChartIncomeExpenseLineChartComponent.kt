@@ -1,23 +1,31 @@
 package com.example.moneymate.ui.screens.transaction.component
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.yml.charts.axis.AxisData
+import co.yml.charts.common.model.Point
 import co.yml.charts.ui.linechart.LineChart
 import co.yml.charts.ui.linechart.model.*
 import com.example.domain.transaction.model.DateRange
 import com.example.domain.transaction.model.MonthlyChartData
 import com.example.moneymate.ui.screens.transaction.chart.YChartLineDataConverter
+import com.example.moneymate.utils.ChartUtils
+import java.time.LocalDate
 
+@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun YChartIncomeExpenseLineChartComponent(
@@ -28,15 +36,41 @@ fun YChartIncomeExpenseLineChartComponent(
     val days = monthlyChartData.days
     val dateRange = monthlyChartData.dateRange
 
-    // Calculate totals for summary
-    val totalIncome = days.sumOf { it.income }
-    val totalExpenses = days.sumOf { it.expenses }
+    // Calculate totals for summary - filter by actual selected date range
+    val filteredDays = remember(days, dateRange) {
+        days.filter { dailyData ->
+            try {
+                val dayDate = LocalDate.parse(dailyData.date)
+                val startDate = LocalDate.parse(dateRange.startDate)
+                val endDate = LocalDate.parse(dateRange.endDate)
+                !dayDate.isBefore(startDate) && !dayDate.isAfter(endDate)
+            } catch (e: Exception) {
+                true // If parsing fails, include all days
+            }
+        }
+    }
+
+    // Group days intelligently for the chart display
+    val chartDays = remember(filteredDays) {
+        ChartUtils.smartGroupDaysForChart(filteredDays)
+    }
+
+    val totalIncome = filteredDays.sumOf { it.income }
+    val totalExpenses = filteredDays.sumOf { it.expenses }
     val netAmount = totalIncome - totalExpenses
+
+    // Show grouping info to user
+    val showGroupingInfo = filteredDays.size > chartDays.size
+    val daysCountText = if (showGroupingInfo) {
+        "Showing ${chartDays.size} of ${filteredDays.size} days (grouped for better visibility)"
+    } else {
+        "Showing ${filteredDays.size} days"
+    }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(horizontal = 16.dp) // CHANGED: Only horizontal padding
     ) {
         // Header with TWO date pickers
         Row(
@@ -58,7 +92,7 @@ fun YChartIncomeExpenseLineChartComponent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // From Date Picker
+            // From Date Picker - show full date
             Column {
                 Text(
                     text = "From",
@@ -66,14 +100,18 @@ fun YChartIncomeExpenseLineChartComponent(
                     color = Color.Gray,
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
-                DatePickerDropdown(
-                    selectedDate = dateRange.startDate,
-                    onDateSelected = { newStartDate ->
-                        onDateRangeChanged(dateRange.copy(startDate = newStartDate))
+                SimpleMonthPickerButton(
+                    selectedDateString = dateRange.startDate,
+                    onDateSelected = { newStartDateString ->
+                        // Don't adjust the date - use exactly what user selected
+                        onDateRangeChanged(dateRange.copy(startDate = newStartDateString))
                     },
-                    modifier = Modifier.width(120.dp)
+                    modifier = Modifier.width(140.dp),
+                    displayFormat = "dd MMM yyyy"
                 )
             }
+
+            // To Date Picker - show full date
             Column {
                 Text(
                     text = "To",
@@ -81,38 +119,81 @@ fun YChartIncomeExpenseLineChartComponent(
                     color = Color.Gray,
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
-                DatePickerDropdown(
-                    selectedDate = dateRange.endDate,
-                    onDateSelected = { newEndDate ->
-                        onDateRangeChanged(dateRange.copy(endDate = newEndDate))
+                SimpleMonthPickerButton(
+                    selectedDateString = dateRange.endDate,
+                    onDateSelected = { newEndDateString ->
+                        // Don't adjust the date - use exactly what user selected
+                        onDateRangeChanged(dateRange.copy(endDate = newEndDateString))
                     },
-                    modifier = Modifier.width(120.dp)
+                    modifier = Modifier.width(140.dp),
+                    displayFormat = "dd MMM yyyy"
                 )
             }
         }
 
+        // Validation message if dates are invalid
+        val isValidRange = remember(dateRange) {
+            try {
+                val start = LocalDate.parse(dateRange.startDate)
+                val end = LocalDate.parse(dateRange.endDate)
+                !start.isAfter(end)
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        if (!isValidRange) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "⚠️ Start date must be before end date",
+                fontSize = 12.sp,
+                color = Color.Red,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+        } else if (showGroupingInfo) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "📊 $daysCountText",
+                fontSize = 11.sp,
+                color = Color(0xFF666666),
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
 
-        if (days.isNotEmpty() && days.any { it.income > 0 || it.expenses > 0 }) {
+        // Use grouped days for the chart
+        if (filteredDays.isNotEmpty() && filteredDays.any { it.income > 0 || it.expenses > 0 }) {
             DualLineChartWithYCharts(
-                days = days,
+                days = chartDays,
+                originalDaysCount = filteredDays.size,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp)
+                    .height(320.dp) // CHANGED: Slightly taller for better spacing
             )
         } else {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp)
+                    .height(320.dp) // CHANGED: Match height with chart
                     .background(Color(0xFFF5F5F5)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "No data available for selected date range",
-                    color = Color.Gray,
-                    fontSize = 14.sp
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "No data available for selected date range",
+                        color = Color.Gray,
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        text = "${dateRange.startDate} to ${dateRange.endDate}",
+                        color = Color.Gray,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
         }
 
@@ -222,30 +303,61 @@ fun YChartIncomeExpenseLineChartComponent(
 @Composable
 fun DualLineChartWithYCharts(
     days: List<com.example.domain.transaction.model.DailyData>,
+    originalDaysCount: Int = days.size,
     modifier: Modifier = Modifier
 ) {
-    val incomePoints = YChartLineDataConverter.convertToIncomePoints(days)
-    val expensePoints = YChartLineDataConverter.convertToExpensePoints(days)
-    val dayLabels = YChartLineDataConverter.getDayLabels(days)
+    val displayDays = days.takeIf { it.isNotEmpty() } ?: emptyList()
 
+    // Points are already at correct positions (0, 1, 2, ...) from converter
+    val incomePoints = YChartLineDataConverter.convertToIncomePoints(displayDays)
+    val expensePoints = YChartLineDataConverter.convertToExpensePoints(displayDays)
+    val dayLabels = YChartLineDataConverter.getDayLabels(displayDays)
+
+    val isGrouped = originalDaysCount > days.size
+
+    // Adjust spacing
+    val axisStepSize = when {
+        displayDays.size <= 7 -> 40.dp
+        displayDays.size <= 15 -> 30.dp
+        displayDays.size <= 30 -> 20.dp
+        else -> 15.dp
+    }
+
+    val steps = maxOf(0, displayDays.size - 1)
+
+    // Use minimal but balanced padding
     val xAxisData = AxisData.Builder()
-        .axisStepSize(30.dp)
-        .steps(days.size - 1)
-        .bottomPadding(50.dp)
-        .axisLabelAngle(if (days.size > 10) 45f else 0f)
-        .startDrawPadding(60.dp)  // Increased left padding
+        .axisStepSize(axisStepSize)
+        .steps(steps)
+        .bottomPadding(45.dp)
+        .axisLabelAngle(if (displayDays.size > 10) 45f else 0f)
+        .startDrawPadding(4.dp) // CHANGED: Minimal padding
         .labelData { index ->
-            if (index < dayLabels.size) dayLabels[index] else "Day $index"
+            if (index < dayLabels.size) dayLabels[index] else ""
         }
         .build()
 
+    val maxValue = remember(displayDays) {
+        if (displayDays.isEmpty()) 100.0 else {
+            val maxIncome = displayDays.maxOfOrNull { it.income } ?: 0.0
+            val maxExpense = displayDays.maxOfOrNull { it.expenses } ?: 0.0
+            maxOf(maxIncome, maxExpense) * 1.15
+        }
+    }
+
+    val yAxisSteps = 5
+    val yStepValue = if (maxValue > 0) {
+        val step = (maxValue / yAxisSteps).toInt()
+        if (step == 0) 1 else step
+    } else 1
+
     val yAxisData = AxisData.Builder()
-        .steps(5)
+        .steps(yAxisSteps)
         .labelAndAxisLinePadding(25.dp)
         .axisOffset(25.dp)
         .topPadding(60.dp)
         .labelData { index ->
-            val value = index * 100
+            val value = index * yStepValue
             "$$value"
         }
         .build()
@@ -253,14 +365,23 @@ fun DualLineChartWithYCharts(
     val incomeLine = Line(
         dataPoints = incomePoints,
         lineStyle = LineStyle(
+            color = Color(0xFF4ECDC4),
+            lineType = LineType.SmoothCurve(isDotted = false)
+        ),
+        intersectionPoint = IntersectionPoint(
             color = Color(0xFF4ECDC4)
+        ),
+        selectionHighlightPoint = SelectionHighlightPoint(
+            color = Color(0xFF4ECDC4),
+            radius = 8.dp
         ),
         selectionHighlightPopUp = SelectionHighlightPopUp(
             popUpLabel = { xIndex, yValue ->
                 val index = kotlin.math.round(xIndex).toInt()
-                val actualIncome = if (index < days.size) days[index].income else yValue.toDouble()
-
-                if (actualIncome > 0) "$${actualIncome.toInt()} Income" else ""
+                val actualIncome = if (index < displayDays.size) displayDays[index].income else yValue.toDouble()
+                val dateLabel = if (index < dayLabels.size) dayLabels[index] else "Day $index"
+                val groupedInfo = if (isGrouped && actualIncome > 0) "\n(Average per period)" else ""
+                if (actualIncome > 0) "$${String.format("%.1f", actualIncome)}\nIncome ($dateLabel)$groupedInfo" else ""
             }
         )
     )
@@ -268,17 +389,26 @@ fun DualLineChartWithYCharts(
     val expenseLine = Line(
         dataPoints = expensePoints,
         lineStyle = LineStyle(
+            color = Color(0xFFFF6B6B),
+            lineType = LineType.SmoothCurve(isDotted = false)
+        ),
+        intersectionPoint = IntersectionPoint(
             color = Color(0xFFFF6B6B)
+        ),
+        selectionHighlightPoint = SelectionHighlightPoint(
+            color = Color(0xFFFF6B6B),
+            radius = 8.dp
         ),
         selectionHighlightPopUp = SelectionHighlightPopUp(
             popUpLabel = { xIndex, yValue ->
                 val index = kotlin.math.round(xIndex).toInt()
-                val actualExpense = if (index < days.size) days[index].expenses else yValue.toDouble()
-                if (actualExpense > 0) "$${actualExpense.toInt()} Expense" else ""
+                val actualExpense = if (index < displayDays.size) displayDays[index].expenses else yValue.toDouble()
+                val dateLabel = if (index < dayLabels.size) dayLabels[index] else "Day $index"
+                val groupedInfo = if (isGrouped && actualExpense > 0) "\n(Average per period)" else ""
+                if (actualExpense > 0) "$${String.format("%.1f", actualExpense)}\nExpense ($dateLabel)$groupedInfo" else ""
             }
         )
     )
-
     val linePlotData = LinePlotData(
         lines = listOf(incomeLine, expenseLine)
     )
@@ -286,14 +416,14 @@ fun DualLineChartWithYCharts(
     val lineChartData = LineChartData(
         linePlotData = linePlotData,
         xAxisData = xAxisData,
-        yAxisData = yAxisData
+        yAxisData = yAxisData,
+        backgroundColor = Color.Transparent
     )
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(300.dp)
-            .padding(horizontal = 8.dp)
+            .height(320.dp)
     ) {
         LineChart(
             modifier = Modifier.fillMaxSize(),

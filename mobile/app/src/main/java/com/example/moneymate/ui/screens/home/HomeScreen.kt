@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -99,107 +101,120 @@ fun HomeScreen(
         }
     }
 
-    when {
-        uiState.userDataState is ScreenState.Loading -> {
-            FullScreenLoading(message = "Loading home data...")
-        }
-        uiState.userDataState is ScreenState.Error -> {
-            FullScreenError(
-                error = (uiState.userDataState as ScreenState.Error).error,
-                onRetry = { viewModel.loadAllData() }
+    Scaffold(
+        containerColor = Color.White,
+        topBar = {
+            Box(modifier = Modifier.statusBarsPadding()) {
+                SectionStateManager(
+                    state = uiState.userDataState,
+                    onRetry = { viewModel.loadUserData() }
+                ) { userData ->
+                    TopAppBarSection(
+                        userName = userData.user.fullName ?: "User",
+                        profileImage = userData.user.avatarUrl?.let { avatarUrl ->
+                            Config.buildImageUrl(avatarUrl)
+                        },
+                        onProfileClick = onProfileClick
+                    )
+                }
+            }
+        },
+        bottomBar = {
+            BottomNavigationBar(
+                currentScreen = currentScreen,
+                onNavigationItemSelected = onNavigationItemSelected
             )
-        }
-        else -> {
-            Box(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White)
-                        .statusBarsPadding()
-                ) {
-                    item {
-                        SectionStateManager(
-                            state = uiState.userDataState,
-                            onRetry = { viewModel.loadUserData() }
-                        ) { userData ->
-                            Column {
-                                TopAppBarSection(
-                                    userName = userData.user.fullName ?: "User",
-                                    profileImage = userData.user.avatarUrl?.let { avatarUrl ->
-                                        Config.buildImageUrl(avatarUrl)
-                                    },
-                                    onProfileClick = onProfileClick
-                                )
-
-                                Spacer(modifier = Modifier.height(14.dp))
-                                SectionStateManager(
-                                    state = uiState.balanceState,
-                                    onRetry = { viewModel.loadTotalBalance() }
-                                ) { balance ->
-                                    WalletBalanceCard(
-                                        totalBalance = balance?.totalBalance,
-                                        currencySymbol = currencySymbol,
-                                        isLoading = uiState.isTotalBalanceLoading
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                // Financial Overview section with state management
-                                SectionStateManager(
-                                    state = uiState.financialOverviewState,
-                                    onRetry = { viewModel.loadFinancialOverview() }
-                                ) { financialData ->
-                                    FinancialOverviewCard(
-                                        totalIncome = financialData.totalIncome,
-                                        totalExpense = financialData.totalExpense,
-                                        currencySymbol = currencySymbol
-                                    )
-                                }
-
-                                if (userData.stats.walletCount == 0 && userData.stats.totalTransactions == 0) {
-                                    FirstLoginContent()
-                                } else {
+        },
+        floatingActionButton = {
+            AddRecordButton(
+                onClick = onAddRecord,
+                iconRes = R.drawable.add_outline,
+                contentDescription = "Add Record",
+                size = 48,
+                modifier = Modifier.padding(bottom = 56.dp)
+            )
+        },
+        floatingActionButtonPosition = FabPosition.Center
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            when {
+                uiState.userDataState is ScreenState.Loading -> {
+                    FullScreenLoading(message = "Loading home data...")
+                }
+                uiState.userDataState is ScreenState.Error -> {
+                    FullScreenError(
+                        error = (uiState.userDataState as ScreenState.Error).error,
+                        onRetry = { viewModel.loadAllData() }
+                    )
+                }
+                else -> {
+                    SectionStateManager(
+                        state = uiState.userDataState,
+                        onRetry = { viewModel.loadUserData() }
+                    ) { userData ->
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.White)
+                        ) {
+                            item {
+                                Column {
+                                    Spacer(modifier = Modifier.height(14.dp))
                                     SectionStateManager(
-                                        state = uiState.budgetState,
-                                        onRetry = { viewModel.loadBudgetData() }
-                                    ) { budgetData ->
-                                        RegularHomeContent(
-                                            recentTransactions = uiState.recentTransactions,
-                                            budgetData = budgetData,
+                                        state = uiState.balanceState,
+                                        onRetry = { viewModel.loadTotalBalance() }
+                                    ) { balance ->
+                                        WalletBalanceCard(
+                                            totalBalance = balance?.totalBalance,
                                             currencySymbol = currencySymbol,
-                                            onSeeAllBudget = onSeeAllBudget,
-                                            onSeeAllTransactions = onSeeAllTransactions,
-                                            isInLazyColumn = true
+                                            isLoading = uiState.isTotalBalanceLoading
                                         )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    SectionStateManager(
+                                        state = uiState.financialOverviewState,
+                                        onRetry = { viewModel.loadFinancialOverview() }
+                                    ) { financialData ->
+                                        FinancialOverviewCard(
+                                            totalIncome = financialData.totalIncome,
+                                            totalExpense = financialData.totalExpense,
+                                            currencySymbol = currencySymbol
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    if (userData.stats.walletCount == 0 && userData.stats.totalTransactions == 0) {
+                                        FirstLoginContent()
+                                    } else {
+                                        SectionStateManager(
+                                            state = uiState.budgetState,
+                                            onRetry = { viewModel.loadBudgetData() }
+                                        ) { budgetData ->
+                                            RegularHomeContent(
+                                                recentTransactions = uiState.recentTransactions,
+                                                budgetData = budgetData,
+                                                currencySymbol = currencySymbol,
+                                                onSeeAllBudget = onSeeAllBudget,
+                                                onSeeAllTransactions = onSeeAllTransactions,
+                                                isInLazyColumn = true
+                                            )
+                                        }
                                     }
                                 }
                             }
+
+                            item {
+                                Spacer(modifier = Modifier.height(80.dp))
+                            }
                         }
                     }
-
-                    item {
-                        Spacer(modifier = Modifier.height(80.dp))
-                    }
                 }
-
-                AddRecordButton(
-                    onClick = onAddRecord,
-                    iconRes = R.drawable.add_outline,
-                    contentDescription = "Add Record",
-                    size = 48,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 110.dp)
-                )
-
-                BottomNavigationBar(
-                    currentScreen = currentScreen,
-                    onNavigationItemSelected = onNavigationItemSelected,
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                )
             }
         }
     }

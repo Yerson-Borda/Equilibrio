@@ -19,12 +19,16 @@ object DataSyncManager {
         object CategoriesUpdated : DataChangeEvent()
         object TagsUpdated : DataChangeEvent()
         object BudgetUpdated : DataChangeEvent()
+        object CategoryLimitsUpdated : DataChangeEvent()
         object UserDataUpdated : DataChangeEvent()
 
         // Add more event types as needed
         data class SpecificTransactionUpdated(val transactionId: Int) : DataChangeEvent()
     }
 
+    fun notifyCategoryLimitsUpdated() {
+        _dataChangeEvents.tryEmit(DataChangeEvent.CategoryLimitsUpdated)
+    }
     fun notifyBudgetUpdated() {
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
             println("🔄 DEBUG: DataSyncManager - Notifying about budget update")

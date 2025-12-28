@@ -27,7 +27,7 @@ fun BottomNavigationBar(
         NavigationBarItem(
             icon = {
                 Icon(
-                    painter = painterResource(R.drawable.ic_home),
+                    painter = painterResource(R.drawable.home),
                     contentDescription = "Home",
                     modifier = Modifier.size(24.dp)
                 )
