@@ -1,6 +1,8 @@
 // data/network/transaction/model/ChartResponses.kt
 package com.example.data.network.transaction.model
 
+import com.example.domain.transaction.model.AverageSpendingData
+import com.example.domain.transaction.model.TopCategoryData
 import kotlinx.serialization.Serializable
 
 // KEEP EXISTING MODELS
@@ -65,3 +67,37 @@ data class MonthlyComparisonResponse(
     val difference: Double,
     val percentage_change: Double
 )
+
+@Serializable
+data class TopCategoryResponse(
+    val category_id: Int,
+    val category_name: String,
+    val total_amount: Double
+)
+
+@Serializable
+data class AverageSpendingResponse(
+    val category_id: Int,
+    val category_name: String,
+    val total_period_spent: Double,
+    val transactions: Int,
+    val period_type: String
+)
+
+private fun TopCategoryResponse.toDomain(): TopCategoryData {
+    return TopCategoryData(
+        categoryId = category_id,
+        categoryName = category_name,
+        totalAmount = total_amount
+    )
+}
+
+private fun AverageSpendingResponse.toDomain(): AverageSpendingData {
+    return AverageSpendingData(
+        categoryId = category_id,
+        categoryName = category_name,
+        totalPeriodSpent = total_period_spent,
+        transactions = transactions,
+        periodType = period_type
+    )
+}

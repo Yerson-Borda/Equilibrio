@@ -1,5 +1,7 @@
 package com.example.moneymate.ui.screens.transaction.component
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,6 +34,7 @@ import com.example.domain.transaction.model.TransactionChartsData
 import com.example.moneymate.ui.screens.transaction.TransactionScreenViewModel
 import kotlinx.coroutines.launch
 
+@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SwipeableChartContainer(
@@ -44,7 +47,6 @@ fun SwipeableChartContainer(
     viewModel: TransactionScreenViewModel,
     modifier: Modifier = Modifier
 ) {
-    println("📱 DEBUG: SwipeableChartContainer - currentChartType: $currentChartType")
     val chartTypes = ChartType.values()
     val pagerState = rememberPagerState(initialPage = chartTypes.indexOf(currentChartType)) { chartTypes.size }
     val coroutineScope = rememberCoroutineScope()
@@ -55,47 +57,55 @@ fun SwipeableChartContainer(
             state = pagerState,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(400.dp)
-                .background(Color.White)
+                .height(380.dp)
         ) { page ->
             val chartType = chartTypes[page]
 
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) {
-                        detectHorizontalDragGestures { change, dragAmount ->
-                        }
-                    }
-            ) {
-                when (chartType) {
-                    ChartType.MONTHLY_TRENDS -> {
-                        YChartMonthlyBarChartComponent(
-                            monthlyChartData = chartsData.monthlyChart,
-                            onFilterChanged = onFilterChanged,
-                            onPeriodChanged = onPeriodChanged,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp)
-                        )
-                    }
-                    ChartType.CATEGORY_BREAKDOWN -> {
-                        YChartIncomeExpenseLineChartComponent(
-                            monthlyChartData = chartsData.monthlyChart,
-                            onDateRangeChanged = onDateRangeChanged,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp)
-                        )
-                    }
-                    ChartType.MONTHLY_COMPARISON -> {
-                        CategoryPieChartComponent(
-                            categorySummaryData = chartsData.categorySummary,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp)
-                        )
-                    }
+            when (chartType) {
+                ChartType.MONTHLY_TRENDS -> {
+                    YChartMonthlyBarChartComponent(
+                        monthlyChartData = chartsData.monthlyChart,
+                        onFilterChanged = onFilterChanged,
+                        onPeriodChanged = onPeriodChanged,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                // Add new chart type for comparison line chart
+                ChartType.CATEGORY_BREAKDOWN -> {
+                    YChartIncomeExpenseLineChartComponent(
+                        monthlyChartData = chartsData.monthlyChart,
+                        onDateRangeChanged = onDateRangeChanged,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                ChartType.MONTHLY_COMPARISON -> {
+                    CategoryPieChartComponent(
+                        categorySummaryData = chartsData.categorySummary,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                ChartType.TOP_CATEGORIES -> {
+                    // This is now the new category breakdown donut chart
+                    ExpensesBreakdownDonutChart(
+                        topCategories = chartsData.topCategories,
+                        averageSpending = chartsData.averageSpending,
+                        period = chartsData.currentPeriod,
+                        onPeriodChanged = { newPeriod ->
+                            viewModel.loadAverageSpending(newPeriod)
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                ChartType.AVERAGE_SPENDING -> {
+                    AverageSpendingChart(
+                        averageSpendingData = chartsData.averageSpending,
+                        period = chartsData.currentPeriod,
+                        onPeriodChanged = { newPeriod ->
+                            viewModel.updatePeriodFilter(newPeriod)
+                        },
+                        isLoading = false,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
         }

@@ -24,7 +24,6 @@ val viewModelModule  = module {
     viewModel { EditProfileViewModel(get(), get(), get(), get()) }
     viewModel { ProfileOptionsScreenViewModel(get()) }
     viewModel { SettingsScreenViewModel(get(), get()) }
-    viewModel{ TransactionScreenViewModel(get(), get() , get() , get()) }
-    viewModel { GoalScreenViewModel(get(), get()) }
-
+    viewModel{ TransactionScreenViewModel(get(), get() , get() , get(), get(), get()) }
+    viewModel { GoalScreenViewModel(get(), get(), get(), get(), get()) }
 }
