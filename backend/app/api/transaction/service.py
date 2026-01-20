@@ -11,8 +11,38 @@ from app.utils.enums.transaction_type import TransactionType
 from app.api.budget import service as budget_service
 from app.api.financial_summary.service import update_monthly_summary
 from app.services.currency_service import currency_service
+from fastapi import UploadFile
+from app.core.file_settings import (
+    TRANSACTION_UPLOAD_DIR,
+    ALLOWED_EXTENSIONS,
+    MAX_FILE_SIZE
+)
+from uuid import uuid4
+from pathlib import Path
+import shutil
 
-def create_transaction(db: Session, user_id: int, data):
+def save_receipt(user_id: int, file: UploadFile) -> str:
+    ext = Path(file.filename).suffix.lower()
+
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(400, "Invalid file type")
+
+    file.file.seek(0, 2)
+    size = file.file.tell()
+    file.file.seek(0)
+
+    if size > MAX_FILE_SIZE:
+        raise HTTPException(400, "File too large")
+
+    filename = f"{user_id}_{uuid4()}{ext}"
+    path = TRANSACTION_UPLOAD_DIR / filename
+
+    with open(path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    return f"/static/receipts/{filename}"
+
+def create_transaction(db: Session, user_id: int, data, receipt: UploadFile | None = None):
     wallet = db.query(Wallet).filter(
         Wallet.id == data.wallet_id,
         Wallet.user_id == user_id
@@ -28,6 +58,10 @@ def create_transaction(db: Session, user_id: int, data):
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
 
+    receipt_url = None
+    if receipt:
+        receipt_url = save_receipt(user_id, receipt)
+
     transaction = Transaction(
         name=data.name,
         amount=data.amount,
@@ -36,7 +70,8 @@ def create_transaction(db: Session, user_id: int, data):
         transaction_date=data.transaction_date,
         wallet_id=data.wallet_id,
         category_id=data.category_id,
-        user_id=user_id
+        user_id=user_id,
+        receipt_url=receipt_url
     )
 
     # Update wallet balance
@@ -68,7 +103,6 @@ def create_transaction(db: Session, user_id: int, data):
     update_monthly_summary(db, user_id, transaction)
 
     return _serialize_transaction(transaction)
-
 
 def get_wallet_transactions(db: Session, user_id: int, wallet_id: int, limit: int):
     wallet = db.query(Wallet).filter(
@@ -255,7 +289,8 @@ def _serialize_transaction(tx: Transaction) -> TransactionResponse:
         category_id=tx.category_id,
         user_id=tx.user_id,
         created_at=tx.created_at,
-        tags=[t.name for t in tx.tags]
+        tags=[t.name for t in tx.tags],
+        receipt_url=tx.receipt_url
     )
 
 def _serialize_transactions(txs: list[Transaction]) -> list[TransactionResponse]:

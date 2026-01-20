@@ -12,6 +12,7 @@ class Transaction(Base):
     amount = Column(DECIMAL(10, 2), nullable=False)
     note = Column(Text, nullable=True)
     type = Column(Enum(TransactionType), nullable=False)
+    receipt_url = Column(String, nullable=True)
     transaction_date = Column(Date, nullable=False, server_default=func.now())
     wallet_id = Column(Integer, ForeignKey("wallets.id"))
     category_id = Column(Integer, ForeignKey("categories.id"))

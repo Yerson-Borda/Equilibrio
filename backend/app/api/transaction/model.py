@@ -22,6 +22,7 @@ class TransactionResponse(TransactionBase):
     user_id: int
     created_at: datetime
     tags: list[str]
+    receipt_url: Optional[str] = None
 
     class Config:
         from_attributes = True
