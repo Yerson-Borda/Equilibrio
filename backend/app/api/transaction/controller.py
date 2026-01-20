@@ -11,7 +11,7 @@ from app.core.auth import get_current_user
 from app.entities.user import User
 from app.api.transaction.model import (
     TransactionCreate, TransactionResponse,
-    TransferCreate, TransferResponse
+    TransferCreate, TransferResponse, TransferPreviewResponse
 )
 from app.api.transaction import service
 from fastapi import UploadFile, File
@@ -99,3 +99,19 @@ def transfer_funds(
     db: Session = Depends(get_db)
 ):
     return service.transfer_funds(db, current_user.id, transfer_data)
+
+@router.get("/transfer/preview", response_model=TransferPreviewResponse)
+def preview_transfer(
+    source_wallet_id: int,
+    destination_wallet_id: int,
+    amount: Decimal,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    return service.preview_transfer(
+        db=db,
+        user_id=current_user.id,
+        source_wallet_id=source_wallet_id,
+        destination_wallet_id=destination_wallet_id,
+        amount=amount
+    )

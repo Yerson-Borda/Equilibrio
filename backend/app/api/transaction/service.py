@@ -250,6 +250,51 @@ def transfer_funds(db: Session, user_id: int, data):
         "converted_amount": float(converted_amount)
     }
 
+def preview_transfer(
+    db: Session,
+    user_id: int,
+    source_wallet_id: int,
+    destination_wallet_id: int,
+    amount: Decimal
+):
+    source_wallet = db.query(Wallet).filter(
+        Wallet.id == source_wallet_id,
+        Wallet.user_id == user_id
+    ).first()
+
+    if not source_wallet:
+        raise HTTPException(404, "Source wallet not found")
+
+    destination_wallet = db.query(Wallet).filter(
+        Wallet.id == destination_wallet_id,
+        Wallet.user_id == user_id
+    ).first()
+
+    if not destination_wallet:
+        raise HTTPException(404, "Destination wallet not found")
+
+    if amount <= 0:
+        raise HTTPException(400, "Amount must be greater than zero")
+
+    if source_wallet.currency == destination_wallet.currency:
+        exchange_rate = Decimal("1.0")
+        converted_amount = amount
+    else:
+        exchange_rate = currency_service.get_exchange_rate(
+            source_wallet.currency,
+            destination_wallet.currency
+        )
+        converted_amount = (amount * exchange_rate).quantize(Decimal("0.01"))
+
+    return {
+        "source_currency": source_wallet.currency,
+        "destination_currency": destination_wallet.currency,
+        "amount": amount,
+        "exchange_rate": exchange_rate,
+        "converted_amount": converted_amount
+    }
+
+
 def get_transactions_by_tag(db: Session, user_id: int, tag_id: int):
     txs = (
         db.query(Transaction)
