@@ -10,6 +10,7 @@ from app.api.analytics.controller import router as analytics
 from app.api.tag.controller import router as tags
 from app.api.category_limits.controller import router as category_limits
 from app.api.goal.controller import router as goal
+from app.api.savings_goal.controller import router as savings_goal
 
 def register_routers(app: FastAPI):
     app.include_router(auth, prefix="/api/auth", tags=["auth"])
@@ -23,3 +24,4 @@ def register_routers(app: FastAPI):
     app.include_router(tags, prefix="/api/tags", tags=["tags"])
     app.include_router(category_limits, prefix="/api/limits", tags=["category_limits"])
     app.include_router(goal, prefix="/api/goals", tags=["goals"])
+    app.include_router(savings_goal, prefix="/api/savings_goal", tags=["savings_goal"])

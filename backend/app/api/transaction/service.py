@@ -21,6 +21,7 @@ from uuid import uuid4
 from pathlib import Path
 import shutil
 from app.api.goal.service import update_goal_progress
+from app.api.savings_goal.service import record_savings
 
 def save_receipt(user_id: int, file: UploadFile) -> str:
     ext = Path(file.filename).suffix.lower()
@@ -102,6 +103,7 @@ def create_transaction(db: Session, user_id: int, data, receipt: UploadFile | No
     db.refresh(transaction)
 
     update_monthly_summary(db, user_id, transaction)
+    record_savings(db, transaction)
 
     return _serialize_transaction(transaction)
 
@@ -247,6 +249,7 @@ def transfer_funds(db: Session, user_id: int, data):
     update_monthly_summary(db, user_id, dest_tx)
 
     update_goal_progress(db, dest_tx)
+    record_savings(db, dest_tx)
 
     return {
         "message": "Transfer completed successfully",
