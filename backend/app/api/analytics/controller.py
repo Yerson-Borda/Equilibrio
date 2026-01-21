@@ -11,7 +11,8 @@ from .service import (
     get_monthly_comparison_service,
     get_spending_trends_service,
     get_top_categories_current_month_service,
-    get_average_spending_service
+    get_average_spending_service,
+    get_savings_trends_service
 )
 from ...core.auth import get_current_user
 
@@ -101,4 +102,19 @@ def get_average_spending(
         db=db,
         current_user=current_user,
         period=period,
+    )
+
+@router.get("/savings-trends")
+def get_savings_trends(
+    months: int = Query(6, ge=1, le=12),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Get savings trends over multiple months.
+    """
+    return get_savings_trends_service(
+        db=db,
+        current_user=current_user,
+        months=months,
     )
