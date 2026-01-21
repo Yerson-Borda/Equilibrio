@@ -8,3 +8,5 @@ class WalletType(enum.Enum):
     INVESTMENT = "investment"
     LOAN = "loan"
     MORTGAGE = "mortgage"
+    GOAL = "goal"
+    

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, DECIMAL, Enum
+from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, DECIMAL, Enum, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.utils.enums.wallet_type import WalletType
@@ -16,6 +16,8 @@ class Wallet(Base):
     color = Column(String, default="#3B82F6")
     user_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # is_goal = Column(Boolean, default=False)
 
     owner = relationship("User", back_populates="wallets")
     transactions = relationship("Transaction", back_populates="wallet")
+    goal = relationship("Goal", back_populates="wallet", uselist=False)

@@ -25,3 +25,4 @@ class User(Base):
     financial_summaries = relationship("FinancialSummary", back_populates="user", cascade="all, delete-orphan")
     tags = relationship("Tag", back_populates="user", cascade="all, delete-orphan")
     category_limits = relationship("CategoryLimit", back_populates="user", cascade="all, delete")
+    goals = relationship("Goal", back_populates="user", cascade="all, delete-orphan")

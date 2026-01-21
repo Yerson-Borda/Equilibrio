@@ -20,6 +20,7 @@ from app.core.file_settings import (
 from uuid import uuid4
 from pathlib import Path
 import shutil
+from app.api.goal.service import update_goal_progress
 
 def save_receipt(user_id: int, file: UploadFile) -> str:
     ext = Path(file.filename).suffix.lower()
@@ -241,6 +242,11 @@ def transfer_funds(db: Session, user_id: int, data):
     db.commit()
     db.refresh(source_tx)
     db.refresh(dest_tx)
+
+    update_monthly_summary(db, user_id, source_tx)
+    update_monthly_summary(db, user_id, dest_tx)
+
+    update_goal_progress(db, dest_tx)
 
     return {
         "message": "Transfer completed successfully",
