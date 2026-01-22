@@ -13,15 +13,20 @@ import com.example.domain.category.usecase.DeleteCategoryUseCase
 import com.example.domain.category.usecase.GetCategoriesUseCase
 import com.example.domain.category.usecase.GetExpenseCategoriesUseCase
 import com.example.domain.category.usecase.GetIncomeCategoriesUseCase
+import com.example.domain.categoryLimit.usecase.DeleteCategoryLimitUseCase
+import com.example.domain.categoryLimit.usecase.GetCategoryLimitsUseCase
+import com.example.domain.categoryLimit.usecase.UpdateCategoryLimitUseCase
 import com.example.domain.tag.usecase.CreateTagUseCase
 import com.example.domain.tag.usecase.DeleteTagUseCase
 import com.example.domain.tag.usecase.GetTagsUseCase
 import com.example.domain.transaction.usecase.CreateTransactionUseCase
 import com.example.domain.transaction.usecase.CreateTransferUseCase
+import com.example.domain.transaction.usecase.GetAverageSpendingUseCase
 import com.example.domain.transaction.usecase.GetCategorySummaryUseCase
 import com.example.domain.transaction.usecase.GetMonthlyChartDataUseCase
 import com.example.domain.transaction.usecase.GetMonthlyComparisonUseCase
 import com.example.domain.transaction.usecase.GetRecentTransactionsUseCase
+import com.example.domain.transaction.usecase.GetTopCategoriesCurrentMonthUseCase
 import com.example.domain.transaction.usecase.GetTransactionsUseCase
 import com.example.domain.transaction.usecase.GetWalletTransactionsUseCase
 import com.example.domain.user.usecase.DeleteAvatarUseCase
@@ -76,4 +81,9 @@ val useCaseModule = module {
     factory{ CreateTagUseCase(get()) }
     factory{ DeleteTagUseCase(get()) }
     factory{ GetTagsUseCase(get()) }
+    factory{ GetCategoryLimitsUseCase(get()) }
+    factory{ UpdateCategoryLimitUseCase(get()) }
+    factory{ DeleteCategoryLimitUseCase(get()) }
+    factory{ GetAverageSpendingUseCase(get()) }
+    factory{ GetTopCategoriesCurrentMonthUseCase(get()) }
 }

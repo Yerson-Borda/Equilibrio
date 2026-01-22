@@ -11,12 +11,15 @@ import com.example.domain.transaction.model.MonthlyComparisonData
 import com.example.domain.transaction.model.PeriodFilter
 import com.example.domain.transaction.model.TransactionChartsData
 import com.example.domain.transaction.model.TransactionEntity
+import com.example.domain.transaction.usecase.GetAverageSpendingUseCase
 import com.example.domain.transaction.usecase.GetCategorySummaryUseCase
 import com.example.domain.transaction.usecase.GetMonthlyChartDataUseCase
 import com.example.domain.transaction.usecase.GetMonthlyComparisonUseCase
 import com.example.domain.transaction.usecase.GetRecentTransactionsUseCase
+import com.example.domain.transaction.usecase.GetTopCategoriesCurrentMonthUseCase
 import com.example.moneymate.utils.DataSyncManager
 import com.example.moneymate.utils.ScreenState
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +29,9 @@ class TransactionScreenViewModel(
     private val getMonthlyChartDataUseCase: GetMonthlyChartDataUseCase,
     private val getCategorySummaryUseCase: GetCategorySummaryUseCase,
     private val getMonthlyComparisonUseCase: GetMonthlyComparisonUseCase,
-    private val getRecentTransactionsUseCase: GetRecentTransactionsUseCase
+    private val getRecentTransactionsUseCase: GetRecentTransactionsUseCase,
+    private val getTopCategoriesCurrentMonthUseCase: GetTopCategoriesCurrentMonthUseCase,
+    private val getAverageSpendingUseCase: GetAverageSpendingUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TransactionScreenState())
@@ -111,28 +116,41 @@ class TransactionScreenViewModel(
             try {
                 println("DEBUG: Loading all chart data...")
 
-                // Load chart data sequentially
-                val monthlyChart = getMonthlyChartDataUseCase.execute(months = 12)
+                // Load all chart data in parallel
+                val monthlyChartDeferred = async { getMonthlyChartDataUseCase.execute(months = 12) }
                 val defaultDateRange = DateRange(getDefaultStartDate(), getDefaultEndDate())
-                val lineChartData = getMonthlyChartDataUseCase.executeForLineChart(defaultDateRange)
-                val categorySummary = getCategorySummaryUseCase.execute()
-                val monthlyComparison = getMonthlyComparisonUseCase.execute()
+                val lineChartDataDeferred = async { getMonthlyChartDataUseCase.executeForLineChart(defaultDateRange) }
+                val categorySummaryDeferred = async { getCategorySummaryUseCase.execute() }
+                val monthlyComparisonDeferred = async { getMonthlyComparisonUseCase.execute() }
+                val topCategoriesDeferred = async { getTopCategoriesCurrentMonthUseCase() }
+                val averageSpendingDeferred = async { getAverageSpendingUseCase(PeriodFilter.MONTH) }
+
+                // Await all results
+                val monthlyChart = monthlyChartDeferred.await()
+                val lineChartData = lineChartDataDeferred.await()
+                val categorySummary = categorySummaryDeferred.await()
+                val monthlyComparison = monthlyComparisonDeferred.await()
+                val topCategories = topCategoriesDeferred.await().getOrElse { emptyList() }
+                val averageSpending = averageSpendingDeferred.await().getOrElse { emptyList() }
 
                 val chartsData = TransactionChartsData(
                     monthlyChart = monthlyChart.copy(
                         days = lineChartData.days,
                         dateRange = defaultDateRange,
-                        selectedFilter = ChartFilter.EXPENSES // Set initial filter
+                        selectedFilter = ChartFilter.EXPENSES
                     ),
                     categorySummary = categorySummary,
                     monthlyComparison = monthlyComparison,
-                    currentChartType = ChartType.MONTHLY_TRENDS
+                    topCategories = topCategories,
+                    averageSpending = averageSpending,
+                    currentChartType = ChartType.MONTHLY_TRENDS,
+                    currentPeriod = PeriodFilter.MONTH
                 )
 
                 _uiState.value = _uiState.value.copy(
                     chartsState = ScreenState.Success(chartsData)
                 )
-                println("DEBUG: All chart data loaded successfully. Initial filter: ${chartsData.monthlyChart.selectedFilter}")
+                println("DEBUG: All chart data loaded successfully")
 
             } catch (e: Exception) {
                 println("DEBUG: Chart data error: ${e.message}")
@@ -164,6 +182,70 @@ class TransactionScreenViewModel(
                         retryAction = { loadAllChartData() }
                     )
                 )
+            }
+        }
+    }
+
+    fun loadAverageSpending(period: PeriodFilter = PeriodFilter.MONTH) {
+        viewModelScope.launch {
+            try {
+                val currentCharts = when (val state = _uiState.value.chartsState) {
+                    is ScreenState.Success -> state.data
+                    else -> return@launch
+                }
+
+                val result = getAverageSpendingUseCase(period)
+                result.fold(
+                    onSuccess = { averageSpending ->
+                        _uiState.value = _uiState.value.copy(
+                            chartsState = ScreenState.Success(
+                                currentCharts.copy(
+                                    averageSpending = averageSpending,
+                                    currentPeriod = period
+                                )
+                            )
+                        )
+                        println("DEBUG: Average spending loaded for period: $period")
+                    },
+                    onFailure = { error ->
+                        println("DEBUG: Failed to load average spending: ${error.message}")
+                    }
+                )
+            } catch (e: Exception) {
+                println("DEBUG: Error loading average spending: ${e.message}")
+            }
+        }
+    }
+
+    fun loadAverageSpendingData(currentPeriod: PeriodFilter = PeriodFilter.MONTH) {
+        viewModelScope.launch {
+            try {
+                val currentCharts = when (val state = _uiState.value.chartsState) {
+                    is ScreenState.Success -> state.data
+                    else -> return@launch
+                }
+
+                // Load average spending for the period
+                val result = getAverageSpendingUseCase(currentPeriod)
+                result.fold(
+                    onSuccess = { averageSpending ->
+                        _uiState.value = _uiState.value.copy(
+                            chartsState = ScreenState.Success(
+                                currentCharts.copy(
+                                    averageSpending = averageSpending,
+                                    currentChartType = ChartType.AVERAGE_SPENDING,
+                                    currentPeriod = currentPeriod
+                                )
+                            )
+                        )
+                        println("DEBUG: Average spending loaded for period: $currentPeriod")
+                    },
+                    onFailure = { error ->
+                        println("DEBUG: Failed to load average spending: ${error.message}")
+                    }
+                )
+            } catch (e: Exception) {
+                println("DEBUG: Error loading average spending: ${e.message}")
             }
         }
     }
@@ -204,25 +286,49 @@ class TransactionScreenViewModel(
         }
     }
 
-    // Update chart type (for swipe/tab changes)
+    // Update filters for charts - ADD EXTENSIVE DEBUGGING
     fun updateCurrentChartType(chartType: ChartType) {
         println("DEBUG: updateCurrentChartType called with: $chartType")
-        val currentCharts = when (val state = _uiState.value.chartsState) {
-            is ScreenState.Success -> {
-                println("DEBUG: Current charts state: SUCCESS")
-                state.data
+
+        when (chartType) {
+            ChartType.AVERAGE_SPENDING -> {
+                // Load average spending data when switching to this chart type
+                val currentCharts = when (val state = _uiState.value.chartsState) {
+                    is ScreenState.Success -> state.data
+                    else -> _uiState.value.chartsData
+                }
+
+                // Check if we already have average spending data
+                if (currentCharts.averageSpending.isNotEmpty()) {
+                    _uiState.value = _uiState.value.copy(
+                        chartsState = ScreenState.Success(
+                            currentCharts.copy(currentChartType = chartType)
+                        )
+                    )
+                } else {
+                    // Load average spending data
+                    loadAverageSpendingData(currentCharts.currentPeriod)
+                }
             }
             else -> {
-                println("DEBUG: Current charts state: ${_uiState.value.chartsState}")
-                _uiState.value.chartsData // fallback
+                val currentCharts = when (val state = _uiState.value.chartsState) {
+                    is ScreenState.Success -> {
+                        println("DEBUG: Current charts state: SUCCESS")
+                        state.data
+                    }
+                    else -> {
+                        println("DEBUG: Current charts state: ${_uiState.value.chartsState}")
+                        _uiState.value.chartsData // fallback
+                    }
+                }
+
+                _uiState.value = _uiState.value.copy(
+                    chartsState = ScreenState.Success(
+                        currentCharts.copy(currentChartType = chartType)
+                    )
+                )
             }
         }
-
-        _uiState.value = _uiState.value.copy(
-            chartsState = ScreenState.Success(
-                currentCharts.copy(currentChartType = chartType)
-            )
-        )
         println("DEBUG: Chart type updated to: $chartType")
     }
 
@@ -279,6 +385,12 @@ class TransactionScreenViewModel(
             ChartType.MONTHLY_COMPARISON -> {
                 println("📅 DEBUG: MONTHLY_COMPARISON filter change (no action needed)")
             }
+            ChartType.TOP_CATEGORIES -> {
+                println("📊 DEBUG: TOP_CATEGORIES filter change (no action needed for donut chart)")
+            }
+            ChartType.AVERAGE_SPENDING -> {
+                println("📊 DEBUG: AVERAGE_SPENDING filter change (no action needed for average spending chart)")
+            }
         }
     }
 
@@ -331,9 +443,18 @@ class TransactionScreenViewModel(
                     ChartType.MONTHLY_COMPARISON -> {
                         // Handle comparison chart period changes if needed
                     }
+                    ChartType.TOP_CATEGORIES -> {
+                        // For top categories donut chart, load average spending for the new period
+                        loadAverageSpending(period)
+                    }
+                    ChartType.AVERAGE_SPENDING -> {
+                        // For average spending chart, reload data for new period
+                        loadAverageSpendingData(period)
+                    }
                 }
             } catch (e: Exception) {
                 println("DEBUG: Period filter error: ${e.message}")
+                e.printStackTrace()
             }
         }
     }
@@ -488,6 +609,61 @@ class TransactionScreenViewModel(
                         )
                     } catch (e: Exception) {
                         println("DEBUG: Monthly comparison refresh error: ${e.message}")
+                    }
+                }
+                ChartType.TOP_CATEGORIES -> {
+                    try {
+                        // Refresh both top categories and average spending
+                        val topCategoriesResult = getTopCategoriesCurrentMonthUseCase()
+                        val averageSpendingResult = getAverageSpendingUseCase(currentCharts.currentPeriod)
+
+                        topCategoriesResult.fold(
+                            onSuccess = { topCategories ->
+                                averageSpendingResult.fold(
+                                    onSuccess = { averageSpending ->
+                                        _uiState.value = _uiState.value.copy(
+                                            chartsState = ScreenState.Success(
+                                                currentCharts.copy(
+                                                    topCategories = topCategories,
+                                                    averageSpending = averageSpending
+                                                )
+                                            )
+                                        )
+                                    },
+                                    onFailure = { error ->
+                                        println("DEBUG: Failed to refresh average spending: ${error.message}")
+                                    }
+                                )
+                            },
+                            onFailure = { error ->
+                                println("DEBUG: Failed to refresh top categories: ${error.message}")
+                            }
+                        )
+                    } catch (e: Exception) {
+                        println("DEBUG: Top categories refresh error: ${e.message}")
+                    }
+                }
+                ChartType.AVERAGE_SPENDING -> {
+                    try {
+                        // Refresh average spending data
+                        val result = getAverageSpendingUseCase(currentCharts.currentPeriod)
+                        result.fold(
+                            onSuccess = { averageSpending ->
+                                _uiState.value = _uiState.value.copy(
+                                    chartsState = ScreenState.Success(
+                                        currentCharts.copy(
+                                            averageSpending = averageSpending
+                                        )
+                                    )
+                                )
+                                println("DEBUG: Average spending refreshed")
+                            },
+                            onFailure = { error ->
+                                println("DEBUG: Failed to refresh average spending: ${error.message}")
+                            }
+                        )
+                    } catch (e: Exception) {
+                        println("DEBUG: Average spending refresh error: ${e.message}")
                     }
                 }
             }

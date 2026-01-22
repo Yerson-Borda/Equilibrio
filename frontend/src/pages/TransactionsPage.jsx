@@ -8,6 +8,10 @@ import { apiService } from "../services/api";
 import SettingsLoader from "../components/ui/SettingsLoader";
 import TagFilter from "../components/ui/TagFilter";
 
+// ✅ embedded widgets shown INSIDE the carousel box
+import Top3CategoriesWidget from '../components/charts/Top3CategoriesWidget';
+import AverageSpendingWidget from '../components/charts/AverageSpendingWidget';
+
 const formatDateLabel = (dateStr) => {
     const d = new Date(dateStr);
     if (Number.isNaN(d.getTime())) return dateStr;
@@ -46,7 +50,6 @@ const TransactionsPage = () => {
     const handlePrevChart = () => {
         setChartIndex((prev) => (prev - 1 + chartViews.length) % chartViews.length);
     };
-
     const handleNextChart = () => {
         setChartIndex((prev) => (prev + 1) % chartViews.length);
     };
