@@ -22,6 +22,7 @@ class TransactionResponse(TransactionBase):
     user_id: int
     created_at: datetime
     tags: list[str]
+    receipt_url: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -38,3 +39,10 @@ class TransferResponse(BaseModel):
     destination_transaction: TransactionResponse
     exchange_rate: float
     converted_amount: float
+
+class TransferPreviewResponse(BaseModel):
+    source_currency: str
+    destination_currency: str
+    amount: Decimal
+    exchange_rate: Decimal
+    converted_amount: Decimal

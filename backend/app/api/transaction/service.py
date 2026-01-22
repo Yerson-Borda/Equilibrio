@@ -11,8 +11,40 @@ from app.utils.enums.transaction_type import TransactionType
 from app.api.budget import service as budget_service
 from app.api.financial_summary.service import update_monthly_summary
 from app.services.currency_service import currency_service
+from fastapi import UploadFile
+from app.core.file_settings import (
+    TRANSACTION_UPLOAD_DIR,
+    ALLOWED_EXTENSIONS,
+    MAX_FILE_SIZE
+)
+from uuid import uuid4
+from pathlib import Path
+import shutil
+from app.api.goal.service import update_goal_progress
+from app.api.savings_goal.service import record_savings
 
-def create_transaction(db: Session, user_id: int, data):
+def save_receipt(user_id: int, file: UploadFile) -> str:
+    ext = Path(file.filename).suffix.lower()
+
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(400, "Invalid file type")
+
+    file.file.seek(0, 2)
+    size = file.file.tell()
+    file.file.seek(0)
+
+    if size > MAX_FILE_SIZE:
+        raise HTTPException(400, "File too large")
+
+    filename = f"{user_id}_{uuid4()}{ext}"
+    path = TRANSACTION_UPLOAD_DIR / filename
+
+    with open(path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    return f"/static/receipts/{filename}"
+
+def create_transaction(db: Session, user_id: int, data, receipt: UploadFile | None = None):
     wallet = db.query(Wallet).filter(
         Wallet.id == data.wallet_id,
         Wallet.user_id == user_id
@@ -28,6 +60,10 @@ def create_transaction(db: Session, user_id: int, data):
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
 
+    receipt_url = None
+    if receipt:
+        receipt_url = save_receipt(user_id, receipt)
+
     transaction = Transaction(
         name=data.name,
         amount=data.amount,
@@ -36,7 +72,8 @@ def create_transaction(db: Session, user_id: int, data):
         transaction_date=data.transaction_date,
         wallet_id=data.wallet_id,
         category_id=data.category_id,
-        user_id=user_id
+        user_id=user_id,
+        receipt_url=receipt_url
     )
 
     # Update wallet balance
@@ -66,9 +103,9 @@ def create_transaction(db: Session, user_id: int, data):
     db.refresh(transaction)
 
     update_monthly_summary(db, user_id, transaction)
+    record_savings(db, transaction)
 
     return _serialize_transaction(transaction)
-
 
 def get_wallet_transactions(db: Session, user_id: int, wallet_id: int, limit: int):
     wallet = db.query(Wallet).filter(
@@ -208,6 +245,12 @@ def transfer_funds(db: Session, user_id: int, data):
     db.refresh(source_tx)
     db.refresh(dest_tx)
 
+    update_monthly_summary(db, user_id, source_tx)
+    update_monthly_summary(db, user_id, dest_tx)
+
+    update_goal_progress(db, dest_tx)
+    record_savings(db, dest_tx)
+
     return {
         "message": "Transfer completed successfully",
         "source_transaction": source_tx,
@@ -215,6 +258,51 @@ def transfer_funds(db: Session, user_id: int, data):
         "exchange_rate": float(exchange_rate),
         "converted_amount": float(converted_amount)
     }
+
+def preview_transfer(
+    db: Session,
+    user_id: int,
+    source_wallet_id: int,
+    destination_wallet_id: int,
+    amount: Decimal
+):
+    source_wallet = db.query(Wallet).filter(
+        Wallet.id == source_wallet_id,
+        Wallet.user_id == user_id
+    ).first()
+
+    if not source_wallet:
+        raise HTTPException(404, "Source wallet not found")
+
+    destination_wallet = db.query(Wallet).filter(
+        Wallet.id == destination_wallet_id,
+        Wallet.user_id == user_id
+    ).first()
+
+    if not destination_wallet:
+        raise HTTPException(404, "Destination wallet not found")
+
+    if amount <= 0:
+        raise HTTPException(400, "Amount must be greater than zero")
+
+    if source_wallet.currency == destination_wallet.currency:
+        exchange_rate = Decimal("1.0")
+        converted_amount = amount
+    else:
+        exchange_rate = currency_service.get_exchange_rate(
+            source_wallet.currency,
+            destination_wallet.currency
+        )
+        converted_amount = (amount * exchange_rate).quantize(Decimal("0.01"))
+
+    return {
+        "source_currency": source_wallet.currency,
+        "destination_currency": destination_wallet.currency,
+        "amount": amount,
+        "exchange_rate": exchange_rate,
+        "converted_amount": converted_amount
+    }
+
 
 def get_transactions_by_tag(db: Session, user_id: int, tag_id: int):
     txs = (
@@ -255,7 +343,8 @@ def _serialize_transaction(tx: Transaction) -> TransactionResponse:
         category_id=tx.category_id,
         user_id=tx.user_id,
         created_at=tx.created_at,
-        tags=[t.name for t in tx.tags]
+        tags=[t.name for t in tx.tags],
+        receipt_url=tx.receipt_url
     )
 
 def _serialize_transactions(txs: list[Transaction]) -> list[TransactionResponse]:

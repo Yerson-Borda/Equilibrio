@@ -11,9 +11,15 @@ from .service import (
     get_monthly_comparison_service,
     get_spending_trends_service,
     get_top_categories_current_month_service,
-    get_average_spending_service
+    get_average_spending_service,
+    get_savings_trends_service
 )
 from ...core.auth import get_current_user
+from app.api.analytics.forecasting_service import (
+    get_savings_forecast_service,
+    get_end_of_month_spending_forecast_service,
+    get_saving_opportunities_service
+)
 
 router = APIRouter()
 
@@ -102,3 +108,44 @@ def get_average_spending(
         current_user=current_user,
         period=period,
     )
+
+@router.get("/savings-trends")
+def get_savings_trends(
+    months: int = Query(6, ge=1, le=12),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Get savings trends over multiple months.
+    """
+    return get_savings_trends_service(
+        db=db,
+        current_user=current_user,
+        months=months,
+    )
+
+
+# FORECASTING
+@router.get("/forecast/savings")
+def get_savings_forecast(
+    months_ahead: int = 3,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return get_savings_forecast_service(db, current_user, months_ahead)
+
+
+@router.get("/forecast/spending")
+def get_spending_forecast(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return get_end_of_month_spending_forecast_service(db, current_user)
+
+
+@router.get("/forecast/suggestions")
+def get_saving_suggestions(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return get_saving_opportunities_service(db, current_user)

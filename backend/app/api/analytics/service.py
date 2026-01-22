@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.entities.transaction import Transaction
 from app.entities.category import Category
 from app.entities.user import User
+from app.entities.monthly_savings_goal import MonthlySavingsGoal as SavingsGoal
 from app.utils.enums.transaction_type import TransactionType
 
 from .model import (
@@ -16,7 +17,6 @@ from .model import (
     MonthlyComparison,
     DateRange
 )
-
 
 def get_category_summary_service(
         db: Session,
@@ -469,6 +469,85 @@ def get_average_spending_service(db: Session, current_user: User, period: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+def get_savings_trends_service(
+    db: Session,
+    current_user: User,
+    months: int,
+):
+    end_date = date.today()
+    start_date = end_date - timedelta(days=30 * months)
+
+    start_year = start_date.year
+    start_month = start_date.month
+
+    data = (
+        db.query(
+            SavingsGoal.year,
+            SavingsGoal.month,
+            SavingsGoal.current_saved,
+            SavingsGoal.target_amount,
+        )
+        .filter(
+            SavingsGoal.user_id == current_user.id,
+            (
+                (SavingsGoal.year > start_year) |
+                (
+                    (SavingsGoal.year == start_year) &
+                    (SavingsGoal.month >= start_month)
+                )
+            )
+        )
+        .order_by(SavingsGoal.year, SavingsGoal.month)
+        .all()
+    )
+
+    indexed = {
+        (row.year, row.month): row
+        for row in data
+    }
+
+    monthly_trends = []
+
+    current = start_date.replace(day=1)
+    end_month = end_date.replace(day=1)
+
+    while current <= end_month:
+        row = indexed.get((current.year, current.month))
+
+        saved = float(row.current_saved) if row else 0.0
+        target = float(row.target_amount) if row else 0.0
+
+        achievement = (
+            round(saved / target, 2)
+            if target > 0
+            else 0.0
+        )
+
+        monthly_trends.append({
+            "year": current.year,
+            "month": current.month,
+            "display_name": current.strftime("%b %Y"),
+            "saved_amount": saved,
+            "target_amount": target,
+            "achievement_rate": achievement,
+        })
+
+        if current.month == 12:
+            current = current.replace(year=current.year + 1, month=1)
+        else:
+            current = current.replace(month=current.month + 1)
+
+    return {
+        "monthly_trends": monthly_trends,
+        "months_analyzed": months,
+        "analysis_period": {
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
+        },
+    }
+
 
 
 def _to_float_round(value: Decimal | None, places: int = 2) -> float:

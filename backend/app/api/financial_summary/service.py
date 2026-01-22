@@ -48,11 +48,13 @@ def update_monthly_summary(db: Session, user_id: int, transaction):
     if transaction.type == TransactionType.INCOME:
         summary.total_income += converted_amount
 
-        if wallet.wallet_type == WalletType.SAVING_ACCOUNT:
-            summary.total_saved += converted_amount
-
     elif transaction.type == TransactionType.EXPENSE:
         summary.total_spent += converted_amount
+
+    elif transaction.type == TransactionType.TRANSFER:
+        if wallet.wallet_type in (WalletType.SAVING_ACCOUNT, WalletType.GOAL):
+            summary.total_saved += converted_amount
+
 
     db.commit()
     db.refresh(summary)
@@ -101,11 +103,14 @@ def recalculate_monthly_summary(db: Session, user_id: int):
 
         if txn.type == TransactionType.INCOME:
             total_income += converted
-            if wallet.wallet_type == WalletType.SAVING_ACCOUNT:
-                total_saved += converted
 
         elif txn.type == TransactionType.EXPENSE:
             total_spent += converted
+
+        elif txn.type == TransactionType.TRANSFER:
+            if wallet.wallet_type in (WalletType.SAVING_ACCOUNT, WalletType.GOAL):
+                total_saved += converted
+
 
     summary.total_income = total_income
     summary.total_spent = total_spent

@@ -50,3 +50,18 @@ class DateRange(BaseModel):
             )
 
         return cls(start_date=start_date, end_date=end_date)
+
+class MonthlySavingsTrend(BaseModel):
+    year: int
+    month: int
+    display_name: str
+    saved_amount: float
+    target_amount: float
+    achievement_rate: float
+
+class SavingsTrendSummary(BaseModel):
+    total_saved: float
+    average_saved: float
+    best_month: str
+    worst_month: str
+    month_over_month_change: float
