@@ -16,7 +16,8 @@ data class TransactionDto(
     @SerialName("category_id") val categoryId: Int,
     @SerialName("user_id") val userId: Int,
     @SerialName("created_at") val createdAt: String,
-    @SerialName("tags") val tags: List<String> = emptyList()
+    @SerialName("tags") val tags: List<String> = emptyList(),
+    @SerialName("receipt_url") val receiptUrl: String? = null
 ) {
     fun toEntity(): TransactionEntity {
         return TransactionEntity(
@@ -30,7 +31,8 @@ data class TransactionDto(
             categoryId = categoryId,
             userId = userId,
             createdAt = createdAt,
-            tags = tags
+            tags = tags,
+            receiptUrl = receiptUrl
         )
     }
 }

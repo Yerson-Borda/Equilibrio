@@ -16,6 +16,11 @@ import com.example.domain.category.usecase.GetIncomeCategoriesUseCase
 import com.example.domain.categoryLimit.usecase.DeleteCategoryLimitUseCase
 import com.example.domain.categoryLimit.usecase.GetCategoryLimitsUseCase
 import com.example.domain.categoryLimit.usecase.UpdateCategoryLimitUseCase
+import com.example.domain.goal.usecase.CreateGoalUseCase
+import com.example.domain.goal.usecase.DeleteGoalUseCase
+import com.example.domain.goal.usecase.GetGoalUseCase
+import com.example.domain.goal.usecase.GetGoalsUseCase
+import com.example.domain.goal.usecase.UpdateGoalUseCase
 import com.example.domain.tag.usecase.CreateTagUseCase
 import com.example.domain.tag.usecase.DeleteTagUseCase
 import com.example.domain.tag.usecase.GetTagsUseCase
@@ -28,6 +33,7 @@ import com.example.domain.transaction.usecase.GetMonthlyComparisonUseCase
 import com.example.domain.transaction.usecase.GetRecentTransactionsUseCase
 import com.example.domain.transaction.usecase.GetTopCategoriesCurrentMonthUseCase
 import com.example.domain.transaction.usecase.GetTransactionsUseCase
+import com.example.domain.transaction.usecase.GetTransferPreviewUseCase
 import com.example.domain.transaction.usecase.GetWalletTransactionsUseCase
 import com.example.domain.user.usecase.DeleteAvatarUseCase
 import com.example.domain.user.usecase.GetUserDetailedUseCase
@@ -42,6 +48,8 @@ import com.example.domain.wallet.usecase.GetWalletDetailUseCase
 import com.example.domain.wallet.usecase.GetWalletUseCase
 import com.example.domain.wallet.usecase.GetWalletsUseCase
 import com.example.domain.wallet.usecase.UpdateWalletUseCase
+import com.example.domain.savingsGoal.usecase.GetCurrentSavingsGoalUseCase
+import com.example.domain.savingsGoal.usecase.UpdateSavingsGoalUseCase
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.factoryOf
 import org.koin.dsl.module
@@ -59,6 +67,7 @@ val useCaseModule = module {
     factory { DeleteWalletUseCase(get()) }
     factory { UpdateWalletUseCase(get()) }
     factory { CreateTransferUseCase(get()) }
+    factory { GetTransferPreviewUseCase(get()) }
     factory { CreateTransactionUseCase(get()) }
     factory { GetTransactionsUseCase(get()) }
     factory { GetUserUseCase(get()) }
@@ -86,4 +95,12 @@ val useCaseModule = module {
     factory{ DeleteCategoryLimitUseCase(get()) }
     factory{ GetAverageSpendingUseCase(get()) }
     factory{ GetTopCategoriesCurrentMonthUseCase(get()) }
+    factory{ GetCurrentSavingsGoalUseCase(get()) }
+    factory{ UpdateSavingsGoalUseCase(get()) }
+    factory{ CreateGoalUseCase(get()) }
+    factory{ DeleteGoalUseCase(get()) }
+    factory{ GetGoalUseCase(get()) }
+    factory{ GetGoalsUseCase(get()) }
+    factory{ UpdateGoalUseCase(get()) }
+
 }

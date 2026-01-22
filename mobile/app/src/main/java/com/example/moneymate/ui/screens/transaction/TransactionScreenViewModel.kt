@@ -233,7 +233,7 @@ class TransactionScreenViewModel(
                             chartsState = ScreenState.Success(
                                 currentCharts.copy(
                                     averageSpending = averageSpending,
-                                    currentChartType = ChartType.AVERAGE_SPENDING,
+                                    currentChartType = ChartType.AVERAGE_SPENDING_LIST,
                                     currentPeriod = currentPeriod
                                 )
                             )
@@ -291,8 +291,8 @@ class TransactionScreenViewModel(
         println("DEBUG: updateCurrentChartType called with: $chartType")
 
         when (chartType) {
-            ChartType.AVERAGE_SPENDING -> {
-                // Load average spending data when switching to this chart type
+            ChartType.AVERAGE_SPENDING_RADAR, ChartType.AVERAGE_SPENDING_LIST -> {
+                // Load average spending data when switching to either average spending chart type
                 val currentCharts = when (val state = _uiState.value.chartsState) {
                     is ScreenState.Success -> state.data
                     else -> _uiState.value.chartsData
@@ -388,7 +388,7 @@ class TransactionScreenViewModel(
             ChartType.TOP_CATEGORIES -> {
                 println("📊 DEBUG: TOP_CATEGORIES filter change (no action needed for donut chart)")
             }
-            ChartType.AVERAGE_SPENDING -> {
+            ChartType.AVERAGE_SPENDING_RADAR, ChartType.AVERAGE_SPENDING_LIST -> {
                 println("📊 DEBUG: AVERAGE_SPENDING filter change (no action needed for average spending chart)")
             }
         }
@@ -447,8 +447,8 @@ class TransactionScreenViewModel(
                         // For top categories donut chart, load average spending for the new period
                         loadAverageSpending(period)
                     }
-                    ChartType.AVERAGE_SPENDING -> {
-                        // For average spending chart, reload data for new period
+                    ChartType.AVERAGE_SPENDING_RADAR, ChartType.AVERAGE_SPENDING_LIST -> {
+                        // For average spending charts, reload data for new period
                         loadAverageSpendingData(period)
                     }
                 }
@@ -643,7 +643,7 @@ class TransactionScreenViewModel(
                         println("DEBUG: Top categories refresh error: ${e.message}")
                     }
                 }
-                ChartType.AVERAGE_SPENDING -> {
+                ChartType.AVERAGE_SPENDING_RADAR, ChartType.AVERAGE_SPENDING_LIST -> {
                     try {
                         // Refresh average spending data
                         val result = getAverageSpendingUseCase(currentCharts.currentPeriod)

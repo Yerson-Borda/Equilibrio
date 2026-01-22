@@ -11,5 +11,6 @@ data class TransactionEntity(
     val categoryId: Int,
     val userId: Int,
     val createdAt: String,
-    val tags: List<String> = emptyList() // Added tags field
+    val tags: List<String> = emptyList(), // Added tags field
+    val receiptUrl: String? = null // Receipt image URL
 )

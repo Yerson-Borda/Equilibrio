@@ -11,6 +11,7 @@ import com.example.domain.transaction.model.SpendingTrendData
 import com.example.domain.transaction.model.TopCategoryData
 import com.example.domain.transaction.model.TransactionEntity
 import com.example.domain.transaction.model.TransferEntity
+import com.example.domain.transaction.model.TransferPreview
 
 interface TransactionRepository {
     suspend fun createTransaction(
@@ -23,6 +24,12 @@ interface TransactionRepository {
         amount: Any,
         note: String?
     ): Result<TransferEntity>
+
+    suspend fun getTransferPreview(
+        sourceWalletId: Int,
+        destinationWalletId: Int,
+        amount: String
+    ): Result<TransferPreview>
 
     suspend fun getTransactions(): Result<List<TransactionEntity>>
 

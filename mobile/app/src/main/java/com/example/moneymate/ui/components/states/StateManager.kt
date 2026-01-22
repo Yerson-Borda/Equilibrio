@@ -34,8 +34,7 @@ fun <T> StateManager(
             EmptyState(
                 title = emptyTitle,
                 message = emptyMessage,
-                icon = emptyIcon,
-                action = emptyAction
+                icon = emptyIcon
             )
         }
         is ScreenState.Success -> {

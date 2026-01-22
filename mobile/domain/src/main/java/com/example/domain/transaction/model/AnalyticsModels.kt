@@ -118,5 +118,6 @@ enum class ChartType {
     CATEGORY_BREAKDOWN,   // Line chart (second) - renamed to be more general
     MONTHLY_COMPARISON,    // Pie chart (third)
     TOP_CATEGORIES,
-    AVERAGE_SPENDING
+    AVERAGE_SPENDING_RADAR,  // Radar chart version
+    AVERAGE_SPENDING_LIST    // List-based version (last)
 }

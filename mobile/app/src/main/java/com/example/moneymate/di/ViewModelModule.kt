@@ -3,6 +3,7 @@ package com.example.moneymate.di
 
 import com.example.moneymate.ui.screens.auth.signUp.SignUpViewModel
 import com.example.moneymate.ui.screens.auth.singIn.SignInViewModel
+import com.example.moneymate.ui.screens.goal.GoalDetailViewModel
 import com.example.moneymate.ui.screens.goal.GoalScreenViewModel
 import com.example.moneymate.ui.screens.home.HomeViewModel
 import com.example.moneymate.ui.screens.profile.editprofile.EditProfileViewModel
@@ -20,10 +21,10 @@ val viewModelModule  = module {
     viewModel{SignInViewModel(get())}
     viewModel{ HomeViewModel(get(), get(), get(), get()) }
     viewModel{ WalletViewModel(get(), get(), get(), get(),get(), get()) }
-    viewModel{ AddTransactionViewModel(get(), get(), get(), get() , get(), get(), get()) }
+    viewModel{ AddTransactionViewModel(get(), get(), get(), get() , get(), get(), get(), get()) }
     viewModel { EditProfileViewModel(get(), get(), get(), get()) }
     viewModel { ProfileOptionsScreenViewModel(get()) }
     viewModel { SettingsScreenViewModel(get(), get()) }
     viewModel{ TransactionScreenViewModel(get(), get() , get() , get(), get(), get()) }
-    viewModel { GoalScreenViewModel(get(), get(), get(), get(), get()) }
-}
+    viewModel { GoalScreenViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { GoalDetailViewModel(get(), get(), get(), get()) }}
