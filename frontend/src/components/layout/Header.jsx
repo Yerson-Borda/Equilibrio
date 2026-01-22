@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 
-import searchIcon from '../../assets/icons/search-icon.png';
-import notificationIcon from '../../assets/icons/notification-icon.png';
-import dropdownIcon from '../../assets/icons/dropdown-icon.png';
-import dropupIcon from '../../assets/icons/dropup-icon.png';
+import searchIcon from "../../assets/icons/search-icon.png";
+import notificationIcon from "../../assets/icons/notification-icon.png";
+import dropdownIcon from "../../assets/icons/dropdown-icon.png";
+import dropupIcon from "../../assets/icons/dropup-icon.png";
 
-import { apiService } from '../../services/api';
-import { formatCurrency} from '../../config/currencies';
+import { apiService } from "../../services/api";
+import { formatCurrency } from "../../config/currencies";
 
-const Header = () => {
+const Header = ({ title = "" }) => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [user, setUser] = useState(null);
     const [setTotalBalance] = useState(0);
@@ -19,10 +19,10 @@ const Header = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-
     useEffect(() => {
         fetchUserData();
-        fetchTotalBalance();// eslint-disable-next-line react-hooks/exhaustive-deps
+        fetchTotalBalance();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [location]);
 
     const fetchUserData = async () => {
@@ -73,36 +73,29 @@ const Header = () => {
 
     return (
         <header className="bg-transparent">
-            <div className="flex items-center justify-between px-8 py-4">
-                {/* Left side — Total Balance */}
+            <div className="flex items-center justify-between px-8 py-6">
+                {/* Left side: Title + indicators */}
                 <div className="flex-1">
-                    <div className="flex items-center space-x-4">
-                        {/* Balance Card */}
-                        <h1 className="text-3xl font-bold text-gray-900 mt-6 ml-1">Dashboard</h1>
-                        {/* Wallet Count + Multi-currency indicators */}
+                    <div className="flex items-center gap-6">
+                        <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
+
                         {!isLoadingBalance && balanceBreakdown.length > 0 && (
                             <div className="flex items-center space-x-4">
                                 <div className="text-center">
                                     <p className="text-sm text-metallic-gray">Wallets</p>
-                                    <p className="text-lg font-semibold text-text">
-                                        {totalWallets}
-                                    </p>
+                                    <p className="text-lg font-semibold text-text">{totalWallets}</p>
                                 </div>
 
-                                {/* Multi-currency */}
-                                {new Set(balanceBreakdown.map(w => w.original_currency)).size > 1 && (
+                                {new Set(balanceBreakdown.map((w) => w.original_currency)).size > 1 && (
                                     <div className="flex items-center space-x-2 bg-blue-50 px-3 py-1 rounded-full">
-                                        <span className="text-blue-600 text-sm font-medium">
-                                            {
-                                                new Set(
-                                                    balanceBreakdown.map(w => w.original_currency)
-                                                ).size
-                                            } currencies
-                                        </span>
+                    <span className="text-blue-600 text-sm font-medium">
+                      {new Set(balanceBreakdown.map((w) => w.original_currency)).size}{" "}
+                        currencies
+                    </span>
                                     </div>
                                 )}
 
-                                {/* Breakdown Tooltip */}
+                                {/* Breakdown tooltip */}
                                 <div className="relative group">
                                     <button className="text-metallic-gray hover:text-text transition-colors">
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor">
@@ -116,31 +109,24 @@ const Header = () => {
                                     </button>
 
                                     <div className="absolute left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-strokes p-4 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                                        <h4 className="font-semibold text-text mb-2">
-                                            Balance Breakdown
-                                        </h4>
+                                        <h4 className="font-semibold text-text mb-2">Balance Breakdown</h4>
 
                                         <div className="space-y-2 max-h-48 overflow-y-auto">
                                             {balanceBreakdown.map((w, idx) => (
                                                 <div key={idx} className="flex justify-between items-center text-sm">
-                                                    <span className="text-metallic-gray truncate flex-1 mr-2">
-                                                        {w.wallet_name}
-                                                    </span>
+                          <span className="text-metallic-gray truncate flex-1 mr-2">
+                            {w.wallet_name}
+                          </span>
 
                                                     <div className="text-right">
                                                         <div className="font-medium text-text">
-                                                            {formatCurrency(
-                                                                w.original_balance,
-                                                                w.original_currency
-                                                            )}
+                                                            {formatCurrency(w.original_balance, w.original_currency)}
                                                         </div>
 
-                                                        {w.original_currency !== (user?.default_currency || 'USD') && (
+                                                        {w.original_currency !== (user?.default_currency || "USD") && (
                                                             <div className="text-xs text-metallic-gray">
-                                                                ≈ {formatCurrency(
-                                                                w.converted_balance,
-                                                                w.converted_currency
-                                                            )}
+                                                                ≈{" "}
+                                                                {formatCurrency(w.converted_balance, w.converted_currency)}
                                                             </div>
                                                         )}
                                                     </div>
@@ -149,11 +135,11 @@ const Header = () => {
                                         </div>
 
                                         {balanceBreakdown.some(
-                                            w => w.original_currency !== (user?.default_currency || 'USD')
+                                            (w) => w.original_currency !== (user?.default_currency || "USD")
                                         ) && (
                                             <div className="mt-2 pt-2 border-t border-strokes">
                                                 <p className="text-xs text-metallic-gray">
-                                                    * Converted to {user?.default_currency || 'USD'}
+                                                    * Converted to {user?.default_currency || "USD"}
                                                 </p>
                                             </div>
                                         )}
@@ -166,18 +152,14 @@ const Header = () => {
 
                 {/* Right — Icons & Profile */}
                 <div className="flex items-center space-x-6">
-
-                    {/* Search */}
                     <button className="p-2 hover:bg-gray-50 rounded-lg transition">
                         <img src={searchIcon} alt="Search" className="w-5 h-5" />
                     </button>
 
-                    {/* Notifications */}
                     <button className="p-2 hover:bg-gray-50 rounded-lg transition">
                         <img src={notificationIcon} alt="Notifications" className="w-5 h-5" />
                     </button>
 
-                    {/* Profile */}
                     <div className="relative">
                         <button
                             className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition"
@@ -196,17 +178,21 @@ const Header = () => {
                                     />
                                 ) : null}
 
-                                <div className={`${user?.avatar_url ? 'hidden' : 'flex'} w-full h-full items-center justify-center`}>
-                                    <span className="text-white text-sm font-medium">
-                                        {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'U'}
-                                    </span>
+                                <div
+                                    className={`${
+                                        user?.avatar_url ? "hidden" : "flex"
+                                    } w-full h-full items-center justify-center`}
+                                >
+                  <span className="text-white text-sm font-medium">
+                    {user?.full_name ? user.full_name.charAt(0).toUpperCase() : "U"}
+                  </span>
                                 </div>
                             </div>
 
                             <div className="flex items-center space-x-1">
-                                <span className="text-sm font-medium text-text">
-                                    {user?.full_name || 'User'}
-                                </span>
+                <span className="text-sm font-medium text-text">
+                  {user?.full_name || "User"}
+                </span>
                                 <img
                                     src={isProfileOpen ? dropupIcon : dropdownIcon}
                                     alt="Dropdown"
@@ -215,7 +201,6 @@ const Header = () => {
                             </div>
                         </button>
 
-                        {/* Dropdown */}
                         {isProfileOpen && (
                             <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-strokes py-1 z-50">
                                 <button
@@ -225,7 +210,7 @@ const Header = () => {
                                     Update Profile
                                 </button>
 
-                                <div className="border-t border-strokes my-1"></div>
+                                <div className="border-t border-strokes my-1" />
 
                                 <button
                                     onClick={handleExportTransactions}
@@ -234,7 +219,7 @@ const Header = () => {
                                     Export Transactions
                                 </button>
 
-                                <div className="border-t border-strokes my-1"></div>
+                                <div className="border-t border-strokes my-1" />
 
                                 <button
                                     onClick={handleDeleteData}
@@ -254,11 +239,11 @@ const Header = () => {
                     <div className="flex items-center space-x-4 text-xs text-metallic-gray">
                         <span>Balances in:</span>
 
-                        {Array.from(new Set(balanceBreakdown.map(w => w.original_currency))).map((cur) => (
+                        {Array.from(new Set(balanceBreakdown.map((w) => w.original_currency))).map((cur) => (
                             <span key={cur} className="flex items-center space-x-1">
-                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                <span>{cur}</span>
-                            </span>
+                <span className="w-2 h-2 bg-blue-500 rounded-full" />
+                <span>{cur}</span>
+              </span>
                         ))}
                     </div>
                 </div>

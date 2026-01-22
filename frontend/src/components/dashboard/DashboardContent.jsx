@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // Stat icons
@@ -16,7 +16,7 @@ import BudgetGauge from '../budget/BudgetGauge.jsx';
 
 import { apiService } from '../../services/api';
 import { syncService } from '../../services/syncService';
-import { getCurrencySymbol } from '../../config/currencies';
+import { getCurrencySymbol, formatCurrencyMasked } from '../../config/currencies';
 
 // Helper to show "USD - US Dollar" style text
 const getCurrencyDisplay = (code) => {
@@ -50,6 +50,8 @@ const DashboardContent = ({ wallets = [], userStats }) => {
 
     const [dashboardWallets, setDashboardWallets] = useState(wallets || []);
     const [selectedWalletIndex, setSelectedWalletIndex] = useState(0);
+    const [hoverWalletIndex, setHoverWalletIndex] = useState(0);
+    const walletStackRef = useRef(null);
     const [selectedWallet, setSelectedWallet] = useState(null);
     const [isWalletDialogOpen, setIsWalletDialogOpen] = useState(false);
 
@@ -99,6 +101,12 @@ const DashboardContent = ({ wallets = [], userStats }) => {
             setSelectedWalletIndex(idx);
         }
     }, [dashboardWallets, selectedWallet]);
+
+    // Keep hover stack in sync with selected wallet (so mouse leave returns to selection)
+    useEffect(() => {
+        setHoverWalletIndex(selectedWalletIndex);
+    }, [selectedWalletIndex]);
+
 
     // ----- chart helpers -----
     const buildIncomeExpenseSeries = (transactions, days) => {
@@ -237,7 +245,16 @@ const DashboardContent = ({ wallets = [], userStats }) => {
 
     const handleAddTransactionFromDialog = () => {
         if (!selectedWallet) return;
-        navigate('/transactions', { state: { fromDashboard: true, selectedWallet } });
+
+        setIsWalletDialogOpen(false);
+
+        // ✅ go to MyWallets and tell it to open the modal
+        navigate('/wallets', {
+            state: {
+                openAddTransaction: true,
+                defaultWalletId: selectedWallet.id,
+            },
+        });
     };
 
     // ------- Wallet detail dialog (Card Shortcut 3.2) -------
@@ -281,11 +298,7 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                                         Total Balance
                                     </p>
                                     <p className="text-3xl font-bold ml-6">
-                                        {walletSymbol}
-                                        {balance.toLocaleString(undefined, {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2,
-                                        })}
+                                        {formatCurrencyMasked(balance, walletSymbol, 16)}
                                     </p>
                                 </div>
                             </div>
@@ -317,11 +330,7 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                             <p className="text-sm text-metallic-gray mb-1">Your Balance</p>
                             <div className="flex items-center justify-between">
                                 <p className="text-2xl font-semibold text-text">
-                                    {walletSymbol}
-                                    {balance.toLocaleString(undefined, {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    })}
+                                    {formatCurrencyMasked(balance, walletSymbol, 16)}
                                 </p>
                                 <div className="flex items-center space-x-3 text-xs">
                                     <span className="flex items-center space-x-1 text-green-600">
@@ -386,8 +395,11 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                                     Total balance
                                 </h3>
                                 <p className="text-2xl font-bold text-white">
-                                    {currencySymbol}
-                                    {Number(userStats?.totalBalance || 0).toFixed(2)}
+                                    {formatCurrencyMasked(
+                                        userStats?.totalBalance || 0,
+                                        currencySymbol,
+                                        13
+                                    )}
                                 </p>
                             </div>
                         </div>
@@ -400,8 +412,7 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                                     Total spending
                                 </h3>
                                 <p className="text-2xl font-bold text-text">
-                                    {currencySymbol}
-                                    {Number(userStats?.totalSpending || 0).toFixed(2)}
+                                    {formatCurrencyMasked(userStats?.totalSpending || 0, currencySymbol, 13)}
                                 </p>
                             </div>
                         </div>
@@ -414,8 +425,7 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                                     Total saved
                                 </h3>
                                 <p className="text-2xl font-bold text-text">
-                                    {currencySymbol}
-                                    {Number(userStats?.totalSaved || 0).toFixed(2)}
+                                    {formatCurrencyMasked(userStats?.totalSaved || 0, currencySymbol, 13)}
                                 </p>
                             </div>
                         </div>
@@ -569,19 +579,38 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                             </div>
                         ) : (
                             <div
-                                className="relative mt-2 mx-auto mb-0 overflow-hidden"
+                                ref={walletStackRef}
+                                className="relative mt-2 mx-auto mb-0 overflow-hidden select-none"
                                 style={{
                                     width: '100%',
                                     maxWidth: '380px',
-                                    height: 250 + (dashboardWallets.length - 1) * 70,
+                                    height: 260, // fixed so the page never grows with N wallets
                                 }}
+                                onMouseMove={(e) => {
+                                    if (!walletStackRef.current) return;
+                                    const rect = walletStackRef.current.getBoundingClientRect();
+                                    const y = e.clientY - rect.top;
+
+                                    const peek = 32; // how much of each next card is visible
+                                    const idx = Math.max(
+                                        0,
+                                        Math.min(dashboardWallets.length - 1, Math.floor(y / peek))
+                                    );
+
+                                    setHoverWalletIndex(idx);
+                                }}
+                                onMouseLeave={() => setHoverWalletIndex(selectedWalletIndex)}
                             >
                                 {dashboardWallets.map((wallet, index) => {
-                                    const isSelected =
-                                        selectedWallet?.id === wallet.id ||
-                                        (!selectedWallet && index === selectedWalletIndex);
-
+                                    const isActive = index === hoverWalletIndex;
                                     const symbol = getCurrencySymbol(wallet.currency);
+
+                                    const peek = 32;
+                                    const maxAbove = peek * 2; // show at most ~2 cards above
+                                    const top = Math.max(-maxAbove, (index - hoverWalletIndex) * peek);
+
+                                    const distance = Math.abs(index - hoverWalletIndex);
+                                    const scale = 1 - Math.min(0.03 * distance, 0.12);
 
                                     return (
                                         <div
@@ -593,17 +622,17 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                                             }}
                                             className="absolute left-0 w-full h-[250px] rounded-xl cursor-pointer transition-all duration-300"
                                             style={{
-                                                top: index * 70,
-                                                zIndex: isSelected ? 40 : 20 - index,
-                                                backgroundColor: isSelected
+                                                top,
+                                                zIndex: 50 - distance,
+                                                backgroundColor: isActive
                                                     ? wallet.color || '#6FBAFC'
-                                                    : 'transparent',
-                                                backdropFilter: isSelected ? 'none' : 'blur(8px)',
-                                                border: isSelected
+                                                    : 'rgba(255,255,255,0.72)',
+                                                backdropFilter: isActive ? 'none' : 'blur(8px)',
+                                                border: isActive
                                                     ? 'none'
                                                     : '1px solid hsla(0, 0%, 100%, 0.30)',
-                                                transform: isSelected ? 'scale(1)' : 'scale(0.97)',
-                                                boxShadow: isSelected
+                                                transform: `scale(${scale})`,
+                                                boxShadow: isActive
                                                     ? '0 12px 30px rgba(0,0,0,0.35)'
                                                     : '0 4px 10px rgba(0,0,0,0.08)',
                                             }}
@@ -611,7 +640,7 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                                             <div className="p-6 flex flex-col justify-between h-full">
                                                 <h3
                                                     className={`text-base font-semibold ${
-                                                        isSelected ? 'text-white' : 'text-text'
+                                                        isActive ? 'text-white' : 'text-text'
                                                     }`}
                                                 >
                                                     {wallet.name}
@@ -627,7 +656,7 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                                                         <div>
                                                             <p
                                                                 className={`text-xs font-bold leading-none ml-6 mt-3 ${
-                                                                    isSelected
+                                                                    isActive
                                                                         ? 'text-white/80'
                                                                         : 'text-metallic-gray'
                                                                 }`}
@@ -636,13 +665,12 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                                                             </p>
                                                             <p
                                                                 className={`text-xl font-bold leading-tight ml-6 ${
-                                                                    isSelected
+                                                                    isActive
                                                                         ? 'text-white'
                                                                         : 'text-text'
                                                                 }`}
                                                             >
-                                                                {symbol}
-                                                                {Number(wallet.balance || 0).toFixed(2)}
+                                                                {formatCurrencyMasked(wallet.balance || 0, symbol, 15)}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -655,7 +683,7 @@ const DashboardContent = ({ wallets = [], userStats }) => {
 
                                                 <p
                                                     className={`mt-4 text-lg font-mono tracking-wider ${
-                                                        isSelected ? 'text-white' : 'text-text'
+                                                        isActive ? 'text-white' : 'text-text'
                                                     }`}
                                                 >
                                                     {formatCardNumber(wallet.card_number)}
@@ -664,7 +692,7 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                                                 <div className="flex justify-between items-center mt-4">
                                                     <span
                                                         className={`${
-                                                            isSelected
+                                                            isActive
                                                                 ? 'text-white/70'
                                                                 : 'text-metallic-gray'
                                                         } text-sm`}
@@ -676,7 +704,7 @@ const DashboardContent = ({ wallets = [], userStats }) => {
                                                         src={mastercardIcon}
                                                         alt="MASTERCARD"
                                                         className={`h-8 ${
-                                                            isSelected ? 'opacity-90' : 'opacity-70'
+                                                            isActive ? 'opacity-90' : 'opacity-70'
                                                         }`}
                                                     />
                                                 </div>

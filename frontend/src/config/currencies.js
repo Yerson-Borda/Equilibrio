@@ -53,3 +53,22 @@ export function formatCurrency(amount, code = DEFAULT_CURRENCY_CODE) {
 
     return `${symbol}${formatted}`;
 }
+/**
+ * NEW: Currency formatter with overflow masking (**)
+ *
+ * Example (maxChars = 13):
+ * "$123,456,789.12" -> "$123,456,7**"
+ */
+export function formatCurrencyMasked(amount, currencySymbol = '$', maxChars = 13) {
+    const num = Number(amount ?? 0);
+
+    const full = `${currencySymbol}${num.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    })}`;
+
+    if (full.length <= maxChars) return full;
+
+    const keep = Math.max(0, maxChars - 2);
+    return `${full.slice(0, keep)}**`;
+}
