@@ -2,23 +2,77 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import CreateWalletModal from './../modals/CreateWalletModal';
+import EditWalletModal from '../modals/EditWalletModal';
+import ConfirmDialog from '../ui/ConfirmDialog';
+import TagFilter from '../ui/TagFilter';
 import { apiService } from '../../services/api';
+import { useSnackbar } from "../ui/SnackbarProvider";
 
 import visaIcon from '../../assets/icons/visa-icon.png';
 import chipIcon from '../../assets/icons/chip-icon.png';
 import nfcIcon from '../../assets/icons/nfc-icon.png';
 
-import { getCurrencySymbol } from '../../config/currencies';
+import { getCurrencySymbol, formatCurrencyMasked } from '../../config/currencies';
 import { getCategoryIcon } from '../../utils/categoryIcons';
 
-const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) => {
+function extractApiError(err) {
+    console.log('Full error:', err); // Log the full error for debugging
+
+    const data = err?.response?.data;
+    if (data) {
+        if (typeof data === 'string') return data;
+        if (Array.isArray(data)) {
+            return data.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join('\n');
+        }
+        if (typeof data === 'object') {
+            if (data.detail) return String(data.detail);
+            if (data.message) return String(data.message);
+            if (data.error) return typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+            const lines = [];
+            Object.entries(data).forEach(([k, v]) => {
+                if (v == null) return;
+                if (Array.isArray(v)) lines.push(`${k}: ${v.join(', ')}`);
+                else if (typeof v === 'object') lines.push(`${k}: ${JSON.stringify(v)}`);
+                else lines.push(`${k}: ${String(v)}`);
+            });
+            if (lines.length) return lines.join('\n');
+            return JSON.stringify(data);
+        }
+    }
+    return err?.message ? String(err.message) : 'Unknown error';
+}
+
+const MyWalletsContent = ({
+                              wallets = [],
+                              onWalletCreated,
+                              onWalletDeleted,
+                              openTransactionOnLoad = false,
+                              defaultWalletId = null,
+                          }) => {
+    const { showSnackbar } = useSnackbar();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isCreatingWallet, setIsCreatingWallet] = useState(false);
     const [selectedWallet, setSelectedWallet] = useState(wallets[0] || null);
+    const [hoverWalletIndex, setHoverWalletIndex] = useState(0);
+    const walletStackRef = useRef(null);
+
+    // ✅ Edit wallet
+    const [isEditWalletOpen, setIsEditWalletOpen] = useState(false);
+    const [walletToEdit, setWalletToEdit] = useState(null);
+    const [isUpdatingWallet, setIsUpdatingWallet] = useState(false);
+
+    // ✅ Delete wallet confirm dialog
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    const [walletToDelete, setWalletToDelete] = useState(null);
+    const [isDeletingWallet, setIsDeletingWallet] = useState(false);
 
     const [transactions, setTransactions] = useState([]);
     const [upcomingPayments, setUpcomingPayments] = useState([]);
     const [showSearch, setShowSearch] = useState(false);
+
+    // Tag filter state
+    const [selectedTag, setSelectedTag] = useState(null);
+    const [isFilteringByTag, setIsFilteringByTag] = useState(false);
 
     // Inline Add Transaction
     const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
@@ -45,6 +99,65 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
         title: '',
     });
 
+    // Attachments (receipts)
+    const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
+    const [attachmentFiles, setAttachmentFiles] = useState([]); // File[]
+    const [attachmentError, setAttachmentError] = useState('');
+    const fileInputRef = useRef(null);
+
+    const openAttachmentModal = () => {
+        setAttachmentError('');
+        setIsAttachmentModalOpen(true);
+    };
+
+    const closeAttachmentModal = () => {
+        setAttachmentError('');
+        setIsAttachmentModalOpen(false);
+    };
+
+    const addFiles = (filesLike) => {
+        const list = Array.from(filesLike || []);
+        if (list.length === 0) return;
+
+        // Backend supports only a single "receipt" file per transaction
+        const MAX_FILES = 1;
+        const MAX_FILE_SIZE_MB = 10;
+
+        const valid = [];
+        const rejected = [];
+
+        for (const f of list) {
+            const sizeMb = f.size / (1024 * 1024);
+            if (sizeMb > MAX_FILE_SIZE_MB) {
+                rejected.push(`${f.name} (too large)`);
+                continue;
+            }
+            valid.push(f);
+        }
+
+        setAttachmentFiles((prev) => {
+            const merged = [...prev, ...valid];
+            // remove duplicates by name+size+lastModified
+            const uniq = [];
+            const seen = new Set();
+            for (const f of merged) {
+                const key = `${f.name}|${f.size}|${f.lastModified}`;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                uniq.push(f);
+            }
+            return uniq.slice(0, MAX_FILES);
+        });
+
+        if (rejected.length) {
+            setAttachmentError(`Some files were skipped: ${rejected.join(', ')}`);
+        }
+    };
+
+    const removeAttachment = (idx) => {
+        setAttachmentFiles((prev) => prev.filter((_, i) => i !== idx));
+    };
+
     // Category dropdown
     const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
     const categoryDropdownRef = useRef(null);
@@ -61,6 +174,31 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
         if (!selectedWallet && wallets.length > 0) setSelectedWallet(wallets[0]);
     }, [wallets, selectedWallet]);
 
+    useEffect(() => {
+        if (!openTransactionOnLoad) return;
+
+        const wallet =
+            wallets.find((w) => String(w.id) === String(defaultWalletId)) ||
+            wallets[0] ||
+            null;
+
+        if (wallet) {
+            handleAddTransactionClick(wallet);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [openTransactionOnLoad, defaultWalletId, wallets]);
+
+    const selectedWalletIndex = useMemo(() => {
+        if (!selectedWallet) return 0;
+        const idx = wallets.findIndex((w) => String(w.id) === String(selectedWallet.id));
+        return idx >= 0 ? idx : 0;
+    }, [wallets, selectedWallet]);
+
+    // Keep hover stack in sync with selected wallet (so mouse leave returns to selection)
+    useEffect(() => {
+        setHoverWalletIndex(selectedWalletIndex);
+    }, [selectedWalletIndex]);
+
     // Close category dropdown on outside click
     useEffect(() => {
         const onClickOutside = (e) => {
@@ -71,12 +209,22 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
         return () => document.removeEventListener('mousedown', onClickOutside);
     }, []);
 
-    const fetchTransactions = async () => {
+    const fetchTransactions = async (tagId = null) => {
         try {
-            const data = await apiService.getTransactions();
+            setIsFilteringByTag(!!tagId);
+            let data;
+            if (tagId) {
+                data = await apiService.getTransactionsByTag(tagId);
+            } else {
+                data = await apiService.getTransactions();
+            }
             setTransactions(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error fetching transactions:', error);
+            setTransactions([]);
+            showSnackbar('Failed to load transactions', { variant: 'error' });
+        } finally {
+            setIsFilteringByTag(false);
         }
     };
 
@@ -103,17 +251,23 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
 
     const fetchTags = async () => {
         try {
-            if (!apiService.getTags) {
-                // If your apiService doesn't have it yet, tags will still render (empty)
-                setTags([]);
-                return;
-            }
             const data = await apiService.getTags();
             setTags(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching tags:', err);
             setTags([]);
         }
+    };
+
+    // Tag filter handlers
+    const handleTagSelect = (tag) => {
+        setSelectedTag(tag);
+        fetchTransactions(tag.id);
+    };
+
+    const handleClearTag = () => {
+        setSelectedTag(null);
+        fetchTransactions();
     };
 
     const handleOpenCreateWallet = () => setIsCreateModalOpen(true);
@@ -127,41 +281,138 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
                 name: walletData.name,
                 currency: walletData.currency,
                 wallet_type: walletData.wallet_type,
-                initial_balance: parseFloat(walletData.initial_balance) || 0,
-                card_number: walletData.card_number || '',
-                color: walletData.color || '#6FBAFC',
+                // backend uses "balance" for create, apiService maps, but we can send balance directly too:
+                balance: parseFloat(walletData.initial_balance) || 0,
+                card_number: walletData.card_number || null,
+                color: walletData.color || "#6FBAFC",
             };
 
             const newWallet = await apiService.createWallet(formattedData);
+
+            // refresh wallets (MyWalletsPage already refetches onWalletCreated)
             if (onWalletCreated) onWalletCreated(newWallet);
 
             setIsCreateModalOpen(false);
             setSelectedWallet(newWallet);
-            alert('Wallet created successfully!');
-            window.location.reload();
+
+            // ✅ snackbar (no reload!)
+            showSnackbar("Wallet created successfully", { variant: "success" });
         } catch (error) {
-            console.error('Error creating wallet:', error);
-            alert(`Failed to create wallet: ${error.message || 'Please try again.'}`);
+            console.error("Error creating wallet:", error);
+            showSnackbar(
+                error?.message ? `Failed to create wallet: ${error.message}` : "Failed to create wallet",
+                { variant: "error" }
+            );
         } finally {
+            // ✅ FIX: this was wrongly setIsDeletingWallet(false)
             setIsCreatingWallet(false);
         }
     };
 
-    const handleDeleteWallet = async (walletId) => {
-        if (!window.confirm('Are you sure you want to delete this wallet? This action cannot be undone.')) return;
+    const openEditWallet = (wallet) => {
+        setWalletToEdit(wallet);
+        setIsEditWalletOpen(true);
+    };
+
+    const closeEditWallet = () => {
+        setIsEditWalletOpen(false);
+        setWalletToEdit(null);
+    };
+
+    const handleUpdateWallet = async (submitData, walletId) => {
+        try {
+            setIsUpdatingWallet(true);
+
+            const updater =
+                apiService.updateWallet ||
+                apiService.editWallet ||
+                apiService.updateWalletById;
+
+            if (!updater) {
+                throw new Error('apiService.updateWallet is not implemented');
+            }
+
+            const payload = {
+                name: submitData.name,
+                currency: submitData.currency,
+                wallet_type: submitData.wallet_type,
+                balance: Number(submitData.initial_balance) || 0,
+                card_number: submitData.card_number || '',
+                color: submitData.color || '#6FBAFC',
+            };
+
+            const updatedWallet = await apiService.updateWallet(walletId, payload);
+
+            // Keep the selected wallet in sync immediately
+            setSelectedWallet((prev) => {
+                if (!prev) return prev;
+                return String(prev.id) === String(walletId) ? { ...prev, ...updatedWallet } : prev;
+            });
+
+            showSnackbar('Wallet updated successfully', { variant: 'success' });
+
+            // Let other parts of the app know
+            window.dispatchEvent(new Event('wallet_updated'));
+
+            closeEditWallet();
+        } catch (error) {
+            console.error('Error updating wallet:', error);
+            showSnackbar(
+                error?.message ? `Failed to update wallet: ${error.message}` : 'Failed to update wallet',
+                { variant: 'error' }
+            );
+        } finally {
+            setIsUpdatingWallet(false);
+        }
+    };
+
+    const openDeleteWalletDialog = (wallet) => {
+        setWalletToDelete(wallet);
+        setIsDeleteConfirmOpen(true);
+    };
+
+    const closeDeleteWalletDialog = () => {
+        if (isDeletingWallet) return;
+        setIsDeleteConfirmOpen(false);
+        setWalletToDelete(null);
+    };
+
+    const confirmDeleteWallet = async () => {
+        if (!walletToDelete?.id) return;
+        await handleDeleteWallet(walletToDelete.id, { skipConfirm: true });
+        closeDeleteWalletDialog();
+    };
+
+    const handleDeleteWallet = async (walletId, opts = {}) => {
+        const { skipConfirm = false } = opts;
+
+        if (!skipConfirm) {
+            openDeleteWalletDialog(
+                wallets.find((w) => String(w.id) === String(walletId)) || selectedWallet
+            );
+            return;
+        }
 
         try {
-            setIsCreatingWallet(true);
+            setIsDeletingWallet(true);
             await apiService.deleteWallet(walletId);
+
             if (onWalletDeleted) onWalletDeleted(walletId);
-            if (selectedWallet?.id === walletId) setSelectedWallet(null);
-            alert('Wallet deleted successfully!');
-            window.location.reload();
+
+            if (selectedWallet?.id === walletId) {
+                setSelectedWallet(null);
+            }
+
+            // ✅ snackbar (no reload!)
+            showSnackbar("Wallet deleted successfully", { variant: "success" });
         } catch (error) {
-            console.error('Error deleting wallet:', error);
-            alert('Failed to delete wallet');
+            console.error("Error deleting wallet:", error);
+            showSnackbar(
+                error?.message ? `Failed to delete wallet: ${error.message}` : "Failed to delete wallet",
+                { variant: "error" }
+            );
         } finally {
-            setIsCreatingWallet(false);
+            setIsDeletingWallet(false);
         }
     };
 
@@ -190,6 +441,7 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
         setSelectedTagIds([]);
         setNewTagText('');
         setIsAddingTag(false);
+        setAttachmentFiles([]);
 
         setShowCategoryDropdown(false);
         setIsAddTransactionOpen(true);
@@ -202,6 +454,7 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
         setSelectedTagIds([]);
         setNewTagText('');
         setIsAddingTag(false);
+        setAttachmentFiles([]);
 
         setTransactionForm({
             amount: '',
@@ -267,64 +520,103 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
     const handleConfirmTransaction = async () => {
         try {
             if (!transactionForm.amount) {
-                alert('Please enter an amount.');
+                showSnackbar('Please enter an amount.', { variant: 'error' });
                 return;
             }
 
             if (transactionType !== 'transfer' && !transactionForm.category_id) {
-                alert('Please select a category.');
+                showSnackbar('Please select a category.', { variant: 'error' });
                 return;
             }
 
             setIsSubmittingTransaction(true);
 
-            const data = {
-                ...transactionForm,
-                type: transactionType,
-            };
+            const hasAttachments = attachmentFiles.length > 0;
 
+            // TRANSFER LOGIC
             if (transactionType === 'transfer') {
+                if (!transactionForm.source_wallet_id || !transactionForm.destination_wallet_id) {
+                    showSnackbar('Please select both source and destination wallets.', { variant: 'error' });
+                    return;
+                }
+
                 const transferPayload = {
-                    source_wallet_id: parseInt(data.source_wallet_id, 10),
-                    destination_wallet_id: parseInt(data.destination_wallet_id, 10),
-                    amount: parseFloat(data.amount),
-                    note: data.note || '',
-                    // Optional tags (if backend supports for transfers)
-                    tag_ids: selectedTagIds.map((x) => (String(x).startsWith('local-') ? null : parseInt(x, 10))).filter(Boolean),
+                    source_wallet_id: parseInt(transactionForm.source_wallet_id, 10),
+                    destination_wallet_id: parseInt(transactionForm.destination_wallet_id, 10),
+                    amount: parseFloat(transactionForm.amount),
+                    note: transactionForm.note || '',
                 };
 
                 await apiService.createTransfer(transferPayload);
-                alert('Transfer completed successfully!');
-            } else {
-                const formattedData = {
-                    amount: parseFloat(data.amount),
-                    name: data.title || (data.type === 'income' ? 'Income' : 'Expense'),
-                    description: data.note || '',
-                    type: data.type,
-                    transaction_date: new Date().toISOString().split('T')[0],
-                    wallet_id: parseInt(data.wallet_id || selectedWallet?.id || wallets[0]?.id, 10),
-                    category_id: parseInt(data.category_id, 10),
 
-                    // ✅ tags (send both formats so it works regardless of backend field name)
-                    tag_ids: selectedTagIds
-                        .map((x) => (String(x).startsWith('local-') ? null : parseInt(x, 10)))
-                        .filter(Boolean),
-                    tags: tags
-                        .filter((t) => selectedTagIds.includes(String(t.id)))
-                        .map((t) => t.name),
+            } else {
+                // INCOME/EXPENSE LOGIC
+                // Get selected tag IDs and convert to tag names
+                const selectedTags = tags
+                    .filter((t) => selectedTagIds.includes(String(t.id)))
+                    .map((t) => t.name)
+                    .filter(Boolean);
+
+                // According to OpenAPI spec, tags should be sent as a comma-separated string
+                const tagsString = selectedTags.length > 0 ? selectedTags.join(',') : null;
+
+                // Prepare transaction data
+                const transactionData = {
+                    name: transactionForm.title || (transactionType === 'income' ? 'Income' : 'Expense'),
+                    amount: parseFloat(transactionForm.amount),
+                    type: transactionType,
+                    transaction_date: new Date().toISOString().split('T')[0],
+                    wallet_id: parseInt(transactionForm.wallet_id, 10),
+                    category_id: parseInt(transactionForm.category_id, 10),
+                    note: transactionForm.note || '',
+                    tags: tagsString, // Send as comma-separated string
                 };
 
-                await apiService.createTransaction(formattedData);
-                alert('Transaction added successfully!');
+                // If there are attachments, create FormData and send multipart
+                if (hasAttachments) {
+                    const formData = new FormData();
+
+                    // Append all fields as strings
+                    Object.entries(transactionData).forEach(([key, value]) => {
+                        if (value !== null && value !== undefined) {
+                            formData.append(key, String(value));
+                        }
+                    });
+
+                    // Append receipt file - backend expects 'receipt' field
+                    formData.append('receipt', attachmentFiles[0]);
+
+                    await apiService.createTransaction(formData);
+                } else {
+                    // No attachments, send as JSON
+                    await apiService.createTransaction(transactionData);
+                }
             }
 
-            await fetchTransactions();
+            await fetchTransactions(selectedTag?.id || null);
             window.dispatchEvent(new Event('transaction_updated'));
-            window.location.reload();
+            showSnackbar('Transaction added successfully!', { variant: 'success' });
             setIsAddTransactionOpen(false);
+            setAttachmentFiles([]);
+            setSelectedTagIds([]);
         } catch (error) {
             console.error('❌ Error creating transaction:', error);
-            alert(`Failed to create transaction: ${error.message || 'Please try again.'}`);
+            console.error('Error details:', error.data);
+
+            // Log the request data for debugging
+            console.log('Transaction data sent:', {
+                name: transactionForm.title || (transactionType === 'income' ? 'Income' : 'Expense'),
+                amount: parseFloat(transactionForm.amount),
+                type: transactionType,
+                transaction_date: new Date().toISOString().split('T')[0],
+                wallet_id: parseInt(transactionForm.wallet_id, 10),
+                category_id: parseInt(transactionForm.category_id, 10),
+                note: transactionForm.note || '',
+                tags: tags.filter((t) => selectedTagIds.includes(String(t.id))).map((t) => t.name),
+            });
+
+            const msg = extractApiError(error);
+            showSnackbar(`Failed to create transaction: ${msg}`, { variant: 'error' });
         } finally {
             setIsSubmittingTransaction(false);
         }
@@ -419,7 +711,7 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
         for (const c of normalizedCandidates) {
             const key = ICON_ALIASES[normalizeKey(c)] || c;
             const icon = getCategoryIcon(key);
-            // If getCategoryIcon returns others for unknown, we must detect “best effort”
+            // If getCategoryIcon returns others for unknown, we must detect "best effort"
             // We can't know internal mapping, so we treat alias hit as strong
             if (ICON_ALIASES[normalizeKey(c)] && icon) return icon;
         }
@@ -469,16 +761,73 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
         );
     }, [transactionForm.category_id, categoriesForCurrentType]);
 
+    // Filter transactions by selected tag
+    const filteredTransactions = useMemo(() => {
+        // If we're filtering by tag via API, use the already filtered transactions
+        if (selectedTag) {
+            return transactions.filter((t) => {
+                // Check if transaction has tags array and includes the selected tag
+                if (Array.isArray(t.tags)) {
+                    return t.tags.some(tag =>
+                        tag.id === selectedTag.id ||
+                        tag.name === selectedTag.name ||
+                        String(tag) === String(selectedTag.id) ||
+                        String(tag) === selectedTag.name
+                    );
+                }
+
+                // If tags is a string, check if it contains the tag name
+                if (typeof t.tags === 'string') {
+                    return t.tags.toLowerCase().includes(selectedTag.name.toLowerCase());
+                }
+
+                return false;
+            });
+        }
+
+        return transactions;
+    }, [transactions, selectedTag]);
+
+    // Function to get tags from a transaction
+    const getTransactionTags = (transaction) => {
+        if (!transaction.tags) return [];
+
+        if (Array.isArray(transaction.tags)) {
+            return transaction.tags;
+        }
+
+        if (typeof transaction.tags === 'string') {
+            // Handle comma-separated string of tag names
+            return transaction.tags.split(',').map(tagName => ({
+                id: `string-${tagName.trim()}`,
+                name: tagName.trim()
+            }));
+        }
+
+        return [];
+    };
+
     return (
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* LEFT COLUMN (UNCHANGED) */}
             <div className="space-y-6" style={{ width: '450px' }}>
                 <div
-                    className="relative mb-20"
+                    ref={walletStackRef}
+                    className="relative mb-20 overflow-hidden select-none"
                     style={{
-                        width: '380px',
-                        height: Math.max(260, 200 + (wallets.length - 1) * 70),
+                        width: '450px',
+                        height: 260, // fixed so the page never grows with N wallets
                     }}
+                    onMouseMove={(e) => {
+                        if (!walletStackRef.current) return;
+                        const rect = walletStackRef.current.getBoundingClientRect();
+                        const y = e.clientY - rect.top;
+
+                        const peek = 32;
+                        const idx = Math.max(0, Math.min(wallets.length - 1, Math.floor(y / peek)));
+                        setHoverWalletIndex(idx);
+                    }}
+                    onMouseLeave={() => setHoverWalletIndex(selectedWalletIndex)}
                 >
                     {wallets.length === 0 && (
                         <Card className="p-6 text-center">
@@ -492,25 +841,40 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
 
                     {wallets.map((wallet, index) => {
                         const isSelected = selectedWallet?.id === wallet.id;
+                        const isActive = index === hoverWalletIndex;
                         const symbol = getCurrencySymbol(wallet.currency);
+
+                        const peek = 32;
+                        const maxAbove = peek * 2;
+                        const top = Math.max(-maxAbove, (index - hoverWalletIndex) * peek);
+
+                        const distance = Math.abs(index - hoverWalletIndex);
+                        const scale = 1 - Math.min(0.03 * distance, 0.12);
 
                         return (
                             <div
                                 key={wallet.id}
-                                onClick={() => setSelectedWallet(wallet)}
+                                onClick={() => {
+                                    setSelectedWallet(wallet);
+                                    setHoverWalletIndex(index);
+                                }}
                                 className="absolute left-0 w-[450px] h-[250px] rounded-xl cursor-pointer transition-all duration-300"
                                 style={{
-                                    top: index * 70,
-                                    zIndex: isSelected ? 40 : 20 - index,
-                                    backgroundColor: isSelected ? wallet.color || '#6FBAFC' : 'transparent',
-                                    backdropFilter: isSelected ? 'none' : 'blur(8px)',
-                                    border: isSelected ? 'none' : '1px solid hsla(0, 0%, 100%, 0.30)',
-                                    transform: isSelected ? 'scale(1)' : 'scale(0.97)',
-                                    boxShadow: isSelected ? '0 12px 30px rgba(0,0,0,0.35)' : '0 4px 10px rgba(0,0,0,0.08)',
+                                    top,
+                                    zIndex: 50 - distance,
+                                    backgroundColor: isActive
+                                        ? wallet.color || '#6FBAFC'
+                                        : 'rgba(255,255,255,0.72)',
+                                    backdropFilter: isActive ? 'none' : 'blur(8px)',
+                                    border: isActive ? 'none' : '1px solid hsla(0, 0%, 100%, 0.30)',
+                                    transform: `scale(${scale})`,
+                                    boxShadow: isActive
+                                        ? '0 12px 30px rgba(0,0,0,0.35)'
+                                        : '0 4px 10px rgba(0,0,0,0.08)',
                                 }}
                             >
                                 <div className="p-6 flex flex-col justify-between h-full">
-                                    <h3 className={`text-base font-semibold ${isSelected ? 'text-white' : 'text-text'}`}>
+                                    <h3 className={`text-base font-semibold ${isActive ? 'text-white' : 'text-text'}`}>
                                         {wallet.name}
                                     </h3>
 
@@ -518,26 +882,27 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
                                         <div className="flex items-start space-x-3">
                                             <img src={chipIcon} alt="Chip" className="w-10 h-8 object-contain mt-4" />
                                             <div>
-                                                <p className="text-xs opacity-75 font-bold leading-none ml-6 mt-3">Total Balance</p>
-                                                <p className="text-xl font-bold leading-tight ml-6">
-                                                    {symbol}
-                                                    {Number(wallet.balance || 0).toFixed(2)}
+                                                <p className={`text-xs opacity-75 font-bold leading-none ml-6 mt-3 ${isActive ? 'text-white/80' : 'text-metallic-gray'}`}>
+                                                    Total Balance
+                                                </p>
+                                                <p className={`text-xl font-bold leading-tight ml-6 ${isActive ? 'text-white' : 'text-text'}`}>
+                                                    {formatCurrencyMasked(wallet.balance || 0, symbol, 15)}
                                                 </p>
                                             </div>
                                         </div>
                                         <img src={nfcIcon} alt="NFC" className="w-8 h-7 object-contain mt-3" />
                                     </div>
 
-                                    <p className={`mt-4 text-lg font-mono tracking-wider ${isSelected ? 'text-white' : 'text-text'}`}>
+                                    <p className={`mt-4 text-lg font-mono tracking-wider ${isActive ? 'text-white' : 'text-text'}`}>
                                         {formatCardNumber(wallet.card_number)}
                                     </p>
 
                                     <div className="flex justify-between items-center mt-4">
-                    <span className={`${isSelected ? 'text-white/70' : 'text-metallic-gray'} text-sm`}>
-                      {wallet.expiry || '09/30'}
-                    </span>
+                                        <span className={`${isActive ? 'text-white/70' : 'text-metallic-gray'} text-sm`}>
+                                            {wallet.expiry || '09/30'}
+                                        </span>
 
-                                        <img src={visaIcon} alt="VISA" className="h-8 opacity-90" />
+                                        <img src={visaIcon} alt="VISA" className={`h-8 ${isActive ? 'opacity-90' : 'opacity-70'}`} />
                                     </div>
                                 </div>
                             </div>
@@ -552,15 +917,18 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
                                 <div>
                                     <p className="text-sm text-metallic-gray">Balance</p>
                                     <p className="text-2xl font-bold text-text">
-                                        {getCurrencySymbol(selectedWallet.currency)}
-                                        {Number(selectedWallet.balance || 0).toFixed(2)}
+                                        {formatCurrencyMasked(
+                                            selectedWallet.balance || 0,
+                                            getCurrencySymbol(selectedWallet.currency),
+                                            16
+                                        )}
                                     </p>
                                 </div>
 
                                 <button
                                     type="button"
                                     className="text-sm text-blue-500 hover:text-blue-600 flex items-center gap-1"
-                                    onClick={() => console.log('Edit wallet clicked', selectedWallet)}
+                                    onClick={() => openEditWallet(selectedWallet)}
                                 >
                                     ✏️ <span className="hidden sm:inline">Edit</span>
                                 </button>
@@ -598,11 +966,11 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
                                         </button>
 
                                         <button
-                                            onClick={() => handleDeleteWallet(selectedWallet.id)}
-                                            disabled={isCreatingWallet}
+                                            onClick={() => openDeleteWalletDialog(selectedWallet)}
+                                            disabled={isDeletingWallet}
                                             className="flex-[0.3] bg-red-500 text-white hover:bg-red-600 py-3 rounded-lg font-semibold"
                                         >
-                                            {isCreatingWallet ? '...' : 'Delete'}
+                                            {isDeletingWallet ? '...' : 'Delete'}
                                         </button>
                                     </div>
                                 )}
@@ -668,6 +1036,8 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
 
                                     <input
                                         type="number"
+                                        step="0.01"
+                                        min="0"
                                         className="mt-3 w-56 border rounded-lg p-2"
                                         placeholder="0.00"
                                         value={transactionForm.amount}
@@ -739,18 +1109,18 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
                                         >
                                             {selectedCategory ? (
                                                 <span className="flex items-center gap-3">
-                          <span
-                              className="w-8 h-8 rounded-full flex items-center justify-center"
-                              style={{ backgroundColor: selectedCategory.color || '#E9EEF5' }}
-                          >
-                            <img
-                                src={getCategoryIconSafe(selectedCategory)}
-                                alt={selectedCategory.name}
-                                className="w-4 h-4"
-                            />
-                          </span>
-                          <span className="font-medium">{selectedCategory.name}</span>
-                        </span>
+                                                    <span
+                                                        className="w-8 h-8 rounded-full flex items-center justify-center"
+                                                        style={{ backgroundColor: selectedCategory.color || '#E9EEF5' }}
+                                                    >
+                                                        <img
+                                                            src={getCategoryIconSafe(selectedCategory)}
+                                                            alt={selectedCategory.name}
+                                                            className="w-4 h-4"
+                                                        />
+                                                    </span>
+                                                    <span className="font-medium">{selectedCategory.name}</span>
+                                                </span>
                                             ) : (
                                                 <span className="text-metallic-gray">Select category</span>
                                             )}
@@ -770,12 +1140,12 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
                                                         }}
                                                         className="w-full px-4 py-3 flex items-center gap-4 hover:bg-gray-50 text-left"
                                                     >
-                            <span
-                                className="w-10 h-10 rounded-full flex items-center justify-center"
-                                style={{ backgroundColor: cat.color || '#E9EEF5' }}
-                            >
-                              <img src={getCategoryIconSafe(cat)} alt={cat.name} className="w-5 h-5" />
-                            </span>
+                                                        <span
+                                                            className="w-10 h-10 rounded-full flex items-center justify-center"
+                                                            style={{ backgroundColor: cat.color || '#E9EEF5' }}
+                                                        >
+                                                            <img src={getCategoryIconSafe(cat)} alt={cat.name} className="w-5 h-5" />
+                                                        </span>
 
                                                         <span className="font-medium text-text">{cat.name}</span>
                                                     </button>
@@ -787,31 +1157,72 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
                             )}
 
                             {/* Title + Attachments */}
-                            <div className="grid grid-cols-12 gap-4 mb-4">
-                                <div className="col-span-12 md:col-span-7">
-                                    <input
-                                        type="text"
-                                        className="w-full border rounded-lg p-3"
-                                        placeholder={transactionType === 'income' ? 'Income title' : 'Expense title'}
-                                        value={transactionForm.title}
-                                        onChange={(e) => handleTransactionFieldChange('title', e.target.value)}
-                                    />
-                                </div>
-                                <div className="col-span-12 md:col-span-5">
-                                    <button className="w-full border rounded-lg p-3 bg-white text-green-600 font-semibold">
-                                        Add Attachments
+                            {transactionType === 'transfer' ? (
+                                <div className="mb-4">
+                                    <button
+                                        type="button"
+                                        onClick={openAttachmentModal}
+                                        className="w-full border rounded-lg p-3 bg-white text-green-600 font-semibold hover:bg-green-50"
+                                    >
+                                        Add Attachments{attachmentFiles.length ? ` (${attachmentFiles.length})` : ''}
                                     </button>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="grid grid-cols-12 gap-4 mb-4">
+                                    <div className="col-span-12 md:col-span-7">
+                                        <input
+                                            type="text"
+                                            className="w-full border rounded-lg p-3"
+                                            placeholder={transactionType === 'income' ? 'Income title' : 'Expense title'}
+                                            value={transactionForm.title}
+                                            onChange={(e) => handleTransactionFieldChange('title', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="col-span-12 md:col-span-5">
+                                        <button
+                                            type="button"
+                                            onClick={openAttachmentModal}
+                                            className="w-full border rounded-lg p-3 bg-white text-green-600 font-semibold hover:bg-green-50"
+                                        >
+                                            Add Attachments{attachmentFiles.length ? ` (${attachmentFiles.length})` : ''}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Selected attachments preview */}
+                            {attachmentFiles.length > 0 && (
+                                <div className="mb-4">
+                                    <p className="text-xs text-metallic-gray mb-2">Attachments</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {attachmentFiles.map((f, idx) => (
+                                            <span
+                                                key={`${f.name}-${f.size}-${f.lastModified}-${idx}`}
+                                                className="inline-flex items-center gap-2 px-3 py-1 rounded-full border bg-white text-sm"
+                                            >
+                                                <span className="truncate max-w-[240px]">{f.name}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeAttachment(idx)}
+                                                    className="text-metallic-gray hover:text-red-500"
+                                                    aria-label="Remove attachment"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* NOTE */}
                             <div className="mb-4">
-                <textarea
-                    className="w-full border rounded-lg p-3 h-28 resize-none"
-                    placeholder="Note"
-                    value={transactionForm.note}
-                    onChange={(e) => handleTransactionFieldChange('note', e.target.value)}
-                />
+                                <textarea
+                                    className="w-full border rounded-lg p-3 h-28 resize-none"
+                                    placeholder="Note"
+                                    value={transactionForm.note}
+                                    onChange={(e) => handleTransactionFieldChange('note', e.target.value)}
+                                />
                             </div>
 
                             {/* TAGS (added back like design) */}
@@ -878,6 +1289,12 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
                                         </div>
                                     )}
                                 </div>
+                                <p className="text-xs text-metallic-gray mt-2">
+                                    Selected tags: {selectedTagIds.length > 0 ? selectedTagIds.map(id => {
+                                    const tag = tags.find(t => String(t.id) === id);
+                                    return tag ? `#${tag.name}` : '';
+                                }).filter(Boolean).join(', ') : 'None'}
+                                </p>
                             </div>
 
                             {/* Buttons */}
@@ -910,30 +1327,89 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
                                     <button className="text-metallic-gray pb-1 text-sm">Regular Transactions</button>
                                 </div>
 
-                                <button onClick={() => setShowSearch(!showSearch)}>🔍</button>
+                                <div className="flex items-center gap-2">
+                                    <button onClick={() => setShowSearch(!showSearch)}>🔍</button>
+                                    <TagFilter
+                                        onTagSelect={handleTagSelect}
+                                        onClear={handleClearTag}
+                                        selectedTag={selectedTag}
+                                        placeholder="Filter by tag..."
+                                        position="right"
+                                    />
+                                </div>
                             </div>
 
                             {showSearch && (
                                 <input type="text" placeholder="Search transactions..." className="w-full mb-4 p-2 border rounded" />
                             )}
 
+                            {/* Selected tag indicator */}
+                            {selectedTag && (
+                                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm text-gray-600">Filtered by:</span>
+                                            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                                                #{selectedTag.name}
+                                            </span>
+                                            <span className="text-sm text-gray-500">
+                                                ({filteredTransactions.length} transactions found)
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={handleClearTag}
+                                            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                                        >
+                                            Clear filter
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Loading state for tag filtering */}
+                            {isFilteringByTag && (
+                                <div className="flex justify-center py-4">
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                </div>
+                            )}
+
                             <div className="space-y-3 max-h-80 overflow-y-auto">
-                                {transactions.length > 0 ? (
-                                    transactions.map((t, index) => {
+                                {filteredTransactions.length > 0 ? (
+                                    filteredTransactions.map((t, index) => {
                                         const symbol = getDisplayCurrencySymbol(t.currency);
                                         const amountSign = t.type === 'expense' ? '-' : t.type === 'income' ? '+' : '';
                                         const amountColor =
                                             t.type === 'expense' ? 'text-red-600' : t.type === 'income' ? 'text-green-600' : 'text-text';
 
                                         const cat = resolveTxCategory(t);
+                                        const transactionTags = getTransactionTags(t);
 
                                         return (
                                             <div key={t.id || index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                                                 <div className="flex items-center space-x-3">
                                                     {renderTxIcon(t)}
-                                                    <div>
+                                                    <div className="flex-1">
                                                         <p className="font-bold text-text">{t.name || t.description || cat?.name || 'Transaction'}</p>
                                                         <p className="text-sm text-metallic-gray">{getTxDate(t)}</p>
+
+                                                        {/* Show transaction tags if available */}
+                                                        {transactionTags.length > 0 && (
+                                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                                {transactionTags.slice(0, 3).map((tag, idx) => (
+                                                                    <span
+                                                                        key={idx}
+                                                                        className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800"
+                                                                    >
+                                                                        #{typeof tag === 'object' ? tag.name : tag}
+                                                                    </span>
+                                                                ))}
+                                                                {transactionTags.length > 3 && (
+                                                                    <span className="text-xs text-gray-500">
+                                                                        +{transactionTags.length - 3} more
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
 
@@ -946,7 +1422,25 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
                                         );
                                     })
                                 ) : (
-                                    <p className="text-center text-metallic-gray py-4">No transactions yet</p>
+                                    <div className="text-center py-8">
+                                        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        <h3 className="mt-2 text-sm font-medium text-gray-900">No transactions found</h3>
+                                        <p className="mt-1 text-sm text-gray-500">
+                                            {selectedTag
+                                                ? `No transactions found with tag #${selectedTag.name}`
+                                                : 'Get started by creating your first transaction.'}
+                                        </p>
+                                        {selectedTag && (
+                                            <button
+                                                onClick={handleClearTag}
+                                                className="mt-4 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                                            >
+                                                Clear tag filter
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </Card>
@@ -979,11 +1473,146 @@ const MyWalletsContent = ({ wallets = [], onWalletCreated, onWalletDeleted }) =>
                 )}
             </div>
 
+            {/* Attachments modal (like design) */}
+            {isAttachmentModalOpen && (
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4"
+                    onMouseDown={(e) => {
+                        // close when clicking backdrop
+                        if (e.target === e.currentTarget) closeAttachmentModal();
+                    }}
+                >
+                    <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl overflow-hidden">
+                        <div className="px-6 py-4 border-b">
+                            <p className="text-sm font-semibold text-text">Attachments - Upload file</p>
+                        </div>
+
+                        <div className="p-6">
+                            <div className="text-sm font-semibold text-text mb-3">File Upload</div>
+
+                            <div
+                                className="rounded-xl border border-dashed border-gray-300 bg-[#FBFBFD] p-8 text-center cursor-pointer select-none"
+                                onClick={() => fileInputRef.current?.click()}
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                }}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    addFiles(e.dataTransfer.files);
+                                }}
+                            >
+                                <div className="mx-auto mb-3 w-10 h-10 rounded-full bg-white border flex items-center justify-center">
+                                    <span className="text-xl">☁️</span>
+                                </div>
+                                <p className="text-sm text-text">
+                                    Click or drag file to this area to upload
+                                </p>
+                                <p className="text-xs text-metallic-gray mt-2">
+                                    Formats accepted are .png, .jpg, .jpeg, .pdf, .doc, .docx
+                                </p>
+
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    className="hidden"
+                                    multiple
+                                    accept=".png,.jpg,.jpeg,.pdf,.doc,.docx"
+                                    onChange={(e) => {
+                                        addFiles(e.target.files);
+                                        // reset input so same file can be added again if needed
+                                        e.target.value = '';
+                                    }}
+                                />
+                            </div>
+
+                            {attachmentError && (
+                                <p className="text-xs text-red-500 mt-3">{attachmentError}</p>
+                            )}
+
+                            {attachmentFiles.length > 0 && (
+                                <div className="mt-5">
+                                    <p className="text-xs text-metallic-gray mb-2">
+                                        Selected file(s)
+                                    </p>
+                                    <div className="space-y-2">
+                                        {attachmentFiles.map((f, idx) => (
+                                            <div
+                                                key={`${f.name}-${f.size}-${f.lastModified}-${idx}`}
+                                                className="flex items-center justify-between px-4 py-3 rounded-xl border bg-white"
+                                            >
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className="w-9 h-9 rounded-lg bg-[#E9EEF5] flex items-center justify-center">
+                                                        📄
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm font-medium text-text truncate">{f.name}</p>
+                                                        <p className="text-xs text-metallic-gray">
+                                                            {(f.size / 1024).toFixed(0)} KB
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeAttachment(idx)}
+                                                    className="text-sm text-red-500 hover:text-red-600 font-semibold"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="mt-6 flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={closeAttachmentModal}
+                                    className="px-5 py-2.5 rounded-lg border bg-white font-semibold"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={closeAttachmentModal}
+                                    className="px-5 py-2.5 rounded-lg bg-[#3B82F6] text-white font-semibold"
+                                >
+                                    Continue
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <CreateWalletModal
                 isOpen={isCreateModalOpen}
                 onClose={handleCloseCreateWallet}
                 onSubmit={handleCreateWallet}
                 isLoading={isCreatingWallet}
+            />
+
+            <EditWalletModal
+                isOpen={isEditWalletOpen}
+                onClose={closeEditWallet}
+                onSubmit={(submitData, walletId) => handleUpdateWallet(submitData, walletId)}
+                isLoading={isUpdatingWallet}
+                wallet={walletToEdit}
+            />
+
+            <ConfirmDialog
+                isOpen={isDeleteConfirmOpen}
+                title={`Do you really want to delete ${walletToDelete?.name || ''} wallet?`}
+                message="The wallet will be deleted with all the records and related objects."
+                cancelText="Cancel"
+                confirmText="Delete"
+                danger
+                loading={isDeletingWallet}
+                onCancel={closeDeleteWalletDialog}
+                onConfirm={confirmDeleteWallet}
             />
         </div>
     );

@@ -2,9 +2,11 @@ import React, { useEffect, useRef, useState } from "react";
 import Button from "../ui/Button";
 import { apiService } from "../../services/api";
 import SettingsLoader from "../ui/SettingsLoader";
+import { useSnackbar } from "../ui/SnackbarProvider";
 
 const AccountInformation = () => {
     const fileInputRef = useRef(null);
+    const { showSnackbar } = useSnackbar();
 
     const [formData, setFormData] = useState({
         firstName: "",
@@ -66,6 +68,7 @@ const AccountInformation = () => {
             }
         } catch (error) {
             console.error("Error fetching user data:", error);
+            showSnackbar("Failed to load profile data", { variant: "error" });
         } finally {
             setIsPageLoading(false);
         }
@@ -104,11 +107,11 @@ const AccountInformation = () => {
                 setAvatarPreview(fullAvatarUrl);
             }
 
-            alert("Avatar updated successfully!");
+            showSnackbar("Avatar updated successfully!", { variant: "success" });
             return true;
         } catch (error) {
             console.error("Error uploading avatar:", error);
-            alert("Failed to upload avatar. Please try again.");
+            showSnackbar("Failed to upload avatar. Please try again.", { variant: "error" });
             return false;
         }
     };
@@ -157,7 +160,7 @@ const AccountInformation = () => {
 
             await apiService.updateUser(updateData);
 
-            alert("Profile updated successfully!");
+            showSnackbar("Profile updated successfully!", { variant: "success" });
 
             setFormData((prev) => ({
                 ...prev,
@@ -168,7 +171,7 @@ const AccountInformation = () => {
             await fetchUserData();
         } catch (error) {
             console.error("Error updating profile:", error);
-            alert("Failed to update profile. Please try again.");
+            showSnackbar("Failed to update profile. Please try again.", { variant: "error" });
         } finally {
             setIsLoading(false);
         }
@@ -370,9 +373,7 @@ const AccountInformation = () => {
                                 </button>
                             </div>
 
-                            {errors.confirmPassword && (
-                                <p className="text-red-500 text-lg mt-2">{errors.confirmPassword}</p>
-                            )}
+                            {errors.confirmPassword && <p className="text-red-500 text-lg mt-2">{errors.confirmPassword}</p>}
                         </div>
                     </div>
 
@@ -399,20 +400,10 @@ const AccountInformation = () => {
                     aria-label="Upload your photo"
                 >
                     {avatarPreview ? (
-                        <img
-                            src={avatarPreview}
-                            alt="Profile"
-                            className="w-full h-full object-cover rounded-full"
-                        />
+                        <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover rounded-full" />
                     ) : (
                         <>
-                            {/* icon */}
-                            <svg
-                                className="w-20 h-20 mb-3"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                            >
+                            <svg className="w-20 h-20 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path
                                     strokeWidth="1.6"
                                     strokeLinecap="round"
@@ -431,16 +422,9 @@ const AccountInformation = () => {
                                     strokeLinejoin="round"
                                     d="M21 15l-5.2-5.2a1.2 1.2 0 0 0-1.7 0L7 16.9"
                                 />
-                                {/* plus */}
-                                <path
-                                    strokeWidth="1.6"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M17.5 7.5v-2m-1 1h2"
-                                />
+                                <path strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" d="M17.5 7.5v-2m-1 1h2" />
                             </svg>
 
-                            {/* text inside circle like design */}
                             <div className="text-center font-semibold text-2xl leading-tight">
                                 Upload your
                                 <br />
@@ -450,13 +434,7 @@ const AccountInformation = () => {
                     )}
                 </button>
 
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    onChange={handleAvatarChange}
-                    accept="image/*"
-                />
+                <input ref={fileInputRef} type="file" className="hidden" onChange={handleAvatarChange} accept="image/*" />
             </div>
         </div>
     );

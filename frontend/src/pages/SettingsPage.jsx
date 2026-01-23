@@ -8,10 +8,7 @@ const SettingsPage = () => {
 
     return (
         <AppLayout activeItem="settings">
-            {/* IMPORTANT: remove max-w-4xl + mx-auto so content can reach the right side */}
             <div className="w-full">
-                <h1 className="text-2xl font-bold text-text mb-8">Settings</h1>
-
                 <div className="flex space-x-8 border-b border-strokes mb-8">
                     <button
                         className={`pb-4 px-2 font-medium ${

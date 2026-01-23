@@ -1,45 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import Sidebar from './../layout/Sidebar';
-import Header from './../layout/Header';
-import EmptyState from '../dashboard/EmptyState';
-import DashboardContent from '../dashboard/DashboardContent';
-import CreateWalletModal from './../modals/CreateWalletModal';
-import { apiService } from '../../services/api';
-import { webSocketService } from '../../services/websocketService';
+import React, { useState, useEffect } from "react";
+import EmptyState from "../dashboard/EmptyState";
+import DashboardContent from "../dashboard/DashboardContent";
+import CreateWalletModal from "../modals/CreateWalletModal";
+import { apiService } from "../../services/api";
+import { webSocketService } from "../../services/websocketService";
+import { useSnackbar } from "../ui/SnackbarProvider";
 
+/**
+ * Dashboard is now "CONTENT ONLY".
+ * AppLayout is responsible for Sidebar + Header + main paddings.
+ */
 const Dashboard = ({ wallets: initialWallets, onWalletCreated, userStats: initialUserStats }) => {
+    const { showSnackbar } = useSnackbar();
+
     const [wallets, setWallets] = useState(initialWallets || []);
     const [userStats, setUserStats] = useState(
         initialUserStats || {
             totalBalance: 0,
             totalSpending: 0,
             totalSaved: 0,
-            defaultCurrency: 'USD',
+            defaultCurrency: "USD",
         }
     );
+
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
 
     const parseNumber = (value) => {
         if (value === null || value === undefined) return 0;
-        const n = typeof value === 'string' ? parseFloat(value) : Number(value);
+        const n = typeof value === "string" ? parseFloat(value) : Number(value);
         return Number.isNaN(n) ? 0 : n;
     };
 
     const extractTotalBalance = (balanceData) => {
         if (balanceData == null) return 0;
 
-        if (typeof balanceData === 'number') return balanceData;
-        if (typeof balanceData === 'string') return parseNumber(balanceData);
+        if (typeof balanceData === "number") return balanceData;
+        if (typeof balanceData === "string") return parseNumber(balanceData);
 
-        if (typeof balanceData === 'object') {
-            if ('total_balance' in balanceData) {
-                return parseNumber(balanceData.total_balance);
-            }
-            if ('balance' in balanceData) {
-                return parseNumber(balanceData.balance);
-            }
+        if (typeof balanceData === "object") {
+            if ("total_balance" in balanceData) return parseNumber(balanceData.total_balance);
+            if ("balance" in balanceData) return parseNumber(balanceData.balance);
         }
 
         return 0;
@@ -54,10 +56,9 @@ const Dashboard = ({ wallets: initialWallets, onWalletCreated, userStats: initia
             ]);
 
             const totalBalance = extractTotalBalance(balanceData);
-            const totalIncome = parseNumber(summary?.total_income);
             const totalSpent = parseNumber(summary?.total_spent);
             const totalSaved = parseNumber(summary?.total_saved);
-            const defaultCurrency = user?.default_currency || 'USD';
+            const defaultCurrency = user?.default_currency || "USD";
 
             setUserStats({
                 totalBalance,
@@ -66,7 +67,7 @@ const Dashboard = ({ wallets: initialWallets, onWalletCreated, userStats: initia
                 defaultCurrency,
             });
         } catch (error) {
-            console.error('Error refreshing user stats:', error);
+            console.error("Error refreshing user stats:", error);
         }
     };
 
@@ -75,7 +76,7 @@ const Dashboard = ({ wallets: initialWallets, onWalletCreated, userStats: initia
             const walletsData = await apiService.getWallets();
             setWallets(walletsData || []);
         } catch (error) {
-            console.error('Error refreshing wallets:', error);
+            console.error("Error refreshing wallets:", error);
         }
     };
 
@@ -84,129 +85,102 @@ const Dashboard = ({ wallets: initialWallets, onWalletCreated, userStats: initia
             const userData = await apiService.getCurrentUser();
             setCurrentUser(userData);
 
-            if (userData.id) {
+            // Connect websocket once we know user id
+            if (userData?.id) {
                 webSocketService.connect(userData.id);
             }
         } catch (error) {
-            console.error('Error loading current user:', error);
+            console.error("Error loading current user:", error);
         }
     };
 
     const handleWalletCreated = (newWallet) => {
-        console.log('🆕 Adding new wallet to state:', newWallet);
-        setWallets((prevWallets) => {
-            const exists = prevWallets.find((w) => w.id === newWallet.id);
-            if (exists) {
-                console.log('ℹ️ Wallet already exists, updating instead');
-                return prevWallets.map((w) => (w.id === newWallet.id ? newWallet : w));
-            }
-            console.log('✅ Adding new wallet to list');
-            return [...prevWallets, newWallet];
+        setWallets((prev) => {
+            const exists = prev.find((w) => w.id === newWallet.id);
+            if (exists) return prev.map((w) => (w.id === newWallet.id ? newWallet : w));
+            return [...prev, newWallet];
         });
 
         refreshUserStats();
 
-        if (typeof onWalletCreated === 'function') {
+        if (typeof onWalletCreated === "function") {
             onWalletCreated(newWallet);
         }
     };
 
     const handleWalletUpdated = (data) => {
-        console.log('📝 Updating wallet in state:', data);
-        setWallets((prevWallets) =>
-            prevWallets.map((wallet) =>
-                wallet.id === data.wallet_id
-                    ? { ...wallet, balance: data.wallet_balance }
-                    : wallet
+        setWallets((prev) =>
+            prev.map((wallet) =>
+                wallet.id === data.wallet_id ? { ...wallet, balance: data.wallet_balance } : wallet
             )
         );
         refreshUserStats();
     };
 
     const handleWalletDeleted = (walletId) => {
-        console.log('🗑️ Removing wallet from state:', walletId);
-        setWallets((prevWallets) =>
-            prevWallets.filter((wallet) => wallet.id !== walletId)
-        );
+        setWallets((prev) => prev.filter((wallet) => wallet.id !== walletId));
         refreshUserStats();
     };
 
     const handleTransactionUpdate = () => {
-        console.log('🔄 Transaction update event received, refreshing wallets & stats');
         refreshWallets();
         refreshUserStats();
     };
 
     const setupWebSocketListeners = () => {
-        webSocketService.addEventListener('wallet_created', (data) => {
-            console.log('🔄 Real-time: Wallet created', data);
+        webSocketService.addEventListener("wallet_created", (data) => {
             handleWalletCreated(data.wallet || data);
         });
 
-        webSocketService.addEventListener('wallet_updated', (data) => {
-            console.log('🔄 Real-time: Wallet updated', data);
+        webSocketService.addEventListener("wallet_updated", (data) => {
             handleWalletUpdated(data);
         });
 
-        webSocketService.addEventListener('wallet_deleted', (data) => {
-            console.log('🔄 Real-time: Wallet deleted', data);
+        webSocketService.addEventListener("wallet_deleted", (data) => {
             handleWalletDeleted(data.wallet_id);
         });
 
-        webSocketService.addEventListener('transaction_created', () => {
-            handleTransactionUpdate();
-        });
-        webSocketService.addEventListener('transaction_updated', () => {
-            handleTransactionUpdate();
-        });
-        webSocketService.addEventListener('transaction_deleted', () => {
-            handleTransactionUpdate();
-        });
-
-        webSocketService.addEventListener('connected', () => {
-            console.log('✅ WebSocket connected (dashboard)');
-        });
-        webSocketService.addEventListener('disconnected', () => {
-            console.log('⚠️ WebSocket disconnected (dashboard)');
-        });
+        webSocketService.addEventListener("transaction_created", handleTransactionUpdate);
+        webSocketService.addEventListener("transaction_updated", handleTransactionUpdate);
+        webSocketService.addEventListener("transaction_deleted", handleTransactionUpdate);
     };
 
     const cleanupWebSocketListeners = () => {
-        webSocketService.removeEventListener('wallet_created');
-        webSocketService.removeEventListener('wallet_updated');
-        webSocketService.removeEventListener('wallet_deleted');
-        webSocketService.removeEventListener('transaction_created');
-        webSocketService.removeEventListener('transaction_updated');
-        webSocketService.removeEventListener('transaction_deleted');
-        webSocketService.removeEventListener('connected');
-        webSocketService.removeEventListener('disconnected');
+        webSocketService.removeEventListener("wallet_created");
+        webSocketService.removeEventListener("wallet_updated");
+        webSocketService.removeEventListener("wallet_deleted");
+        webSocketService.removeEventListener("transaction_created");
+        webSocketService.removeEventListener("transaction_updated");
+        webSocketService.removeEventListener("transaction_deleted");
     };
 
     const handleCreateWallet = async (walletData) => {
         try {
             setIsLoading(true);
-            console.log('🎯 Creating wallet with data:', walletData);
             const newWallet = await apiService.createWallet(walletData);
-            console.log('✅ Wallet created successfully:', newWallet);
+
             handleWalletCreated(newWallet);
+
+            // ✅ Snackbar instead of dialog/alert
+            showSnackbar("Wallet created successfully!", { variant: "success" });
+
             setIsCreateModalOpen(false);
         } catch (error) {
-            console.error('❌ Error creating wallet:', error);
-            alert(
-                `Failed to create wallet: ${error.message || 'Please try again.'}`
-            );
+            console.error("Error creating wallet:", error);
+
+            // ✅ Snackbar error
+            showSnackbar(error?.message ? `Failed to create wallet: ${error.message}` : "Failed to create wallet", {
+                variant: "error",
+            });
         } finally {
             setIsLoading(false);
         }
     };
 
+    // Keep in sync if parent passes data
     useEffect(() => {
-        if (initialWallets) {
-            setWallets(initialWallets);
-        }
-        if (initialUserStats) {
-            setUserStats(initialUserStats);
-        }
+        if (initialWallets) setWallets(initialWallets);
+        if (initialUserStats) setUserStats(initialUserStats);
     }, [initialWallets, initialUserStats]);
 
     useEffect(() => {
@@ -222,26 +196,14 @@ const Dashboard = ({ wallets: initialWallets, onWalletCreated, userStats: initia
     }, []);
 
     return (
-        <div className="min-h-screen bg-background flex">
-            <Sidebar activeItem="dashboard" />
-
-            <div className="flex-1 ml-64 flex flex-col bg-background">
-                <Header />
-
-                <div className="flex-1 p-8 overflow-auto bg-background">
-                    {wallets.length === 0 ? (
-                        <EmptyState
-                            onCreateWallet={() => setIsCreateModalOpen(true)}
-                            userStats={userStats}
-                        />
-                    ) : (
-                        <DashboardContent
-                            wallets={wallets}
-                            onCreateWallet={() => setIsCreateModalOpen(true)}
-                            userStats={userStats}
-                        />
-                    )}
-                </div>
+        <>
+            {/* CONTENT ONLY */}
+            <div className="w-full">
+                {wallets.length === 0 ? (
+                    <EmptyState onCreateWallet={() => setIsCreateModalOpen(true)} userStats={userStats} />
+                ) : (
+                    <DashboardContent wallets={wallets} onCreateWallet={() => setIsCreateModalOpen(true)} userStats={userStats} />
+                )}
             </div>
 
             <CreateWalletModal
@@ -250,7 +212,7 @@ const Dashboard = ({ wallets: initialWallets, onWalletCreated, userStats: initia
                 onSubmit={handleCreateWallet}
                 isLoading={isLoading}
             />
-        </div>
+        </>
     );
 };
 

@@ -1,13 +1,15 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
+import React, { useEffect } from "react";
+import { BrowserRouter as Router } from "react-router-dom";
 
-import AppRoutes from './routes/AppRoutes';
-import { syncService } from './services/syncService';
-import { apiService } from './services/api';
+import AppRoutes from "./routes/AppRoutes";
+import { syncService } from "./services/syncService";
+import { apiService } from "./services/api";
+
+import { SnackbarProvider } from "./components/ui/SnackbarProvider";
 
 function App() {
     useEffect(() => {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (token) {
             initializeApp();
         }
@@ -16,10 +18,10 @@ function App() {
             initializeApp();
         };
 
-        window.addEventListener('user_logged_in', handleLogin);
+        window.addEventListener("user_logged_in", handleLogin);
 
         return () => {
-            window.removeEventListener('user_logged_in', handleLogin);
+            window.removeEventListener("user_logged_in", handleLogin);
             syncService.stopSync();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -29,20 +31,22 @@ function App() {
         try {
             const userData = await apiService.getCurrentUser();
             if (userData && userData.id) {
-                console.log('Initializing sync for user:', userData.id);
+                console.log("Initializing sync for user:", userData.id);
                 syncService.initialize(userData.id);
             }
         } catch (error) {
-            console.error('Failed to initialize app:', error);
+            console.error("Failed to initialize app:", error);
         }
     };
 
     return (
-        <Router>
-            <div className="App">
-                <AppRoutes />
-            </div>
-        </Router>
+        <SnackbarProvider>
+            <Router>
+                <div className="App">
+                    <AppRoutes />
+                </div>
+            </Router>
+        </SnackbarProvider>
     );
 }
 

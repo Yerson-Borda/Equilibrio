@@ -1,6 +1,9 @@
 .modal-overlay {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: rgba(0,0,0,0.45);
     display: flex;
     justify-content: center;
@@ -13,6 +16,9 @@
     width: 450px;
     border-radius: 20px;
     padding: 20px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 /* Tabs */
@@ -27,6 +33,16 @@
     padding-bottom: 6px;
     opacity: 0.5;
     font-size: 15px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
+    color: #333;
+    transition: opacity 0.2s;
+}
+
+.tab:hover {
+    opacity: 0.8;
 }
 
 .tab.active {
@@ -39,23 +55,81 @@
 .amount-container {
     text-align: center;
     margin-top: 10px;
+    position: relative;
 }
 
 .amount-display {
     font-size: 48px;
     font-weight: 700;
     color: #3b4556;
-}
-
-.amount-subtext {
-    font-size: 11px;
-    opacity: 0.5;
+    margin-bottom: 10px;
 }
 
 .hidden-input {
     position: absolute;
     opacity: 0;
     pointer-events: none;
+    width: 0;
+    height: 0;
+}
+
+/* Exchange Rate Info */
+.exchange-rate-info {
+    margin-top: 15px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border-left: 3px solid #4C6FFF;
+    text-align: left;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.exchange-rate-label {
+    font-size: 12px;
+    color: #666;
+    display: block;
+    margin-bottom: 4px;
+    line-height: 1.4;
+}
+
+.target-amount {
+    font-size: 14px;
+    font-weight: 700;
+    color: #16A34A;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.loading-preview {
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+    margin-top: 10px;
+    text-align: center;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+.transfer-error {
+    font-size: 12px;
+    color: #F87171;
+    margin-top: 8px;
+    text-align: center;
+    font-weight: 500;
+    background: rgba(248, 113, 113, 0.1);
+    padding: 6px 10px;
+    border-radius: 6px;
+    display: inline-block;
 }
 
 /* Form */
@@ -67,6 +141,8 @@
     font-size: 11px;
     color: #666;
     margin-bottom: 4px;
+    display: block;
+    font-weight: 500;
 }
 
 .input {
@@ -74,10 +150,23 @@
     border: 1px solid #e5e7eb;
     border-radius: 10px;
     padding: 10px 12px;
+    font-family: inherit;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+    margin-bottom: 15px;
+}
+
+.input:focus {
+    outline: none;
+    border-color: #4C6FFF;
+    box-shadow: 0 0 0 2px rgba(76, 111, 255, 0.1);
 }
 
 .textarea {
     height: 80px;
+    resize: vertical;
+    min-height: 80px;
 }
 
 .dropdown {
@@ -87,12 +176,34 @@
     border-radius: 10px;
     border: 1px solid #e5e7eb;
     cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    box-sizing: border-box;
+    margin-bottom: 15px;
+    transition: border-color 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23333%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px top 50%;
+    background-size: 10px auto;
+    padding-right: 30px;
+}
+
+.dropdown:focus {
+    outline: none;
+    border-color: #4C6FFF;
+    box-shadow: 0 0 0 2px rgba(76, 111, 255, 0.1);
+}
+
+.relative {
+    position: relative;
+    margin-bottom: 15px;
 }
 
 /* Category panel grid */
 .category-panel {
     position: absolute;
-    top: 48px;
+    top: 100%;
     left: 0;
     width: 100%;
     max-height: 260px;
@@ -102,6 +213,9 @@
     border-radius: 14px;
     padding: 10px;
     z-index: 300;
+    margin-top: 5px;
+    border: 1px solid #e5e7eb;
+    animation: fadeIn 0.2s ease;
 }
 
 .category-item {
@@ -110,6 +224,11 @@
     padding: 8px;
     border-radius: 12px;
     cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    transition: background-color 0.2s;
 }
 
 .category-item:hover {
@@ -124,26 +243,19 @@
     justify-content: center;
     align-items: center;
     margin-right: 12px;
+    flex-shrink: 0;
 }
 
 .icon-img {
     width: 22px;
     height: 22px;
+    object-fit: contain;
 }
 
 .category-name {
     font-size: 14px;
     font-weight: 500;
-}
-
-/* Attachments */
-.attachment-btn {
-    width: 100%;
-    margin-top: 10px;
-    background: #edf2f7;
-    border-radius: 10px;
-    text-align: center;
-    padding: 10px;
+    color: #333;
 }
 
 /* Tags */
@@ -152,6 +264,7 @@
     flex-wrap: wrap;
     gap: 8px;
     margin-top: 14px;
+    margin-bottom: 15px;
 }
 
 .tag {
@@ -159,6 +272,16 @@
     padding: 6px 12px;
     border-radius: 8px;
     font-size: 13px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    color: #333;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.tag:hover {
+    background: #e2e8f0;
 }
 
 .tag-active {
@@ -166,10 +289,24 @@
     color: white;
 }
 
+.tag-active:hover {
+    background: #3a5bff;
+}
+
 .tag-new {
     background: #e2e8f0;
     padding: 6px 12px;
     border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    color: #333;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.tag-new:hover {
+    background: #d1d9e6;
 }
 
 /* Buttons */
@@ -177,30 +314,67 @@
     display: flex;
     justify-content: space-between;
     margin-top: 25px;
+    gap: 10px;
 }
 
 .btn-cancel {
     background: #F87171;
-    padding: 10px 20px;
+    padding: 12px 20px;
     color: white;
     border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    flex: 1;
+    transition: background-color 0.2s;
+    font-size: 14px;
+}
+
+.btn-cancel:hover:not(:disabled) {
+    background: #ef4444;
+}
+
+.btn-cancel:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .btn-confirm {
     background: #16A34A;
-    padding: 10px 20px;
+    padding: 12px 20px;
     color: white;
     border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    flex: 1;
+    transition: background-color 0.2s;
+    font-size: 14px;
+}
+
+.btn-confirm:hover:not(:disabled) {
+    background: #15803d;
+}
+
+.btn-confirm:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 /* Tag modal */
 .tag-modal {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: rgba(0,0,0,0.45);
     display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 1000;
 }
 
 .tag-box {
@@ -208,10 +382,363 @@
     padding: 20px;
     border-radius: 12px;
     width: 300px;
+    max-width: 90vw;
 }
 
 .tag-actions {
     display: flex;
     justify-content: space-between;
     margin-top: 15px;
+    gap: 10px;
+}
+
+
+/* -------- Attachment summary row (inside transaction modal) -------- */
+.attachment-summary{
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 15px;
+    background: #edf2f7;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    border: 1px solid rgba(0,0,0,0.04);
+    border: none;
+    font-family: inherit;
+    transition: background-color 0.2s;
+}
+
+.attachment-summary:hover {
+    background: #e2e8f0;
+}
+
+.attachment-summary-left{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    text-align:left;
+}
+
+.attachment-summary-title{
+    font-size: 12px;
+    font-weight: 600;
+    color:#3b4556;
+}
+
+.attachment-summary-sub{
+    font-size: 11px;
+    opacity: 0.65;
+}
+
+.attachment-summary-action{
+    font-size: 12px;
+    font-weight: 600;
+    color:#4C6FFF;
+}
+
+/* -------- Attachment upload modal (design style) -------- */
+.att-modal-overlay{
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.45);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index: 1200;
+}
+
+.att-modal-box{
+    width: 520px;
+    max-width: 90vw;
+    max-height: 90vh;
+    background: #fff;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.18);
+    overflow-y: auto;
+}
+
+.att-modal-header{
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    margin-bottom: 12px;
+}
+
+.att-modal-title{
+    font-size: 14px;
+    font-weight: 700;
+    color:#2f3a4a;
+}
+
+.att-dropzone{
+    border: 2px dashed #e5e7eb;
+    border-radius: 12px;
+    padding: 22px 14px;
+    text-align:center;
+    cursor:pointer;
+    background: #fafafa;
+    transition: all .15s ease;
+    margin-bottom: 15px;
+}
+
+.att-dropzone:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.att-dropzone.dragover{
+    border-color: #4C6FFF;
+    background: rgba(76,111,255,0.06);
+}
+
+.att-drop-icon{
+    font-size: 22px;
+    margin-bottom: 8px;
+    opacity: 0.7;
+}
+
+.att-drop-title{
+    font-size: 13px;
+    font-weight: 600;
+    color:#3b4556;
+    margin-bottom: 6px;
+}
+
+.att-drop-sub{
+    font-size: 11px;
+    opacity: 0.65;
+}
+
+.hidden {
+    display: none;
+}
+
+.att-files{
+    margin-top: 14px;
+    max-height: 160px;
+    overflow:auto;
+    padding-right: 4px;
+}
+
+.att-file-row{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    border: 1px solid #eef2f7;
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+.att-file-name{
+    font-size: 12px;
+    color:#3b4556;
+    max-width: 360px;
+    overflow:hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.att-file-remove{
+    font-size: 12px;
+    color:#D06978;
+    background: transparent;
+    border: none;
+    cursor:pointer;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.att-file-remove:hover {
+    background: rgba(208, 105, 120, 0.1);
+}
+
+.att-clear{
+    width: 100%;
+    background: #f8fafc;
+    border: 1px solid #eef2f7;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 12px;
+    cursor:pointer;
+    margin-top: 6px;
+    border: none;
+    font-family: inherit;
+    color: #64748b;
+    transition: background-color 0.2s;
+}
+
+.att-clear:hover {
+    background: #f1f5f9;
+}
+
+.att-actions{
+    display:flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.att-cancel{
+    background: #e5e7eb;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    color: #333;
+    transition: background-color 0.2s;
+}
+
+.att-cancel:hover {
+    background: #d1d5db;
+}
+
+.att-continue{
+    background: #4C6FFF;
+    color:white;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.2s;
+}
+
+.att-continue:hover {
+    background: #3a5bff;
+}
+
+/* Transfer exchange preview (under amount) */
+.transfer-meta{
+    margin-top: 6px;
+    text-align: center;
+}
+
+.target-line{
+    font-size: 12px;
+    color: #929EAE;
+    line-height: 1.2;
+}
+
+.target-value{
+    color: #3B82F6;
+    font-weight: 600;
+}
+
+.rate-line{
+    margin-top: 2px;
+    font-size: 11px;
+    color: #929EAE;
+}
+
+/* Position exchange rate and target amount in the value box */
+.amount-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding-left: 10px;
+}
+
+.amount-display {
+    font-size: 48px;
+    font-weight: 700;
+    color: #3b4556;
+}
+
+.transfer-meta {
+    position: absolute;
+    bottom: -25px; /* Place the info just below the amount */
+    left: 0;
+    width: 100%;
+    text-align: left;
+    font-size: 12px;
+    color: #929eae;
+    padding: 10px 0;
+}
+
+.target-line {
+    margin-bottom: 5px;
+}
+
+.target-value {
+    font-weight: 600;
+    color: #3b82f6; /* Blue color for target amount */
+}
+
+.rate-line {
+    margin-top: 2px;
+    color: #929eae;
+}
+
+/* Amount container */
+.amount-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Ensure elements are spaced correctly */
+    padding: 0 20px;
+}
+
+/* Main display box (amount) */
+.amount-display-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 0;
+}
+
+/* Amount (Currency and Value) */
+.amount-display {
+    font-size: 48px;
+    font-weight: 700;
+    color: #3b4556;
+}
+
+/* Transfer symbol (the ↔ icon) */
+.transfer-symbol {
+    font-size: 36px;
+    color: #3b82f6; /* Blue color for transfer symbol */
+    margin: 0 10px;
+}
+
+/* Transfer meta (exchange rate, target amount) */
+.transfer-meta {
+    font-size: 12px;
+    color: #929eae;
+    text-align: left;
+}
+
+/* Target amount text */
+.target-line {
+    font-size: 12px;
+    color: #929eae;
+    margin-bottom: 5px;
+}
+
+.target-value {
+    color: #3b82f6;
+    font-weight: 600;
+}
+
+/* Exchange rate line */
+.rate-line {
+    font-size: 11px;
+    color: #929eae;
 }
