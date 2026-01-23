@@ -1,4 +1,4 @@
-package com.example.moneymate.ui.screens.goal.component
+package com.example.moneymate.ui.screens.home
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
@@ -19,27 +19,39 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 @Composable
-fun SavingsGauge(
+fun BudgetGauge(
     progress: Float, // Should be between 0.0f and 1.0f (0% to 100%)
-    targetAmount: Double
+    spentAmount: Double,
+    limitAmount: Double,
+    currencySymbol: String = "$",
+    modifier: Modifier = Modifier
 ) {
-    val progressColor = Color(0xFF4F73FF)
-    val trackColor = Color(0xFFE0E7FF)
-
-    // Make sure progress is between 0 and 1
+    val hasLimit = limitAmount > 0
     val safeProgress = remember(progress) {
         progress.coerceIn(0f, 1f)
     }
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    // Colors based on budget status
+    val progressColor = when {
+        safeProgress < 0.7f -> Color(0xFF4CAF50) // Green for normal
+        safeProgress < 0.9f -> Color(0xFFFF9800) // Orange for warning
+        else -> Color(0xFFF44336) // Red for critical/over budget
+    }
+
+    val trackColor = Color(0xFFF2F2F7)
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally, // Fixed typo here
+        modifier = modifier
+    ) {
         Box(contentAlignment = Alignment.BottomCenter) {
-            Canvas(modifier = Modifier.size(120.dp, 80.dp)) {
-                // Calculate dimensions
-                val strokeWidth = 14.dp.toPx()
+            Canvas(modifier = Modifier.size(100.dp, 70.dp)) {
+                // Calculate dimensions (slightly smaller for home screen)
+                val strokeWidth = 12.dp.toPx()
                 val radius = size.width / 2 - strokeWidth
                 val centerPoint = Offset(size.width / 2, size.height) // Bottom center
 
-                // 1. Draw the Background Track (Gray/Light Blue)
+                // 1. Draw the Background Track
                 drawArc(
                     color = trackColor,
                     startAngle = 180f,
@@ -50,8 +62,7 @@ fun SavingsGauge(
                     topLeft = Offset(strokeWidth, size.height - radius)
                 )
 
-                // 2. Draw the Progress Arc (Blue)
-                // Only draw if there is progress > 0
+                // 2. Draw the Progress Arc
                 if (safeProgress > 0) {
                     drawArc(
                         color = progressColor,
@@ -65,12 +76,8 @@ fun SavingsGauge(
                 }
 
                 // 3. Draw the Needle
-                // 180 degrees = 0%, 360 degrees = 100%
                 val angleRad = Math.toRadians((180f + (180f * safeProgress)).toDouble())
-
-                // Make needle slightly shorter than radius so it fits nicely
-                val needleLength = radius - 5.dp.toPx()
-
+                val needleLength = radius - 4.dp.toPx()
                 val endX = centerPoint.x + needleLength * cos(angleRad).toFloat()
                 val endY = centerPoint.y + needleLength * sin(angleRad).toFloat()
                 val endPoint = Offset(endX, endY)
@@ -79,46 +86,58 @@ fun SavingsGauge(
                     color = progressColor,
                     start = centerPoint,
                     end = endPoint,
-                    strokeWidth = 4.dp.toPx(), // Slightly thicker needle
+                    strokeWidth = 3.dp.toPx(),
                     cap = StrokeCap.Round
                 )
 
                 // Draw the pivot circle
                 drawCircle(
                     color = progressColor,
-                    radius = 6.dp.toPx(),
+                    radius = 5.dp.toPx(),
                     center = centerPoint
                 )
             }
 
-            // Percentage Text
+            // Percentage Text or Spent Amount
             Text(
-                text = "${(safeProgress * 100).toInt()}%",
-                fontSize = 16.sp,
+                text = if (hasLimit) "${(safeProgress * 100).toInt()}%"
+                else formatCurrency(spentAmount, currencySymbol),
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black,
-                modifier = Modifier.padding(bottom = 10.dp) // Lift text slightly
+                modifier = Modifier.padding(bottom = 8.dp)
             )
         }
 
-        // Labels (0 and Target)
+        // Labels (0 and Limit/Spent)
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("0", fontSize = 11.sp, color = Color.Gray)
+            Text("0", fontSize = 10.sp, color = Color.Gray)
 
-            // Format target amount appropriately
-            val formattedTarget = remember(targetAmount) {
-                when {
-                    targetAmount >= 1_000_000 -> String.format("$%.1fM", targetAmount / 1_000_000)
-                    targetAmount >= 1_000 -> String.format("$%.1fK", targetAmount / 1_000)
-                    targetAmount >= 100 -> String.format("$%.0f", targetAmount)
-                    else -> String.format("$%.2f", targetAmount)
+            val formattedAmount = remember(limitAmount, spentAmount, hasLimit) {
+                if (hasLimit) {
+                    formatCurrency(limitAmount, currencySymbol)
+                } else {
+                    "No Limit"
                 }
             }
 
-            Text(formattedTarget, fontSize = 11.sp, color = Color.Gray)
+            Text(
+                text = formattedAmount,
+                fontSize = 10.sp,
+                color = Color.Gray
+            )
         }
+    }
+}
+
+private fun formatCurrency(amount: Double, currencySymbol: String): String {
+    return when {
+        amount >= 1_000_000 -> String.format("%s%.1fM", currencySymbol, amount / 1_000_000)
+        amount >= 1_000 -> String.format("%s%.1fK", currencySymbol, amount / 1_000)
+        amount >= 100 -> String.format("%s%.0f", currencySymbol, amount)
+        else -> String.format("%s%.2f", currencySymbol, amount)
     }
 }

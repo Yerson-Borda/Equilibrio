@@ -34,29 +34,57 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.domain.budget.model.Budget
 import com.example.domain.categoryLimit.model.CategoryLimitOverview
+import com.example.domain.wallet.model.TotalBalance
 import com.example.moneymate.R
 import com.example.moneymate.ui.components.goal.GoalsListSection
 import com.example.moneymate.ui.components.states.EmptyState
 import com.example.moneymate.ui.components.states.FullScreenError
 import com.example.moneymate.ui.components.states.FullScreenLoading
+import com.example.moneymate.ui.components.states.SectionStateManager
 import com.example.moneymate.ui.navigation.BottomNavigationBar
-import com.example.moneymate.ui.screens.goal.component.*
+import com.example.moneymate.ui.screens.goal.component.NotificationToggle
+import com.example.moneymate.ui.screens.goal.component.SavingSummaryChartSection
+import com.example.moneymate.ui.screens.goal.component.SavingsGoalSection
 import com.example.moneymate.utils.IconMapper
 import com.example.moneymate.utils.ScreenState
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @Composable
 fun GoalScreen(
-    navController: NavController? = null, // Make optional for backward compatibility
+    navController: NavController? = null,
     viewModel: GoalScreenViewModel = koinViewModel(),
     currentScreen: String = "goals",
     onNavigationItemSelected: (String) -> Unit = {},
     onBackClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val formattedStartDate = remember(uiState.selectedStartDate) {
+        uiState.selectedStartDate?.let { timestamp ->
+            try {
+                val dateFormat = SimpleDateFormat("dd MMM", Locale.getDefault())
+                dateFormat.format(Date(timestamp))
+            } catch (e: Exception) {
+                "Start Date"
+            }
+        } ?: "Start Date"
+    }
+
+    val formattedEndDate = remember(uiState.selectedEndDate) {
+        uiState.selectedEndDate?.let { timestamp ->
+            try {
+                val dateFormat = SimpleDateFormat("dd MMM", Locale.getDefault())
+                dateFormat.format(Date(timestamp))
+            } catch (e: Exception) {
+                "End Date"
+            }
+        } ?: "End Date"
+    }
     var showEditSavingsGoalDialog by remember { mutableStateOf(false) }
     var newSavingsGoalAmount by remember { mutableStateOf("") }
 
@@ -72,7 +100,7 @@ fun GoalScreen(
     Scaffold(
         containerColor = Color(0xFFF8F9FA),
         topBar = {
-            Box(modifier = Modifier.statusBarsPadding()) { // Wrap in Box with status bar padding
+            Box(modifier = Modifier.statusBarsPadding()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -85,7 +113,7 @@ fun GoalScreen(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_back_arrow),
-                            contentDescription = "goals",
+                            contentDescription = "Goals",
                             tint = Color.Black,
                             modifier = Modifier.size(21.dp)
                         )
@@ -124,8 +152,8 @@ fun GoalScreen(
                                 savingsGoal = uiState.savingsGoal,
                                 isLoading = uiState.isSavingsGoalLoading,
                                 isError = uiState.savingsGoalError != null,
-                                startDate = uiState.selectedStartDate,
-                                endDate = uiState.selectedEndDate,
+                                startDate = formattedStartDate,
+                                endDate = formattedEndDate,
                                 onEditClick = {
                                     uiState.savingsGoal?.let { goal ->
                                         newSavingsGoalAmount = String.format("%.0f", goal.targetAmount)
@@ -138,19 +166,67 @@ fun GoalScreen(
 
                         // 2. Summary Chart
                         item {
-                            SavingSummaryChartSection(
-                                monthlyChartData = uiState.monthlyChartData,
-                                selectedMonth = uiState.selectedChartMonth,
-                                availableMonths = uiState.availableMonths,
-                                onMonthSelected = { viewModel.onChartMonthSelected(it) },
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
+                            if (uiState.isSavingsTrendsLoading) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(250.dp)
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(color = Color(0xFF4D73FF))
+                                }
+                            } else if (uiState.savingsTrendsError != null) {
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(250.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "Error loading savings data",
+                                                color = Color.Gray,
+                                                modifier = Modifier.padding(bottom = 8.dp)
+                                            )
+                                            TextButton(onClick = { viewModel.refreshOnScreenFocus() }) {
+                                                Text("Retry")
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                SavingSummaryChartSection(
+                                    monthlyChartData = uiState.monthlyChartData,
+                                    selectedMonth = uiState.selectedChartMonth,
+                                    availableMonths = uiState.availableMonths,
+                                    selectedPeriod = uiState.selectedPeriod,
+                                    availablePeriods = uiState.availablePeriods,
+                                    onMonthSelected = { month ->
+                                        viewModel.onChartMonthSelected(month)
+                                    },
+                                    onPeriodSelected = { period ->
+                                        viewModel.onPeriodSelected(period)
+                                    },
+                                    modifier = Modifier.padding(horizontal = 16.dp)
+                                )
+                            }
                         }
 
                         // 3. SWIPEABLE CONTAINER - Budget and Category Limits
                         item {
                             SwipeableBudgetContainer(
                                 budget = budget,
+                                balanceState = uiState.balanceState,
+                                balanceComparison = uiState.balanceComparison,
                                 isNotificationsEnabled = uiState.isNotificationsEnabled,
                                 onToggleNotifications = { viewModel.toggleNotifications() },
                                 categoryLimitsState = uiState.categoryLimitsState,
@@ -173,6 +249,7 @@ fun GoalScreen(
                                     showEditDailyDialog = true
                                 },
                                 isUpdatingBudget = uiState.isUpdating,
+                                onRetryBalance = { viewModel.loadTotalBalance() },
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
                         }
@@ -182,11 +259,9 @@ fun GoalScreen(
                             GoalsListSection(
                                 goalsState = uiState.goalsState,
                                 onGoalClick = { goal ->
-                                    // Navigate to goal detail screen if navController is available
                                     navController?.navigate("goalDetail/${goal.id}")
                                 },
                                 onSeeAllClick = {
-                                    // Navigate to full goals list screen
                                     navController?.navigate("goalsList")
                                 },
                                 modifier = Modifier.padding(top = 16.dp)
@@ -311,7 +386,7 @@ fun GoalScreen(
                             onClick = {
                                 val limit = newMonthlyLimit.toDoubleOrNull()
                                 if (limit != null) {
-                                    viewModel.updateBudget(monthlyAmount = limit, dailyAmount = 0.0)
+                                    viewModel.updateBudget(monthlyAmount = limit, dailyAmount = null)
                                     showEditMonthlyDialog = false
                                     newMonthlyLimit = ""
                                 }
@@ -378,7 +453,7 @@ fun GoalScreen(
                             onClick = {
                                 val limit = newDailyLimit.toDoubleOrNull()
                                 if (limit != null) {
-                                    viewModel.updateBudget(monthlyAmount = 0.0, dailyAmount = limit)
+                                    viewModel.updateBudget(monthlyAmount = null, dailyAmount = limit)
                                     showEditDailyDialog = false
                                     newDailyLimit = ""
                                 }
@@ -424,11 +499,14 @@ fun getMonthName(month: Int): String {
 @Composable
 fun BudgetAndLimitsPage(
     budget: Budget,
+    balanceState: ScreenState<TotalBalance?>,
+    balanceComparison: String,
     isNotificationsEnabled: Boolean,
     onToggleNotifications: () -> Unit,
     onEditMonthlyLimit: () -> Unit,
     onEditDailyLimit: () -> Unit,
-    isUpdating: Boolean = false
+    isUpdating: Boolean = false,
+    onRetryBalance: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -449,18 +527,53 @@ fun BudgetAndLimitsPage(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                SectionStateManager(
+                    state = balanceState,
+                    onRetry = { onRetryBalance() }
+                ) { balance ->
+                    Text(
+                        text = "$${balance?.totalBalance ?: "0.00"}",
+                        color = Color.Black,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                }
                 Text(
-                    text = "$5,240.21",
-                    color = Color.Black,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                Text(
-                    text = "+2.5% vs Last month",
+                    text = balanceComparison,
                     color = Color(0xFF4CAF50),
                     fontSize = 12.sp
                 )
+            }
+
+            // Warning for exceeded limits
+            val exceededLimits = mutableListOf<String>()
+            if (budget.isMonthlyExceeded) {
+                exceededLimits.add("Monthly budget")
+            }
+            if (budget.isDailyExceeded) {
+                exceededLimits.add("Daily limit")
+            }
+
+            if (exceededLimits.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Warning",
+                        tint = Color(0xFFF44336),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Exceeded: ${exceededLimits.joinToString(", ")}",
+                        color = Color(0xFFF44336),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
 
@@ -561,8 +674,19 @@ fun BudgetAndLimitsPage(
                     modifier = Modifier
                         .fillMaxWidth(budget.monthlyProgress.coerceIn(0f, 1f))
                         .height(4.dp)
-                        .background(Color(0xFF4CAF50))
+                        .background(if (budget.isMonthlyExceeded) Color(0xFFF44336) else Color(0xFF4CAF50))
                         .clip(RoundedCornerShape(2.dp))
+                )
+            }
+
+            // Warning text when exceeded
+            if (budget.isMonthlyExceeded) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "⚠️ You've exceeded your monthly budget by $${String.format("%.2f", -budget.monthlyRemaining)}",
+                    color = Color(0xFFF44336),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
@@ -664,8 +788,19 @@ fun BudgetAndLimitsPage(
                     modifier = Modifier
                         .fillMaxWidth(budget.dailyProgress.coerceIn(0f, 1f))
                         .height(4.dp)
-                        .background(Color(0xFF4CAF50))
+                        .background(if (budget.isDailyExceeded) Color(0xFFF44336) else Color(0xFF4CAF50))
                         .clip(RoundedCornerShape(2.dp))
+                )
+            }
+
+            // Warning text when exceeded
+            if (budget.isDailyExceeded) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "⚠️ You've exceeded your daily limit by $${String.format("%.2f", -budget.dailyRemaining)}",
+                    color = Color(0xFFF44336),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
@@ -727,12 +862,36 @@ fun LimitsPerCategoryPage(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Category Limits",
-                color = Color.Black,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Column {
+                Text(
+                    text = "Category Limits",
+                    color = Color.Black,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                // Warning for over-budget categories
+                if (overBudgetCategories.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Warning",
+                            tint = Color(0xFFF44336),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${overBudgetCategories.size} categories over budget",
+                            color = Color(0xFFF44336),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
 
             IconButton(
                 onClick = { onRefreshCategoryLimits() },
@@ -1088,14 +1247,39 @@ fun CompactCategoryTableRow(
                 Spacer(modifier = Modifier.width(8.dp))
             }
 
-            Text(
-                text = category.categoryName,
-                color = Color.Black,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Column {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = category.categoryName,
+                        color = Color.Black,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    if (isOverBudget) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Over budget",
+                            tint = Color(0xFFF44336),
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
+                }
+
+                if (isOverBudget) {
+                    Text(
+                        text = "⚠️ Over budget",
+                        color = Color(0xFFF44336),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
         }
 
         Text(
@@ -1157,6 +1341,8 @@ fun CompactCategoryTableRow(
 @Composable
 fun SwipeableBudgetContainer(
     budget: Budget,
+    balanceState: ScreenState<TotalBalance?>,
+    balanceComparison: String,
     isNotificationsEnabled: Boolean,
     onToggleNotifications: () -> Unit,
     categoryLimitsState: ScreenState<List<CategoryLimitOverview>>,
@@ -1169,6 +1355,7 @@ fun SwipeableBudgetContainer(
     onEditMonthlyLimit: () -> Unit,
     onEditDailyLimit: () -> Unit,
     isUpdatingBudget: Boolean = false,
+    onRetryBalance: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val pageCount = 2
@@ -1205,11 +1392,14 @@ fun SwipeableBudgetContainer(
                 when (page) {
                     0 -> BudgetAndLimitsPage(
                         budget = budget,
+                        balanceState = balanceState,
+                        balanceComparison = balanceComparison,
                         isNotificationsEnabled = isNotificationsEnabled,
                         onToggleNotifications = onToggleNotifications,
                         onEditMonthlyLimit = onEditMonthlyLimit,
                         onEditDailyLimit = onEditDailyLimit,
-                        isUpdating = isUpdatingBudget
+                        isUpdating = isUpdatingBudget,
+                        onRetryBalance = onRetryBalance
                     )
                     1 -> LimitsPerCategoryPage(
                         categoryLimitsState = categoryLimitsState,

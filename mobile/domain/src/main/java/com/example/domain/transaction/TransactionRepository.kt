@@ -7,6 +7,7 @@ import com.example.domain.transaction.model.ComparisonCategoryData
 import com.example.domain.transaction.model.CreateTransaction
 import com.example.domain.transaction.model.DailyData
 import com.example.domain.transaction.model.PeriodFilter
+import com.example.domain.transaction.model.SavingsTrendsData
 import com.example.domain.transaction.model.SpendingTrendData
 import com.example.domain.transaction.model.TopCategoryData
 import com.example.domain.transaction.model.TransactionEntity
@@ -62,4 +63,6 @@ interface TransactionRepository {
     suspend fun getTopCategoriesCurrentMonth(): Result<List<TopCategoryData>>
 
     suspend fun getAverageSpending(period: PeriodFilter): Result<List<AverageSpendingData>>
+    suspend fun getSavingsTrends(months: Int): Result<SavingsTrendsData>
+
 }

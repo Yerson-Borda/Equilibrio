@@ -18,34 +18,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.savingsGoal.model.SavingsGoal
-import com.example.moneymate.ui.screens.goal.getMonthName
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
 @Composable
 fun SavingsGoalSection(
     savingsGoal: SavingsGoal?,
     isLoading: Boolean,
     isError: Boolean,
-    startDate: Long?, // New parameter
-    endDate: Long?,   // New parameter
+    startDate: String,
+    endDate: String,
     onEditClick: () -> Unit,
     onPeriodClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Helper to format timestamps
-    val dateFormatter = remember { SimpleDateFormat("dd MMM", Locale.getDefault()) }
-    val dateDisplay = if (startDate != null && endDate != null) {
-        "${dateFormatter.format(Date(startDate))} - ${dateFormatter.format(Date(endDate))}"
+    val dateDisplay = if (startDate.isNotEmpty() && endDate.isNotEmpty() && startDate != "Start Date" && endDate != "End Date") {
+        "$startDate - $endDate"
     } else {
         val month = savingsGoal?.let { getMonthName(it.month) } ?: "Month"
         "01 $month - 30 $month"
-    }
-    val rawPercentage = if (savingsGoal != null && savingsGoal.targetAmount > 0) {
-        (savingsGoal.currentSaved / savingsGoal.targetAmount) * 100
-    } else {
-        0.0
     }
 
     Card(
@@ -60,7 +51,7 @@ fun SavingsGoalSection(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Saving Goal", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                Text("Savings Goal", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
 
                 Surface(
                     onClick = onPeriodClick,
@@ -80,19 +71,80 @@ fun SavingsGoalSection(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            if (savingsGoal != null) {
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Color(0xFF4D73FF))
+                }
+            } else if (isError) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Error",
+                            tint = Color.Gray,
+                            modifier = Modifier.size(36.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Failed to load savings goal", color = Color.Gray)
+                    }
+                }
+            } else if (savingsGoal != null) {
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
-                        StatRow(Icons.Outlined.EmojiEvents, "Target Achieved", "$${String.format("%,.0f", savingsGoal.currentSaved)}")
+                        StatRow(
+                            Icons.Outlined.EmojiEvents,
+                            "Current Savings",
+                            String.format("$%.2f", savingsGoal.currentSaved)
+                        )
                         Spacer(modifier = Modifier.height(24.dp))
-                        StatRow(Icons.Outlined.AdsClick, "This month Target", "$${String.format("%,.0f", savingsGoal.targetAmount)}")
+                        StatRow(
+                            Icons.Outlined.AdsClick,
+                            "Monthly Target",
+                            String.format("$%.2f", savingsGoal.targetAmount)
+                        )
                     }
 
                     Box(modifier = Modifier.size(140.dp), contentAlignment = Alignment.Center) {
+                        // Calculate percentage correctly
+                        val progressPercentage = if (savingsGoal.targetAmount > 0) {
+                            (savingsGoal.currentSaved / savingsGoal.targetAmount).toFloat()
+                        } else {
+                            0f
+                        }
+
                         SavingsGauge(
-                            progress = rawPercentage.toFloat(), // Pass the 0-100 value directly now
-                            targetAmount = savingsGoal?.targetAmount ?: 0.0
+                            progress = progressPercentage,
+                            targetAmount = savingsGoal.targetAmount
                         )
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "No goal",
+                            tint = Color.Gray,
+                            modifier = Modifier.size(36.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("No savings goal set", color = Color.Gray)
+                        Text("Set a goal to start tracking", fontSize = 12.sp, color = Color.Gray)
                     }
                 }
             }
@@ -103,7 +155,8 @@ fun SavingsGoalSection(
                 onClick = onEditClick,
                 modifier = Modifier.align(Alignment.CenterHorizontally).height(48.dp).padding(horizontal = 24.dp),
                 shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, Color(0xFF4B5563))
+                border = BorderStroke(1.dp, Color(0xFF4B5563)),
+                enabled = savingsGoal != null && !isLoading && !isError
             ) {
                 Text("Adjust Goal", color = Color(0xFF1F2937), fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -128,4 +181,13 @@ private fun StatRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label
             Text(text = value, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
         }
     }
+}
+
+@Composable
+fun getMonthName(month: Int): String {
+    val months = arrayOf(
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    )
+    return if (month in 1..12) months[month - 1] else "Month"
 }

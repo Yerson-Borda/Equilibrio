@@ -50,6 +50,7 @@ import com.example.domain.wallet.usecase.GetWalletsUseCase
 import com.example.domain.wallet.usecase.UpdateWalletUseCase
 import com.example.domain.savingsGoal.usecase.GetCurrentSavingsGoalUseCase
 import com.example.domain.savingsGoal.usecase.UpdateSavingsGoalUseCase
+import com.example.domain.transaction.usecase.GetSavingsTrendsUseCase
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.factoryOf
 import org.koin.dsl.module
@@ -102,5 +103,6 @@ val useCaseModule = module {
     factory{ GetGoalUseCase(get()) }
     factory{ GetGoalsUseCase(get()) }
     factory{ UpdateGoalUseCase(get()) }
+    factory{ GetSavingsTrendsUseCase(get()) }
 
 }

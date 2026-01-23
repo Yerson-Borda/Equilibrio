@@ -19,12 +19,12 @@ import org.koin.dsl.module
 val viewModelModule  = module {
     viewModel { SignUpViewModel(get()) }
     viewModel{SignInViewModel(get())}
-    viewModel{ HomeViewModel(get(), get(), get(), get()) }
+    viewModel{ HomeViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel{ WalletViewModel(get(), get(), get(), get(),get(), get()) }
     viewModel{ AddTransactionViewModel(get(), get(), get(), get() , get(), get(), get(), get()) }
     viewModel { EditProfileViewModel(get(), get(), get(), get()) }
     viewModel { ProfileOptionsScreenViewModel(get()) }
     viewModel { SettingsScreenViewModel(get(), get()) }
     viewModel{ TransactionScreenViewModel(get(), get() , get() , get(), get(), get()) }
-    viewModel { GoalScreenViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { GoalScreenViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get() , get()) }
     viewModel { GoalDetailViewModel(get(), get(), get(), get()) }}

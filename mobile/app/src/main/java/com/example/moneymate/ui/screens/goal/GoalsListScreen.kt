@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -25,12 +27,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.domain.goal.model.Goal
 import com.example.moneymate.R
 import com.example.moneymate.ui.components.states.EmptyState
 import com.example.moneymate.ui.components.states.FullScreenError
 import com.example.moneymate.ui.components.states.FullScreenLoading
 import com.example.moneymate.ui.navigation.BottomNavigationBar
+import com.example.moneymate.utils.Config
 import com.example.moneymate.utils.ScreenState
 import org.koin.androidx.compose.koinViewModel
 import java.time.LocalDate
@@ -68,14 +72,14 @@ fun GoalsListScreen(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_back_arrow),
-                            contentDescription = "goals",
+                            contentDescription = "Goals",
                             tint = Color.Black,
                             modifier = Modifier.size(21.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(105.dp))
                     Text(
-                        text = "goals",
+                        text = "Goals",
                         color = Color.Black,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
@@ -160,65 +164,105 @@ fun VerticalGoalCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(140.dp)
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
-            // Goal Title
-            Text(
-                text = goal.title,
-                color = Color.Black,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Deadline
-            if (goal.deadline != null) {
-                Text(
-                    text = formatDate(goal.deadline!!),
-                    color = Color.Black.copy(alpha = 0.6f),
-                    fontSize = 10.sp
+            // Image section at the top
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+            ) {
+                AsyncImage(
+                    model = goal.image?.let { Config.buildImageUrl(it) } ?: "https://placehold.co/600x400/4A66FF/FFFFFF?text=${goal.title.replace(" ", "+")}",
+                    contentDescription = goal.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                
+                // Gradient overlay for better text readability
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.7f)
+                                )
+                            )
+                        )
+                )
+                
+                // Goal title overlay
+                Text(
+                    text = goal.title,
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(12.dp)
+                )
             }
-
-            // Progress Section
-            Column {
+            
+            // Details section below image
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                // Deadline
+                if (goal.deadline != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarToday,
+                            contentDescription = null,
+                            tint = Color(0xFF6B7280),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = formatDate(goal.deadline),
+                            color = Color(0xFF6B7280),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+                
                 // Amount saved vs target
                 Text(
                     text = "$${formatAmount(goal.amountSaved)} out of $${formatAmount(goal.goalAmount)}",
                     color = Color.Black,
-                    fontSize = 12.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // Progress Bar
                 ProgressIndicator(
                     progress = goal.progress,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(6.dp)
+                        .height(8.dp)
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // Progress Percentage
+                // Progress info row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -226,23 +270,25 @@ fun VerticalGoalCard(
                 ) {
                     Text(
                         text = "${(goal.progress * 100).toInt()}%",
-                        color = Color.Black.copy(alpha = 0.8f),
-                        fontSize = 10.sp
+                        color = Color(0xFF4A66FF),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
                     )
 
                     if (goal.isAchieved) {
                         Text(
                             text = "Achieved!",
-                            color = Color(0xFF4CAF50),
-                            fontSize = 10.sp,
+                            color = Color(0xFF10B981),
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
                         )
                     } else {
                         goal.daysRemaining?.let { days ->
                             Text(
                                 text = "${days} days left",
-                                color = Color(0xFFFF9800),
-                                fontSize = 10.sp
+                                color = Color(0xFFF59E0B),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
                             )
                         }
                     }
@@ -308,9 +354,13 @@ fun AddRecordButton(
     }
 }
 
-private fun formatDate(date: LocalDate): String {
-    val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy")
-    return date.format(formatter)
+private fun formatDate(date: LocalDate?): String {
+    return if (date != null) {
+        val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy")
+        date.format(formatter)
+    } else {
+        "No deadline"
+    }
 }
 
 private fun formatAmount(amount: Double): String {

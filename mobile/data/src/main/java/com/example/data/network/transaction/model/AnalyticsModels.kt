@@ -84,20 +84,26 @@ data class AverageSpendingResponse(
     val period_type: String
 )
 
-private fun TopCategoryResponse.toDomain(): TopCategoryData {
-    return TopCategoryData(
-        categoryId = category_id,
-        categoryName = category_name,
-        totalAmount = total_amount
-    )
-}
+// SAVINGS TRENDS RESPONSE MODELS
+@Serializable
+data class SavingsTrendsResponse(
+    val monthly_trends: List<SavingsMonthlyTrendDto>,
+    val months_analyzed: Int,
+    val analysis_period: AnalysisPeriodDto
+)
 
-private fun AverageSpendingResponse.toDomain(): AverageSpendingData {
-    return AverageSpendingData(
-        categoryId = category_id,
-        categoryName = category_name,
-        totalPeriodSpent = total_period_spent,
-        transactions = transactions,
-        periodType = period_type
-    )
-}
+@Serializable
+data class SavingsMonthlyTrendDto(
+    val year: Int,
+    val month: Int,
+    val display_name: String,
+    val saved_amount: Double,
+    val target_amount: Double,
+    val achievement_rate: Double
+)
+
+@Serializable
+data class AnalysisPeriodDto(
+    val start_date: String,
+    val end_date: String
+)

@@ -7,9 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,6 +39,9 @@ fun SettingsScreen(
     val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
+    // State for showing confirmation dialog
+    var showLogoutConfirmation by remember { mutableStateOf(false) }
+
     // Handle errors
     LaunchedEffect(errorState) {
         errorState?.let { error ->
@@ -66,12 +67,59 @@ fun SettingsScreen(
         }
     }
 
+    // Logout Confirmation Dialog
+    if (showLogoutConfirmation) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!uiState.isLoading) {
+                    showLogoutConfirmation = false
+                }
+            },
+            title = {
+                Text(
+                    text = "Log Out",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            },
+            text = {
+                Text("Are you sure you want to log out?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.logout()
+                        showLogoutConfirmation = false
+                    },
+                    enabled = !uiState.isLoading
+                ) {
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Log Out")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showLogoutConfirmation = false },
+                    enabled = !uiState.isLoading
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     // Add system bars padding
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .statusBarsPadding() // Add this line
+            .statusBarsPadding()
     ) {
         // Header with Back button and Logout
         Row(
@@ -101,24 +149,16 @@ fun SettingsScreen(
             )
             Spacer(modifier = Modifier.weight(1f))
             IconButton(
-                onClick = { viewModel.logout() },
+                onClick = { showLogoutConfirmation = true },
                 modifier = Modifier.size(24.dp),
                 enabled = !uiState.isLoading
             ) {
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = Color.Black
-                    )
-                } else {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_logout),
-                        contentDescription = "Logout",
-                        tint = Color.Black,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
+                Icon(
+                    painter = painterResource(R.drawable.ic_logout),
+                    contentDescription = "Logout",
+                    tint = if (uiState.isLoading) Color.Gray else Color.Black,
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
 

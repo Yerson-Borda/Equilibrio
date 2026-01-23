@@ -2,6 +2,7 @@ package com.example.data.network.transaction
 import com.example.data.network.transaction.model.AverageSpendingResponse
 import com.example.data.network.transaction.model.CategorySummaryResponse
 import com.example.data.network.transaction.model.MonthlyComparisonResponse
+import com.example.data.network.transaction.model.SavingsTrendsResponse
 import com.example.data.network.transaction.model.SpendingTrendsResponse
 import com.example.data.network.transaction.model.TopCategoryResponse
 import com.example.data.network.transaction.model.TransactionDto
@@ -80,4 +81,9 @@ interface TransactionApi {
     suspend fun getAverageSpending(
         @Query("period") period: String // "day", "month", or "year"
     ): Response<List<AverageSpendingResponse>>
+
+    @GET("api/analytics/savings-trends")
+    suspend fun getSavingsTrends(
+        @Query("months") months: Int = 6
+    ): Response<SavingsTrendsResponse>
 }

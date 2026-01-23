@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.budget.model.Budget
+import com.example.domain.savingsGoal.model.SavingsGoal
 import com.example.domain.transaction.model.TransactionEntity
 import com.example.moneymate.R
 import com.example.moneymate.ui.components.TransactionsSection
@@ -34,6 +35,7 @@ import kotlin.math.sin
 fun RegularHomeContent(
     recentTransactions: List<TransactionEntity>? = null,
     budgetData: Budget? = null,
+    savingsGoal: SavingsGoal? = null,
     currencySymbol: String = "$",
     onSeeAllBudget: () -> Unit,
     onSeeAllTransactions: () -> Unit,
@@ -53,6 +55,7 @@ fun RegularHomeContent(
         Spacer(modifier = Modifier.height(24.dp))
 
         SavingsGoalsSection(
+            savingsGoal = savingsGoal,
             currencySymbol = currencySymbol,
             onSeeAllSavings = onSeeAllBudget
         )
@@ -71,6 +74,7 @@ fun RegularHomeContent(
 
 @Composable
 fun SavingsGoalsSection(
+    savingsGoal: SavingsGoal?,
     currencySymbol: String,
     onSeeAllSavings: () -> Unit
 ) {
@@ -104,49 +108,60 @@ fun SavingsGoalsSection(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    SavingsGoalCard(
-                        goalName = "iPhone 13 Mini",
-                        savedAmount = 699.0,
-                        targetAmount = 1499.0,
-                        currencySymbol = currencySymbol,
-                        modifier = Modifier.weight(1f)
-                    )
+            if (savingsGoal != null) {
+                SavingsGoalCard(
+                    goalName = "Savings Goal",
+                    savedAmount = savingsGoal.currentSaved,
+                    targetAmount = savingsGoal.targetAmount,
+                    currencySymbol = currencySymbol,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                // Fallback hardcoded data if no savings goal is set
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        SavingsGoalCard(
+                            goalName = "iPhone 13 Mini",
+                            savedAmount = 699.0,
+                            targetAmount = 1499.0,
+                            currencySymbol = currencySymbol,
+                            modifier = Modifier.weight(1f)
+                        )
 
-                    SavingsGoalCard(
-                        goalName = "Car",
-                        savedAmount = 20000.0,
-                        targetAmount = 30500.0,
-                        currencySymbol = currencySymbol,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                        SavingsGoalCard(
+                            goalName = "Car",
+                            savedAmount = 20000.0,
+                            targetAmount = 30500.0,
+                            currencySymbol = currencySymbol,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    SavingsGoalCard(
-                        goalName = "Macbook Pro M1",
-                        savedAmount = 1200.0,
-                        targetAmount = 1499.0,
-                        currencySymbol = currencySymbol,
-                        modifier = Modifier.weight(1f)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        SavingsGoalCard(
+                            goalName = "Macbook Pro M1",
+                            savedAmount = 1200.0,
+                            targetAmount = 1499.0,
+                            currencySymbol = currencySymbol,
+                            modifier = Modifier.weight(1f)
+                        )
 
-                    SavingsGoalCard(
-                        goalName = "House",
-                        savedAmount = 15000.0,
-                        targetAmount = 30500.0,
-                        currencySymbol = currencySymbol,
-                        modifier = Modifier.weight(1f)
-                    )
+                        SavingsGoalCard(
+                            goalName = "House",
+                            savedAmount = 15000.0,
+                            targetAmount = 30500.0,
+                            currencySymbol = currencySymbol,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
         }
@@ -279,9 +294,6 @@ fun ActualBudgetContent(
     budget: Budget,
     currencySymbol: String,
 ) {
-    println("DEBUG: monthlyProgress = ${budget.monthlyProgress}")
-    println("DEBUG: monthlySpent = ${budget.monthlySpent}, monthlyLimit = ${budget.monthlyLimit}")
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -358,11 +370,15 @@ fun BudgetWithLimitContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CircularBudgetProgress(
-                progress = (budget.monthlySpent / budget.monthlyLimit).toFloat(),
-                limit = budget.monthlyLimit,
-                pointerIconResId = painterResource(R.drawable.pointer_ic)
+            // Use the new BudgetGauge component
+            BudgetGauge(
+                progress = budget.monthlyProgress.toFloat(),
+                spentAmount = budget.monthlySpent,
+                limitAmount = budget.monthlyLimit,
+                currencySymbol = currencySymbol,
+                modifier = Modifier.size(120.dp)
             )
+
             Column(
                 horizontalAlignment = Alignment.End
             ) {
@@ -430,11 +446,15 @@ fun NoBudgetLimitContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CircularBudgetProgress(
-                progress = (budget.monthlySpent / budget.monthlyLimit).toFloat(),
-                limit = budget.monthlyLimit,
-                pointerIconResId = painterResource(R.drawable.pointer_ic)
+            // Use BudgetGauge for no limit case (progress = 1.0)
+            BudgetGauge(
+                progress = 1.0f, // Full gauge for no limit
+                spentAmount = budget.monthlySpent,
+                limitAmount = 0.0,
+                currencySymbol = currencySymbol,
+                modifier = Modifier.size(120.dp)
             )
+
             Column(
                 horizontalAlignment = Alignment.End
             ) {
