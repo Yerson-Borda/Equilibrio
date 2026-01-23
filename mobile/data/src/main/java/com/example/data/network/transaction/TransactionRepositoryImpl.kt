@@ -1,31 +1,16 @@
+// data/network/transaction/TransactionRepositoryImpl.kt
 package com.example.data.network.transaction
 
-import com.example.data.network.transaction.model.AverageSpendingResponse
-import com.example.data.network.transaction.model.CategoryResponse
-import com.example.data.network.transaction.model.CategorySummaryResponse
-import com.example.data.network.transaction.model.MonthlyComparisonResponse
-import com.example.data.network.transaction.model.MonthlySummary
-import com.example.data.network.transaction.model.TopCategoryResponse
-import com.example.data.network.transaction.model.TransactionCreateRequest
-import com.example.data.network.transaction.model.TransactionDto
-import com.example.data.network.transaction.model.TransferCreateRequest
-import com.example.data.network.transaction.model.TransferDto
+import com.example.data.network.transaction.model.*
 import com.example.domain.transaction.TransactionRepository
-import com.example.domain.transaction.model.AverageSpendingData
-import com.example.domain.transaction.model.CategoryData
-import com.example.domain.transaction.model.CategorySummaryData
-import com.example.domain.transaction.model.ComparisonCategoryData
-import com.example.domain.transaction.model.CreateTransaction
-import com.example.domain.transaction.model.DailyData
-import com.example.domain.transaction.model.PeriodFilter
-import com.example.domain.transaction.model.SpendingTrendData
-import com.example.domain.transaction.model.TopCategoryData
-import com.example.domain.transaction.model.TransactionEntity
-import com.example.domain.transaction.model.TransferEntity
+import com.example.domain.transaction.model.*
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Response
 import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
+import java.util.*
 
 class TransactionRepositoryImpl(
     private val apiService: TransactionApi
@@ -35,9 +20,49 @@ class TransactionRepositoryImpl(
         createTransaction: CreateTransaction
     ): Result<TransactionEntity> {
         return try {
-            val request = TransactionCreateRequest.fromDomain(createTransaction)
+            // Convert amount to string
+            val amountString = when (val amount = createTransaction.amount) {
+                is Double -> amount.toString()
+                is Float -> amount.toString()
+                is Int -> amount.toString()
+                is Long -> amount.toString()
+                is String -> amount
+                else -> throw IllegalArgumentException("Unsupported amount type: ${amount::class.simpleName}")
+            }
 
-            val response = apiService.createTransaction(request)
+            // Create form data parts
+            val name = createTransaction.name.toRequestBody("text/plain".toMediaTypeOrNull())
+            val amount = amountString.toRequestBody("text/plain".toMediaTypeOrNull())
+            val type = createTransaction.type.toRequestBody("text/plain".toMediaTypeOrNull())
+            val transactionDate = createTransaction.transactionDate.toRequestBody("text/plain".toMediaTypeOrNull())
+            val walletId = createTransaction.walletId.toString().toRequestBody("text/plain".toMediaTypeOrNull())
+            val categoryId = createTransaction.categoryId.toString().toRequestBody("text/plain".toMediaTypeOrNull())
+            val note = createTransaction.note?.toRequestBody("text/plain".toMediaTypeOrNull())
+
+            // Convert tags list to comma-separated string
+            val tags = if (createTransaction.tags.isNotEmpty()) {
+                createTransaction.tags.joinToString(",").toRequestBody("text/plain".toMediaTypeOrNull())
+            } else {
+                null
+            }
+
+            // Handle receipt file
+            val receipt: MultipartBody.Part? = createTransaction.receiptFile?.let { file ->
+                val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
+                MultipartBody.Part.createFormData("receipt", file.name, requestFile)
+            }
+
+            val response = apiService.createTransaction(
+                name = name,
+                amount = amount,
+                type = type,
+                transactionDate = transactionDate,
+                walletId = walletId,
+                categoryId = categoryId,
+                note = note,
+                tags = tags,
+                receipt = receipt
+            )
             handleTransactionResponse(response)
         } catch (e: Exception) {
             Result.failure(e)
@@ -60,6 +85,32 @@ class TransactionRepositoryImpl(
 
             val response = apiService.createTransfer(request)
             handleTransferResponse(response)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getTransferPreview(
+        sourceWalletId: Int,
+        destinationWalletId: Int,
+        amount: String
+    ): Result<TransferPreview> {
+        return try {
+            val response = apiService.getTransferPreview(
+                sourceWalletId = sourceWalletId,
+                destinationWalletId = destinationWalletId,
+                amount = amount
+            )
+            if (response.isSuccessful) {
+                val previewDto = response.body()
+                if (previewDto != null) {
+                    Result.success(previewDto.toDomain())
+                } else {
+                    Result.failure(Exception("Failed to get transfer preview"))
+                }
+            } else {
+                Result.failure(Exception("API error: ${response.code()} - ${response.errorBody()?.string()}"))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -226,22 +277,23 @@ class TransactionRepositoryImpl(
         }
     }
 
-    private fun TopCategoryResponse.toDomain(): TopCategoryData {
-        return TopCategoryData(
-            categoryId = category_id,
-            categoryName = category_name,
-            totalAmount = total_amount
-        )
-    }
-
-    private fun AverageSpendingResponse.toDomain(): AverageSpendingData {
-        return AverageSpendingData(
-            categoryId = category_id,
-            categoryName = category_name,
-            totalPeriodSpent = total_period_spent,
-            transactions = transactions,
-            periodType = period_type
-        )
+    // ADD SAVINGS TRENDS METHOD
+    override suspend fun getSavingsTrends(months: Int): Result<SavingsTrendsData> {
+        return try {
+            val response = apiService.getSavingsTrends(months)
+            if (response.isSuccessful) {
+                val savingsTrendsResponse = response.body()
+                if (savingsTrendsResponse != null) {
+                    Result.success(savingsTrendsResponse.toDomain())
+                } else {
+                    Result.failure(Exception("No data received from server"))
+                }
+            } else {
+                Result.failure(Exception("API error: ${response.code()} - ${response.errorBody()?.string()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     private fun isDateInRange(date: String, startDate: String, endDate: String): Boolean {
@@ -328,47 +380,4 @@ class TransactionRepositoryImpl(
             Result.failure(Exception("API error: ${response.code()} - ${response.errorBody()?.string()}"))
         }
     }
-}
-
-// Extension functions for mapping - USE THESE CONSISTENTLY
-private fun MonthlySummary.toDomain(): SpendingTrendData {
-    return SpendingTrendData(
-        year = year,
-        month = month,
-        totalSpent = total_spent,
-        totalIncome = total_income,
-        monthName = month_name,
-        displayName = display_name
-    )
-}
-
-private fun CategorySummaryResponse.toDomain(): CategorySummaryData {
-    return CategorySummaryData(
-        expenses = expenses.map { it.toDomain() },
-        incomes = incomes.map { it.toDomain() },
-        totalExpenses = total_expenses,
-        totalIncomes = total_incomes,
-        netFlow = net_flow
-    )
-}
-
-private fun CategoryResponse.toDomain(): CategoryData {
-    return CategoryData(
-        categoryId = category_id,
-        categoryName = category_name,
-        categoryType = category_type,
-        totalAmount = total_amount,
-        transactionCount = transaction_count
-    )
-}
-
-private fun MonthlyComparisonResponse.toDomain(): ComparisonCategoryData {
-    return ComparisonCategoryData(
-        categoryId = category_id,
-        categoryName = category_name,
-        currentMonthAmount = current_month_amount,
-        previousMonthAmount = previous_month_amount,
-        difference = difference,
-        percentageChange = percentage_change
-    )
 }

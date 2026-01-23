@@ -96,7 +96,18 @@ fun SwipeableChartContainer(
                         modifier = Modifier.fillMaxSize()
                     )
                 }
-                ChartType.AVERAGE_SPENDING -> {
+                ChartType.AVERAGE_SPENDING_RADAR -> {
+                    RadarAverageSpendingChart(
+                        averageSpendingData = chartsData.averageSpending,
+                        period = chartsData.currentPeriod,
+                        onPeriodChanged = { newPeriod ->
+                            viewModel.updatePeriodFilter(newPeriod)
+                        },
+                        isLoading = false,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                ChartType.AVERAGE_SPENDING_LIST -> {
                     AverageSpendingChart(
                         averageSpendingData = chartsData.averageSpending,
                         period = chartsData.currentPeriod,

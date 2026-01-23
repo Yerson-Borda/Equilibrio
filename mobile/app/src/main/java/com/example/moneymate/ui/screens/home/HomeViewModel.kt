@@ -4,7 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.domain.budget.model.Budget
 import com.example.domain.budget.usecase.GetCurrentBudgetUseCase
+import com.example.domain.savingsGoal.model.SavingsGoal
+import com.example.domain.savingsGoal.usecase.GetCurrentSavingsGoalUseCase
+import com.example.domain.transaction.model.SavingsTrendsData
 import com.example.domain.transaction.model.TransactionEntity
+import com.example.domain.transaction.usecase.GetSavingsTrendsUseCase
 import com.example.domain.transaction.usecase.GetTransactionsUseCase
 import com.example.domain.user.model.UserDetailedData
 import com.example.domain.user.usecase.GetUserDetailedUseCase
@@ -21,7 +25,9 @@ class HomeViewModel(
     private val getUserDetailedUseCase: GetUserDetailedUseCase,
     private val getTotalBalanceUseCase: GetTotalBalanceUseCase,
     private val getTransactionsUseCase: GetTransactionsUseCase,
-    private val getBudgetUseCase: GetCurrentBudgetUseCase
+    private val getBudgetUseCase: GetCurrentBudgetUseCase,
+    private val getCurrentSavingsGoalUseCase: GetCurrentSavingsGoalUseCase,
+    private val getSavingsTrendsUseCase: GetSavingsTrendsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeScreenState())
@@ -40,6 +46,10 @@ class HomeViewModel(
                     is DataSyncManager.DataChangeEvent.TransactionsUpdated -> {
                         println("🔄 DEBUG: HomeViewModel - Transaction update detected, refreshing...")
                         refreshTransactionData()
+                    }
+                    is DataSyncManager.DataChangeEvent.BudgetUpdated -> {
+                        println("🔄 DEBUG: HomeViewModel - Budget update detected, refreshing savings...")
+                        loadSavingsData()
                     }
                     is DataSyncManager.DataChangeEvent.WalletsUpdated -> {
                         println("🔄 DEBUG: HomeViewModel - Wallet update detected, refreshing balance...")
@@ -61,6 +71,7 @@ class HomeViewModel(
             loadFinancialOverview()
             loadRecentTransactions()
             loadBudgetData()
+            loadSavingsData()
         }
     }
 
@@ -70,6 +81,7 @@ class HomeViewModel(
         loadFinancialOverview()
         loadRecentTransactions()
         loadBudgetData()
+        loadSavingsData()
     }
 
     fun loadBudgetData() {
@@ -288,6 +300,39 @@ class HomeViewModel(
 
         return Pair(totalIncome, totalExpense)
     }
+
+    fun loadSavingsData() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(savingsGoalState = ScreenState.Loading)
+            try {
+                println("DEBUG: HomeViewModel - Loading savings goal data...")
+                val result = getCurrentSavingsGoalUseCase()
+                if (result.isSuccess) {
+                    val savingsGoal = result.getOrNull()
+                    _uiState.value = _uiState.value.copy(
+                        savingsGoalState = ScreenState.Success(savingsGoal)
+                    )
+                    println("DEBUG: HomeViewModel - Loaded savings goal: $savingsGoal")
+                } else {
+                    val exception = result.exceptionOrNull() ?: Exception("Failed to load savings goal")
+                    _uiState.value = _uiState.value.copy(
+                        savingsGoalState = ScreenState.Error(
+                            com.example.moneymate.utils.ErrorHandler.mapExceptionToAppError(exception),
+                            retryAction = { loadSavingsData() }
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                println("DEBUG: HomeViewModel - Error loading savings goal: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    savingsGoalState = ScreenState.Error(
+                        com.example.moneymate.utils.ErrorHandler.mapExceptionToAppError(e),
+                        retryAction = { loadSavingsData() }
+                    )
+                )
+            }
+        }
+    }
 }
 
 data class HomeScreenState(
@@ -295,7 +340,8 @@ data class HomeScreenState(
     val balanceState: ScreenState<TotalBalance?> = ScreenState.Loading,
     val financialOverviewState: ScreenState<FinancialOverviewData> = ScreenState.Loading,
     val recentTransactionsState: ScreenState<List<TransactionEntity>> = ScreenState.Loading,
-    val budgetState: ScreenState<Budget?> = ScreenState.Loading // Add this
+    val budgetState: ScreenState<Budget?> = ScreenState.Loading,
+    val savingsGoalState: ScreenState<SavingsGoal?> = ScreenState.Loading
 ) {
     val isLoading: Boolean
         get() = userDataState is ScreenState.Loading &&
@@ -333,6 +379,12 @@ data class HomeScreenState(
     val budgetData: Budget?
         get() = when (budgetState) {
             is ScreenState.Success -> budgetState.data
+            else -> null
+        }
+
+    val savingsGoal: SavingsGoal?
+        get() = when (savingsGoalState) {
+            is ScreenState.Success -> savingsGoalState.data
             else -> null
         }
 }

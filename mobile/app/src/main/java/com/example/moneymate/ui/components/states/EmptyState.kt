@@ -1,5 +1,6 @@
 package com.example.moneymate.ui.components.states
 
+import android.R.attr.action
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +25,6 @@ fun EmptyState(
     title: String,
     message: String,
     icon: ImageVector? = null,
-    action: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -59,8 +59,6 @@ fun EmptyState(
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
             )
-            Spacer(modifier = Modifier.height(24.dp))
-            action?.invoke()
         }
     }
 }

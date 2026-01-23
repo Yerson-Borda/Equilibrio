@@ -2,6 +2,8 @@ package com.example.moneymate.utils
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
@@ -21,11 +23,17 @@ object DataSyncManager {
         object BudgetUpdated : DataChangeEvent()
         object CategoryLimitsUpdated : DataChangeEvent()
         object UserDataUpdated : DataChangeEvent()
+        object GoalsUpdated : DataChangeEvent()
 
         // Add more event types as needed
         data class SpecificTransactionUpdated(val transactionId: Int) : DataChangeEvent()
     }
 
+    fun notifyGoalsUpdated() {
+        CoroutineScope(Dispatchers.IO).launch {
+            _dataChangeEvents.emit(DataChangeEvent.GoalsUpdated)
+        }
+    }
     fun notifyCategoryLimitsUpdated() {
         _dataChangeEvents.tryEmit(DataChangeEvent.CategoryLimitsUpdated)
     }

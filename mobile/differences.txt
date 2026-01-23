@@ -1,0 +1,72 @@
+Differences found in RadarAverageSpendingChart.kt:
+
+=== MISSING CODE IN YOUR VERSION ===
+
+Your version ends incomplete at around line 370 with:
+Box {
+    Surface(
+        modifier = Modifier
+            .clip(MaterialTheme.shapes.small)
+
+=== COMPLETE CODE THAT SHOULD BE THERE ===
+
+        Box {
+        Surface(
+            modifier = Modifier
+                .clip(MaterialTheme.shapes.small)
+                .clickable { expanded = true }
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = getRadarPeriodDisplayName(selectedPeriod),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            periodOptions.forEach { (period, label) ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = label,
+                            color = if (period == selectedPeriod) MaterialTheme.colorScheme.primary else Color.Black
+                        )
+                    },
+                    onClick = {
+                        onPeriodSelected(period)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+private fun getRadarPeriodOptions(): List<Pair<PeriodFilter, String>> {
+    return listOf(
+        PeriodFilter.MONTH to "This Month",
+        PeriodFilter.DAYS_30 to "Last 30 Days",
+        PeriodFilter.DAYS_90 to "Last 90 Days",
+        PeriodFilter.YEAR to "This Year"
+    )
+}
+
+private fun getRadarPeriodDisplayName(period: PeriodFilter): String {
+    return when (period) {
+        PeriodFilter.YEAR -> "This Year"
+        PeriodFilter.MONTH -> "This Month"
+        PeriodFilter.DAYS_30 -> "Last 30 Days"
+        PeriodFilter.DAYS_90 -> "Last 90 Days"
+        else -> "This Month"
+    }
+}

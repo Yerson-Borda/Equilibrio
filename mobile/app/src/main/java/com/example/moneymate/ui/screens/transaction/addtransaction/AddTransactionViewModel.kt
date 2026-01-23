@@ -1,5 +1,7 @@
 package com.example.moneymate.ui.screens.transaction.addtransaction
 
+import android.content.Context
+import android.net.Uri
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
@@ -11,13 +13,16 @@ import com.example.domain.tag.model.Tag
 import com.example.domain.tag.usecase.CreateTagUseCase
 import com.example.domain.tag.usecase.GetTagsUseCase
 import com.example.domain.transaction.model.CreateTransaction
+import com.example.domain.transaction.model.TransferPreview
 import com.example.domain.transaction.usecase.CreateTransactionUseCase
 import com.example.domain.transaction.usecase.CreateTransferUseCase
+import com.example.domain.transaction.usecase.GetTransferPreviewUseCase
 import com.example.domain.wallet.model.Wallet
 import com.example.domain.wallet.usecase.GetWalletsUseCase
 import com.example.moneymate.utils.AppError
 import com.example.moneymate.utils.DataSyncManager
 import com.example.moneymate.utils.ErrorHandler
+import com.example.moneymate.utils.FileUtils
 import com.example.moneymate.utils.ScreenState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,6 +33,7 @@ import java.time.LocalDate
 class AddTransactionViewModel(
     private val createTransactionUseCase: CreateTransactionUseCase,
     private val createTransferUseCase: CreateTransferUseCase,
+    private val getTransferPreviewUseCase: GetTransferPreviewUseCase,
     private val getWalletsUseCase: GetWalletsUseCase,
     private val getIncomeCategoriesUseCase: GetIncomeCategoriesUseCase,
     private val getExpenseCategoriesUseCase: GetExpenseCategoriesUseCase,
@@ -171,17 +177,120 @@ class AddTransactionViewModel(
         loadCategories()
     }
     fun onWalletSelected(walletId: Int, walletName: String) {
+        // Find the wallet currency
+        val wallets = when (val state = _uiState.value.walletsState) {
+            is ScreenState.Success -> state.data
+            else -> emptyList()
+        }
+        val selectedWallet = wallets.find { it.id == walletId }
+        
         _uiState.value = _uiState.value.copy(
             selectedWalletId = walletId,
-            selectedWalletName = walletName
+            selectedWalletName = walletName,
+            sourceWalletCurrency = selectedWallet?.currency ?: "USD"
         )
     }
 
     fun onDestinationWalletSelected(walletId: Int, walletName: String) {
+        // Find the wallet currency
+        val wallets = when (val state = _uiState.value.walletsState) {
+            is ScreenState.Success -> state.data
+            else -> emptyList()
+        }
+        val selectedWallet = wallets.find { it.id == walletId }
+        
         _uiState.value = _uiState.value.copy(
             destinationWalletId = walletId,
-            destinationWalletName = walletName
+            destinationWalletName = walletName,
+            destinationWalletCurrency = selectedWallet?.currency ?: "USD"
         )
+        
+        // Load transfer preview if we have all required data
+        loadTransferPreviewIfNeeded()
+    }
+
+    fun onNumberPressed(number: String) {
+        val currentAmount = _uiState.value.amount
+        val newAmount = if (currentAmount == "0") number else currentAmount + number
+        _uiState.value = _uiState.value.copy(amount = newAmount)
+        
+        // Load preview for transfers
+        if (_uiState.value.selectedType == TransactionType.TRANSFER) {
+            loadTransferPreviewIfNeeded()
+        }
+    }
+
+    fun onBackspacePressed() {
+        val currentAmount = _uiState.value.amount
+        if (currentAmount.isNotEmpty()) {
+            val newAmount = currentAmount.dropLast(1)
+            _uiState.value = _uiState.value.copy(
+                amount = if (newAmount.isEmpty()) "0" else newAmount
+            )
+            
+            // Load preview for transfers
+            if (_uiState.value.selectedType == TransactionType.TRANSFER) {
+                loadTransferPreviewIfNeeded()
+            }
+        }
+    }
+
+    fun onDecimalPressed() {
+        val currentAmount = _uiState.value.amount
+        if (!currentAmount.contains(".")) {
+            _uiState.value = _uiState.value.copy(amount = "$currentAmount.")
+        }
+    }
+
+    private fun loadTransferPreviewIfNeeded() {
+        val state = _uiState.value
+        
+        // Only load if we have valid wallets and amount
+        if (state.selectedWalletId > 0 && 
+            state.destinationWalletId > 0 &&
+            state.selectedWalletId != state.destinationWalletId &&
+            state.amount.isNotEmpty() && 
+            state.amount != "0" &&
+            state.amount != "0.") {
+            
+            loadTransferPreview(
+                sourceWalletId = state.selectedWalletId,
+                destinationWalletId = state.destinationWalletId,
+                amount = state.amount
+            )
+        } else {
+            // Clear preview if conditions aren't met
+            _uiState.value = _uiState.value.copy(transferPreview = null)
+        }
+    }
+
+    private fun loadTransferPreview(
+        sourceWalletId: Int,
+        destinationWalletId: Int,
+        amount: String
+    ) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingPreview = true)
+            
+            val result = getTransferPreviewUseCase(
+                sourceWalletId = sourceWalletId,
+                destinationWalletId = destinationWalletId,
+                amount = amount
+            )
+            
+            if (result.isSuccess) {
+                _uiState.value = _uiState.value.copy(
+                    transferPreview = result.getOrNull(),
+                    isLoadingPreview = false
+                )
+            } else {
+                // Failed to load preview, clear it
+                _uiState.value = _uiState.value.copy(
+                    transferPreview = null,
+                    isLoadingPreview = false
+                )
+            }
+        }
     }
 
     fun onCategorySelected(categoryId: Int, categoryName: String) {
@@ -231,31 +340,8 @@ class AddTransactionViewModel(
         }
     }
 
-    fun onNumberPressed(number: String) {
-        val currentAmount = _uiState.value.amount
-        val newAmount = if (currentAmount == "0") number else currentAmount + number
-        _uiState.value = _uiState.value.copy(amount = newAmount)
-    }
-
-    fun onBackspacePressed() {
-        val currentAmount = _uiState.value.amount
-        if (currentAmount.isNotEmpty()) {
-            val newAmount = currentAmount.dropLast(1)
-            _uiState.value = _uiState.value.copy(
-                amount = if (newAmount.isEmpty()) "0" else newAmount
-            )
-        }
-    }
-
-    fun onDecimalPressed() {
-        val currentAmount = _uiState.value.amount
-        if (!currentAmount.contains(".")) {
-            _uiState.value = _uiState.value.copy(amount = "$currentAmount.")
-        }
-    }
-
     @RequiresApi(Build.VERSION_CODES.O)
-    fun createTransaction() {
+    fun createTransaction(context: Context) {
         if (!validateInputs()) {
             return
         }
@@ -270,17 +356,17 @@ class AddTransactionViewModel(
             try {
                 when (_uiState.value.selectedType) {
                     TransactionType.TRANSFER -> {
-                        handleTransferCreation()
+                        handleTransferCreation(context)
                     }
                     else -> {
-                        handleTransactionCreation()
+                        handleTransactionCreation(context)
                     }
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     transactionState = ScreenState.Error(
                         ErrorHandler.mapExceptionToAppError(e),
-                        retryAction = { createTransaction() }
+                        retryAction = { createTransaction(context) }
                     )
                 )
             }
@@ -312,7 +398,18 @@ class AddTransactionViewModel(
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private suspend fun handleTransactionCreation() {
+    private suspend fun handleTransactionCreation(context: Context) {
+        // Convert first attachment URI to File if available
+        val receiptFile = _uiState.value.attachments.firstOrNull()?.let { uriString ->
+            try {
+                val uri = Uri.parse(uriString)
+                FileUtils.getFileFromUri(context, uri)
+            } catch (e: Exception) {
+                println("⚠️ Failed to convert URI to File: ${e.message}")
+                null
+            }
+        }
+
         val createTransaction = CreateTransaction(
             name = _uiState.value.name,
             amount = _uiState.value.amount,
@@ -321,7 +418,8 @@ class AddTransactionViewModel(
             transactionDate = LocalDate.now().toString(),
             walletId = _uiState.value.selectedWalletId,
             categoryId = _uiState.value.selectedCategoryId,
-            tags = _uiState.value.selectedTagIds
+            tags = _uiState.value.selectedTagIds,
+            receiptFile = receiptFile
         )
 
         val result = createTransactionUseCase(createTransaction)
@@ -353,14 +451,14 @@ class AddTransactionViewModel(
             _uiState.value = _uiState.value.copy(
                 transactionState = ScreenState.Error(
                     ErrorHandler.mapExceptionToAppError(exception),
-                    retryAction = { createTransaction() }
+                    retryAction = { createTransaction(context) }
                 )
             )
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private suspend fun handleTransferCreation() {
+    private suspend fun handleTransferCreation(context: Context) {
         if (_uiState.value.selectedWalletId == _uiState.value.destinationWalletId) {
             _uiState.value = _uiState.value.copy(
                 transactionState = ScreenState.Error(
@@ -392,7 +490,7 @@ class AddTransactionViewModel(
             _uiState.value = _uiState.value.copy(
                 transactionState = ScreenState.Error(
                     ErrorHandler.mapExceptionToAppError(exception),
-                    retryAction = { createTransaction() }
+                    retryAction = { createTransaction(context) }
                 )
             )
         }
@@ -471,7 +569,12 @@ data class AddTransactionState(
     val walletsState: ScreenState<List<Wallet>> = ScreenState.Loading,
     val categoriesState: ScreenState<List<Category>> = ScreenState.Loading,
     val tagsState: ScreenState<List<Tag>> = ScreenState.Loading,
-    val transactionState: ScreenState<Unit> = ScreenState.Empty
+    val transactionState: ScreenState<Unit> = ScreenState.Empty,
+    // Transfer-specific fields
+    val sourceWalletCurrency: String = "USD",
+    val destinationWalletCurrency: String = "USD",
+    val transferPreview: TransferPreview? = null,
+    val isLoadingPreview: Boolean = false
 )
 
 enum class TransactionType(val displayName: String, val apiValue: String) {

@@ -1,4 +1,20 @@
 package com.example.domain.transaction.model
+
+data class SavingsMonthlyData(
+    val year: Int,
+    val month: Int,
+    val displayName: String,
+    val savedAmount: Double,
+    val targetAmount: Double,
+    val achievementRate: Double
+)
+
+data class SavingsTrendsData(
+    val monthlyTrends: List<SavingsMonthlyData>,
+    val monthsAnalyzed: Int,
+    val analysisPeriodStart: String,
+    val analysisPeriodEnd: String
+)
 data class SpendingTrendData(
     val year: Int,
     val month: Int,
@@ -24,7 +40,8 @@ data class DailyData(
     val date: String,
     val dayLabel: String,
     val income: Double,
-    val expenses: Double
+    val expenses: Double,
+    val savings: Double = income - expenses
 )
 
 data class DateRange(
@@ -35,24 +52,11 @@ data class DateRange(
 data class MonthlyChartData(
     val months: List<MonthlyData>,
     val days: List<DailyData>,
+    val savingsData: List<SavingsMonthlyData> = emptyList(),
     val selectedFilter: ChartFilter = ChartFilter.EXPENSES,
     val selectedPeriod: PeriodFilter = PeriodFilter.YEAR,
     val dateRange: DateRange = DateRange(getDefaultStartDate(), getDefaultEndDate()) // ADD THIS
 )
-
-private fun getDefaultStartDate(): String {
-    // 30 days ago as default
-    val calendar = java.util.Calendar.getInstance()
-    calendar.add(java.util.Calendar.DAY_OF_YEAR, -30)
-    val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-    return dateFormat.format(calendar.time)
-}
-
-private fun getDefaultEndDate(): String {
-    val calendar = java.util.Calendar.getInstance()
-    val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-    return dateFormat.format(calendar.time)
-}
 
 data class MonthlyData(
     val month: String, // "Jan", "Feb", etc.
@@ -118,5 +122,20 @@ enum class ChartType {
     CATEGORY_BREAKDOWN,   // Line chart (second) - renamed to be more general
     MONTHLY_COMPARISON,    // Pie chart (third)
     TOP_CATEGORIES,
-    AVERAGE_SPENDING
+    AVERAGE_SPENDING_RADAR,  // Radar chart version
+    AVERAGE_SPENDING_LIST    // List-based version (last)
+}
+
+private fun getDefaultStartDate(): String {
+    // 30 days ago as default
+    val calendar = java.util.Calendar.getInstance()
+    calendar.add(java.util.Calendar.DAY_OF_YEAR, -30)
+    val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+    return dateFormat.format(calendar.time)
+}
+
+private fun getDefaultEndDate(): String {
+    val calendar = java.util.Calendar.getInstance()
+    val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+    return dateFormat.format(calendar.time)
 }

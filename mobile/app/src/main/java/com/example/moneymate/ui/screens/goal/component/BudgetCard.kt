@@ -1,13 +1,8 @@
 package com.example.moneymate.ui.screens.goal.component
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,148 +16,50 @@ fun BudgetCard(
     limit: String,
     spent: String,
     progress: Float,
-    modifier: Modifier = Modifier,
-    backgroundColor: Color = Color(0xFF1E1E1E),
-    textColor: Color = Color.White
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier
-            .fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = backgroundColor,
-            contentColor = textColor
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            // Title
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = title,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = textColor.copy(alpha = 0.8f)
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = Color.Black
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            BudgetAmountRow(
-                limitLabel = "Budget",
-                limitValue = limit,
-                spentLabel = "Spent",
-                spentValue = spent
+            // Linear Progress Bar
+            LinearProgressIndicator(
+                progress = { progress.coerceIn(0f, 1f) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp),
+                color = if (progress > 0.9f) Color.Red else Color(0xFF4D73FF),
+                trackColor = Color(0xFFF0F0F0),
+                strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            BudgetProgressBar(
-                progress = progress,
-                progressColor = Color(0xFF4CAF50)
-            )
-        }
-    }
-}
-
-@Composable
-fun DailyLimitCard(
-    title: String,
-    limit: String,
-    spent: String,
-    progress: Float,
-    modifier: Modifier = Modifier,
-    backgroundColor: Color = Color(0xFF1E1E1E),
-    textColor: Color = Color.White
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = backgroundColor,
-            contentColor = textColor
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            // Title
-            Text(
-                text = title,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = textColor.copy(alpha = 0.8f)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Limit and Spent row
-            BudgetAmountRow(
-                limitLabel = "Limit",
-                limitValue = limit,
-                spentLabel = "Spent",
-                spentValue = spent
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Progress bar
-            BudgetProgressBar(
-                progress = progress,
-                progressColor = Color(0xFF2196F3)
-            )
-        }
-    }
-}
-
-@Composable
-fun BudgetAmountRow(
-    limitLabel: String,
-    limitValue: String,
-    spentLabel: String,
-    spentValue: String,
-    textColor: Color = Color.White
-) {
-    androidx.compose.foundation.layout.Row(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = limitLabel,
-                fontSize = 12.sp,
-                color = textColor.copy(alpha = 0.6f)
-            )
-            Text(
-                text = limitValue,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = textColor
-            )
-        }
-
-        Column(
-            modifier = Modifier.weight(1f),
-            horizontalAlignment = androidx.compose.ui.Alignment.End
-        ) {
-            Text(
-                text = spentLabel,
-                fontSize = 12.sp,
-                color = textColor.copy(alpha = 0.6f),
-                textAlign = androidx.compose.ui.text.style.TextAlign.End
-            )
-            Text(
-                text = spentValue,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = textColor,
-                textAlign = androidx.compose.ui.text.style.TextAlign.End
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text("Spent", fontSize = 12.sp, color = Color.Gray)
+                    Text(spent, fontWeight = FontWeight.Bold, color = Color.Black)
+                }
+                Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
+                    Text("Limit", fontSize = 12.sp, color = Color.Gray)
+                    Text(limit, fontWeight = FontWeight.Bold, color = Color.Black)
+                }
+            }
         }
     }
 }

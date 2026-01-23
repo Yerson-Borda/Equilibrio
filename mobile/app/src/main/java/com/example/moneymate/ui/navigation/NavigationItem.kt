@@ -6,13 +6,18 @@ sealed class NavigationItem(val route: String) {
     object SignUp : NavigationItem("sign_up")
     object SignIn : NavigationItem("sign_in")
     object Home : NavigationItem("Home")
-    object Transactions: NavigationItem("Transactions")
-    object Wallets: NavigationItem("Wallets")
-    object CreateWallet: NavigationItem("createWallet")
-    object Goals: NavigationItem("Goals")
-    object Profile: NavigationItem("Profile")
-    object EditProfile: NavigationItem("EditProfile")
-    object Settings: NavigationItem("Settings")
+    object Transactions : NavigationItem("Transactions")
+    object Wallets : NavigationItem("Wallets")
+    object CreateWallet : NavigationItem("createWallet")
+    object Goals : NavigationItem("Goals")
+    object GoalsList : NavigationItem("goalsList")
+    object GoalDetail : NavigationItem("goalDetail/{goalId}") {
+        fun createRoute(goalId: Int) = "goalDetail/$goalId"
+    }
+    object CreateGoal : NavigationItem("createGoal")
+    object Profile : NavigationItem("Profile")
+    object EditProfile : NavigationItem("EditProfile")
+    object Settings : NavigationItem("Settings")
     object WalletDetail : NavigationItem("walletDetail/{walletId}") {
         fun createRoute(walletId: Int) = "walletDetail/$walletId"
     }

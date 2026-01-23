@@ -15,7 +15,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.moneymate.ui.screens.auth.signUp.SignUpScreen
 import com.example.moneymate.ui.screens.auth.singIn.SignInScreen
+import com.example.moneymate.ui.screens.goal.CreateGoalScreen
+import com.example.moneymate.ui.screens.goal.GoalDetailViewModel
+import com.example.moneymate.ui.screens.goal.GoalDetailsScreen
 import com.example.moneymate.ui.screens.goal.GoalScreen
+import com.example.moneymate.ui.screens.goal.GoalsListScreen
 import com.example.moneymate.ui.screens.home.HomeScreen
 import com.example.moneymate.ui.screens.profile.editprofile.EditProfileScreen
 import com.example.moneymate.ui.screens.profile.profileoptions.ProfileOptionsScreen
@@ -196,16 +200,66 @@ fun AppNavHost(
             )
         }
 
+        // Updated GoalScreen with navController
         composable(NavigationItem.Goals.route) {
-            GoalScreen(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                GoalScreen(
+                    navController = navController,
+                    currentScreen = "goals",
+                    onNavigationItemSelected = { route ->
+                        when (route) {
+                            "home" -> navController.navigate(NavigationItem.Home.route)
+                            "transactions" -> navController.navigate(NavigationItem.Transactions.route)
+                            "wallets" -> navController.navigate(NavigationItem.Wallets.route)
+                        }
+                    },
+                    onBackClick = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+        }
+
+        composable(
+            route = NavigationItem.GoalDetail.route,
+            arguments = listOf(navArgument("goalId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val goalId = backStackEntry.arguments?.getInt("goalId") ?: 0
+            val detailViewModel: GoalDetailViewModel = koinViewModel()
+
+            // This replaces the SavedStateHandle logic
+            LaunchedEffect(goalId) {
+                detailViewModel.initialize(goalId)
+            }
+
+            GoalDetailsScreen(
+                viewModel = detailViewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(NavigationItem.CreateGoal.route) {
+            val createViewModel: GoalDetailViewModel = koinViewModel()
+
+            LaunchedEffect(Unit) {
+                createViewModel.initialize(null) // Signal Create Mode
+            }
+
+            CreateGoalScreen(
+                viewModel = createViewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+// Goals List Screen (Already mostly correct, just ensure NavigationItem used)
+        composable(NavigationItem.GoalsList.route) {
+            GoalsListScreen(
+                navController = navController,
                 currentScreen = "goals",
                 onNavigationItemSelected = { route ->
-                    when (route) {
-                        "home" -> navController.navigate(NavigationItem.Home.route)
-                        "transactions" -> navController.navigate(NavigationItem.Transactions.route)
-                        "wallets" -> navController.navigate(NavigationItem.Wallets.route)
-                    }
-                }
+                    navController.navigate(route) { launchSingleTop = true }
+                },
+                onBackClick = { navController.popBackStack() }
             )
         }
 

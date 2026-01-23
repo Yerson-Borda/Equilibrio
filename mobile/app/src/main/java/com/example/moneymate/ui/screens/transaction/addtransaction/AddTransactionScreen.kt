@@ -157,7 +157,7 @@ fun AddTransactionScreen(
 
                 IconButton(
                     onClick = {
-                        viewModel.createTransaction()
+                        viewModel.createTransaction(context)
                     },
                     enabled = uiState.transactionState !is ScreenState.Loading &&
                             uiState.selectedWalletId != 0 &&
@@ -409,6 +409,67 @@ fun TransferContent(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
     ) {
+        // --- 1. Simple Currency Conversion Row ---
+        val hasAmount = uiState.amount.isNotEmpty() && uiState.amount != "0" && uiState.amount != "0."
+        val currenciesAreDifferent = uiState.sourceWalletCurrency != uiState.destinationWalletCurrency
+
+        if (currenciesAreDifferent && hasAmount && uiState.transferPreview != null) {
+            val preview = uiState.transferPreview
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Estimated Total",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray
+                    )
+                    
+                    if (uiState.isLoadingPreview) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = Color(0xFF1E88E5)
+                        )
+                    } else {
+                        Text(
+                            text = "${com.example.moneymate.utils.CurrencyUtils.getCurrencySymbol(preview.destinationCurrency)}${"%.2f".format(preview.convertedAmount)} ${preview.destinationCurrency}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E88E5)
+                        )
+                    }
+                }
+
+                // Small details row underneath
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Exchange rate: ${"%.4f".format(preview.exchangeRate)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF4CAF50),
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                    )
+                    Text(
+                        text = "From: ${uiState.amount} ${preview.sourceCurrency}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.LightGray
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+
+        // --- 2. Wallets Selection Row ---
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -444,6 +505,7 @@ fun TransferContent(
 
         Spacer(modifier = Modifier.height(15.dp))
 
+        // --- 3. Note Field ---
         TransactionTextField(
             Type = "Add Note",
             text = uiState.note,
@@ -452,12 +514,15 @@ fun TransferContent(
 
         Spacer(modifier = Modifier.height(15.dp))
 
+        // --- 4. Attachment Button ---
         SimpleAttachmentButton(
             onAddAttachment = onAddAttachment,
             modifier = Modifier.fillMaxWidth()
         )
 
+        // --- 5. Attachments Preview ---
         if (uiState.attachments.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
             SelectedAttachmentsSection(
                 attachments = uiState.attachments,
                 onRemoveAttachment = { uri ->

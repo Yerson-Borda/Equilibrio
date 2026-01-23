@@ -7,10 +7,12 @@ import com.example.domain.transaction.model.ComparisonCategoryData
 import com.example.domain.transaction.model.CreateTransaction
 import com.example.domain.transaction.model.DailyData
 import com.example.domain.transaction.model.PeriodFilter
+import com.example.domain.transaction.model.SavingsTrendsData
 import com.example.domain.transaction.model.SpendingTrendData
 import com.example.domain.transaction.model.TopCategoryData
 import com.example.domain.transaction.model.TransactionEntity
 import com.example.domain.transaction.model.TransferEntity
+import com.example.domain.transaction.model.TransferPreview
 
 interface TransactionRepository {
     suspend fun createTransaction(
@@ -23,6 +25,12 @@ interface TransactionRepository {
         amount: Any,
         note: String?
     ): Result<TransferEntity>
+
+    suspend fun getTransferPreview(
+        sourceWalletId: Int,
+        destinationWalletId: Int,
+        amount: String
+    ): Result<TransferPreview>
 
     suspend fun getTransactions(): Result<List<TransactionEntity>>
 
@@ -55,4 +63,6 @@ interface TransactionRepository {
     suspend fun getTopCategoriesCurrentMonth(): Result<List<TopCategoryData>>
 
     suspend fun getAverageSpending(period: PeriodFilter): Result<List<AverageSpendingData>>
+    suspend fun getSavingsTrends(months: Int): Result<SavingsTrendsData>
+
 }

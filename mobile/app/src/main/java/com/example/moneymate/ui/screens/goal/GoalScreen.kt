@@ -1,19 +1,10 @@
 package com.example.moneymate.ui.screens.goal
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -27,29 +18,8 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,25 +31,62 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
+import com.example.domain.budget.model.Budget
 import com.example.domain.categoryLimit.model.CategoryLimitOverview
+import com.example.domain.wallet.model.TotalBalance
+import com.example.moneymate.R
+import com.example.moneymate.ui.components.goal.GoalsListSection
 import com.example.moneymate.ui.components.states.EmptyState
 import com.example.moneymate.ui.components.states.FullScreenError
 import com.example.moneymate.ui.components.states.FullScreenLoading
+import com.example.moneymate.ui.components.states.SectionStateManager
 import com.example.moneymate.ui.navigation.BottomNavigationBar
 import com.example.moneymate.ui.screens.goal.component.NotificationToggle
+import com.example.moneymate.ui.screens.goal.component.SavingSummaryChartSection
+import com.example.moneymate.ui.screens.goal.component.SavingsGoalSection
 import com.example.moneymate.utils.IconMapper
 import com.example.moneymate.utils.ScreenState
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
+@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @Composable
 fun GoalScreen(
+    navController: NavController? = null,
     viewModel: GoalScreenViewModel = koinViewModel(),
     currentScreen: String = "goals",
-    onNavigationItemSelected: (String) -> Unit = {}
+    onNavigationItemSelected: (String) -> Unit = {},
+    onBackClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val formattedStartDate = remember(uiState.selectedStartDate) {
+        uiState.selectedStartDate?.let { timestamp ->
+            try {
+                val dateFormat = SimpleDateFormat("dd MMM", Locale.getDefault())
+                dateFormat.format(Date(timestamp))
+            } catch (e: Exception) {
+                "Start Date"
+            }
+        } ?: "Start Date"
+    }
+
+    val formattedEndDate = remember(uiState.selectedEndDate) {
+        uiState.selectedEndDate?.let { timestamp ->
+            try {
+                val dateFormat = SimpleDateFormat("dd MMM", Locale.getDefault())
+                dateFormat.format(Date(timestamp))
+            } catch (e: Exception) {
+                "End Date"
+            }
+        } ?: "End Date"
+    }
+    var showEditSavingsGoalDialog by remember { mutableStateOf(false) }
+    var newSavingsGoalAmount by remember { mutableStateOf("") }
 
     // State for budget editing dialogs
     var showEditMonthlyDialog by remember { mutableStateOf(false) }
@@ -87,30 +94,40 @@ fun GoalScreen(
     var newMonthlyLimit by remember { mutableStateOf("") }
     var newDailyLimit by remember { mutableStateOf("") }
 
-    // Handle budget errors
-    uiState.error?.let { error ->
-        LaunchedEffect(error) {
-            snackbarHostState.showSnackbar(
-                message = error.getUserFriendlyMessage(),
-                duration = SnackbarDuration.Short
-            )
-        }
-    }
-
-    // Handle category limit errors
-    uiState.categoryLimitError?.let { error ->
-        LaunchedEffect(error) {
-            snackbarHostState.showSnackbar(
-                message = error,
-                duration = SnackbarDuration.Short
-            )
-            viewModel.clearCategoryLimitError()
-        }
-    }
+    // This state is for the Material 3 Date Range Picker
+    val dateRangePickerState = rememberDateRangePickerState()
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        containerColor = Color(0xFF121212),
+        containerColor = Color(0xFFF8F9FA),
+        topBar = {
+            Box(modifier = Modifier.statusBarsPadding()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = onBackClick,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_back_arrow),
+                            contentDescription = "Goals",
+                            tint = Color.Black,
+                            modifier = Modifier.size(21.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(105.dp))
+                    Text(
+                        text = "goals",
+                        color = Color.Black,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        },
         bottomBar = {
             BottomNavigationBar(
                 currentScreen = currentScreen,
@@ -118,99 +135,222 @@ fun GoalScreen(
             )
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             when (val state = uiState.budgetState) {
-                is ScreenState.Loading -> {
-                    FullScreenLoading(message = "Loading budget data...")
-                }
-                is ScreenState.Error -> {
-                    FullScreenError(
-                        error = state.error,
-                        onRetry = { viewModel.loadBudgetData() }
-                    )
-                }
+                is ScreenState.Loading -> FullScreenLoading(message = "Loading...")
+                is ScreenState.Error -> FullScreenError(error = state.error, onRetry = { viewModel.loadBudgetData() })
                 is ScreenState.Success -> {
                     val budget = state.data
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp)
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Top Chart Section
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFF1E1E1E)
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(200.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "Charts Coming Soon",
-                                    color = Color.White.copy(alpha = 0.5f),
-                                    fontSize = 16.sp
+                        // 1. Savings Goal
+                        item {
+                            SavingsGoalSection(
+                                savingsGoal = uiState.savingsGoal,
+                                isLoading = uiState.isSavingsGoalLoading,
+                                isError = uiState.savingsGoalError != null,
+                                startDate = formattedStartDate,
+                                endDate = formattedEndDate,
+                                onEditClick = {
+                                    uiState.savingsGoal?.let { goal ->
+                                        newSavingsGoalAmount = String.format("%.0f", goal.targetAmount)
+                                        showEditSavingsGoalDialog = true
+                                    }
+                                },
+                                onPeriodClick = { viewModel.toggleDateRangePicker(true) }
+                            )
+                        }
+
+                        // 2. Summary Chart
+                        item {
+                            if (uiState.isSavingsTrendsLoading) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(250.dp)
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(color = Color(0xFF4D73FF))
+                                }
+                            } else if (uiState.savingsTrendsError != null) {
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(250.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "Error loading savings data",
+                                                color = Color.Gray,
+                                                modifier = Modifier.padding(bottom = 8.dp)
+                                            )
+                                            TextButton(onClick = { viewModel.refreshOnScreenFocus() }) {
+                                                Text("Retry")
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                SavingSummaryChartSection(
+                                    monthlyChartData = uiState.monthlyChartData,
+                                    selectedMonth = uiState.selectedChartMonth,
+                                    availableMonths = uiState.availableMonths,
+                                    selectedPeriod = uiState.selectedPeriod,
+                                    availablePeriods = uiState.availablePeriods,
+                                    onMonthSelected = { month ->
+                                        viewModel.onChartMonthSelected(month)
+                                    },
+                                    onPeriodSelected = { period ->
+                                        viewModel.onPeriodSelected(period)
+                                    },
+                                    modifier = Modifier.padding(horizontal = 16.dp)
                                 )
                             }
                         }
 
-                        // Swipeable Container Section
-                        SwipeableBudgetContainer(
-                            budget = budget,
-                            isNotificationsEnabled = uiState.isNotificationsEnabled,
-                            onToggleNotifications = { viewModel.toggleNotifications() },
-                            categoryLimitsState = uiState.categoryLimitsState,
-                            overBudgetCategories = uiState.overBudgetCategories,
-                            onUpdateCategoryLimit = { categoryId, limit ->
-                                viewModel.updateCategoryLimit(categoryId, limit)
-                            },
-                            onDeleteCategoryLimit = { categoryId ->
-                                viewModel.deleteCategoryLimit(categoryId)
-                            },
-                            isUpdatingCategoryLimit = uiState.isUpdatingCategoryLimit,
-                            isDeletingCategoryLimit = uiState.isDeletingCategoryLimit,
-                            onRefreshCategoryLimits = { viewModel.loadCategoryLimits() },
-                            onEditMonthlyLimit = {
-                                newMonthlyLimit = String.format("%.0f", budget.monthlyLimit)
-                                showEditMonthlyDialog = true
-                            },
-                            onEditDailyLimit = {
-                                newDailyLimit = String.format("%.0f", budget.dailyLimit)
-                                showEditDailyDialog = true
-                            },
-                            isUpdatingBudget = uiState.isUpdating
-                        )
+                        // 3. SWIPEABLE CONTAINER - Budget and Category Limits
+                        item {
+                            SwipeableBudgetContainer(
+                                budget = budget,
+                                balanceState = uiState.balanceState,
+                                balanceComparison = uiState.balanceComparison,
+                                isNotificationsEnabled = uiState.isNotificationsEnabled,
+                                onToggleNotifications = { viewModel.toggleNotifications() },
+                                categoryLimitsState = uiState.categoryLimitsState,
+                                overBudgetCategories = uiState.overBudgetCategories,
+                                onUpdateCategoryLimit = { categoryId, limit ->
+                                    viewModel.updateCategoryLimit(categoryId, limit)
+                                },
+                                onDeleteCategoryLimit = { categoryId ->
+                                    viewModel.deleteCategoryLimit(categoryId)
+                                },
+                                isUpdatingCategoryLimit = uiState.isUpdatingCategoryLimit,
+                                isDeletingCategoryLimit = uiState.isDeletingCategoryLimit,
+                                onRefreshCategoryLimits = { viewModel.loadCategoryLimits() },
+                                onEditMonthlyLimit = {
+                                    newMonthlyLimit = String.format("%.0f", budget.monthlyLimit)
+                                    showEditMonthlyDialog = true
+                                },
+                                onEditDailyLimit = {
+                                    newDailyLimit = String.format("%.0f", budget.dailyLimit)
+                                    showEditDailyDialog = true
+                                },
+                                isUpdatingBudget = uiState.isUpdating,
+                                onRetryBalance = { viewModel.loadTotalBalance() },
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                        }
 
-                        Spacer(modifier = Modifier.height(32.dp))
+                        // 4. NEW GOALS SECTION
+                        item {
+                            GoalsListSection(
+                                goalsState = uiState.goalsState,
+                                onGoalClick = { goal ->
+                                    navController?.navigate("goalDetail/${goal.id}")
+                                },
+                                onSeeAllClick = {
+                                    navController?.navigate("goalsList")
+                                },
+                                modifier = Modifier.padding(top = 16.dp)
+                            )
+                        }
                     }
                 }
                 is ScreenState.Empty -> {
-                    EmptyState(
-                        title = "No Budget Set",
-                        message = "You haven't set up a budget yet. Create one to start tracking your spending!",
-                        icon = androidx.compose.material.icons.Icons.Default.Payments,
-                        action = {
-                            Button(onClick = {
-                                // TODO: Navigate to budget setup screen
-                            }) {
-                                Text("Set Up Budget")
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        EmptyState(
+                            title = "No Budget",
+                            message = "Set up a budget.",
+                            icon = Icons.Default.Payments
+                        )
+
+                        // Show goals section even when no budget
+                        GoalsListSection(
+                            goalsState = uiState.goalsState,
+                            onGoalClick = { goal ->
+                                navController?.navigate("goalDetail/${goal.id}")
+                            },
+                            onSeeAllClick = {
+                                navController?.navigate("goalsList")
                             }
-                        }
+                        )
+                    }
+                }
+            }
+
+            // --- DATE RANGE PICKER DIALOG ---
+            if (uiState.showDateRangePicker) {
+                DatePickerDialog(
+                    onDismissRequest = { viewModel.toggleDateRangePicker(false) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            viewModel.onDateRangeSelected(
+                                dateRangePickerState.selectedStartDateMillis,
+                                dateRangePickerState.selectedEndDateMillis
+                            )
+                        }) { Text("Confirm") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { viewModel.toggleDateRangePicker(false) }) { Text("Cancel") }
+                    }
+                ) {
+                    DateRangePicker(
+                        state = dateRangePickerState,
+                        modifier = Modifier.height(450.dp).padding(16.dp),
+                        showModeToggle = false
                     )
                 }
             }
 
-            // Monthly Budget Edit Dialog
+            // --- EDIT SAVINGS GOAL DIALOG ---
+            if (showEditSavingsGoalDialog) {
+                AlertDialog(
+                    onDismissRequest = { showEditSavingsGoalDialog = false },
+                    title = { Text("Update Savings Goal") },
+                    text = {
+                        TextField(
+                            value = newSavingsGoalAmount,
+                            onValueChange = { newSavingsGoalAmount = it },
+                            label = { Text("Target Amount") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            newSavingsGoalAmount.toDoubleOrNull()?.let { viewModel.updateSavingsGoal(it) }
+                            showEditSavingsGoalDialog = false
+                        }) {
+                            Text("Update")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showEditSavingsGoalDialog = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
+            }
+
+            // --- MONTHLY BUDGET EDIT DIALOG ---
             if (showEditMonthlyDialog) {
                 AlertDialog(
                     onDismissRequest = {
@@ -220,14 +360,14 @@ fun GoalScreen(
                     title = {
                         Text(
                             text = "Edit Monthly Budget",
-                            color = Color.White
+                            color = Color.Black
                         )
                     },
                     text = {
                         Column {
                             Text(
                                 text = "Current monthly budget: $${String.format("%.0f", uiState.budget?.monthlyLimit ?: 0.0)}",
-                                color = Color.White.copy(alpha = 0.7f),
+                                color = Color.Black.copy(alpha = 0.7f),
                                 fontSize = 14.sp,
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
@@ -246,7 +386,7 @@ fun GoalScreen(
                             onClick = {
                                 val limit = newMonthlyLimit.toDoubleOrNull()
                                 if (limit != null) {
-                                    viewModel.updateBudget(monthlyLimit = limit, dailyLimit = null)
+                                    viewModel.updateBudget(monthlyAmount = limit, dailyAmount = null)
                                     showEditMonthlyDialog = false
                                     newMonthlyLimit = ""
                                 }
@@ -256,9 +396,8 @@ fun GoalScreen(
                             if (uiState.isUpdating) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(16.dp),
-                                    color = Color.White,
-                                    strokeWidth = 2.dp
-                                )
+                                    color = Color.Black,
+                                    strokeWidth = 2.dp)
                             } else {
                                 Text("Save")
                             }
@@ -274,11 +413,11 @@ fun GoalScreen(
                             Text("Cancel")
                         }
                     },
-                    containerColor = Color(0xFF1E1E1E)
+                    containerColor = Color.White
                 )
             }
 
-            // Daily Limit Edit Dialog
+            // --- DAILY LIMIT EDIT DIALOG ---
             if (showEditDailyDialog) {
                 AlertDialog(
                     onDismissRequest = {
@@ -288,14 +427,14 @@ fun GoalScreen(
                     title = {
                         Text(
                             text = "Edit Daily Limit",
-                            color = Color.White
+                            color = Color.Black
                         )
                     },
                     text = {
                         Column {
                             Text(
                                 text = "Current daily limit: $${String.format("%.0f", uiState.budget?.dailyLimit ?: 0.0)}",
-                                color = Color.White.copy(alpha = 0.7f),
+                                color = Color.Black.copy(alpha = 0.7f),
                                 fontSize = 14.sp,
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
@@ -314,7 +453,7 @@ fun GoalScreen(
                             onClick = {
                                 val limit = newDailyLimit.toDoubleOrNull()
                                 if (limit != null) {
-                                    viewModel.updateBudget(monthlyLimit = null, dailyLimit = limit)
+                                    viewModel.updateBudget(monthlyAmount = null, dailyAmount = limit)
                                     showEditDailyDialog = false
                                     newDailyLimit = ""
                                 }
@@ -324,7 +463,7 @@ fun GoalScreen(
                             if (uiState.isUpdating) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(16.dp),
-                                    color = Color.White,
+                                    color = Color.Black,
                                     strokeWidth = 2.dp
                                 )
                             } else {
@@ -342,21 +481,32 @@ fun GoalScreen(
                             Text("Cancel")
                         }
                     },
-                    containerColor = Color(0xFF1E1E1E)
+                    containerColor = Color.White
                 )
             }
         }
     }
 }
 
+/**
+ * HELPER FUNCTION: Corrects the "Unresolved reference: getMonthName"
+ */
+fun getMonthName(month: Int): String {
+    val months = arrayOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+    return if (month in 1..12) months[month - 1] else "Month"
+}
+
 @Composable
 fun BudgetAndLimitsPage(
-    budget: com.example.domain.budget.model.Budget,
+    budget: Budget,
+    balanceState: ScreenState<TotalBalance?>,
+    balanceComparison: String,
     isNotificationsEnabled: Boolean,
     onToggleNotifications: () -> Unit,
     onEditMonthlyLimit: () -> Unit,
     onEditDailyLimit: () -> Unit,
-    isUpdating: Boolean = false
+    isUpdating: Boolean = false,
+    onRetryBalance: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -371,24 +521,59 @@ fun BudgetAndLimitsPage(
         ) {
             Text(
                 text = "Available Balance",
-                color = Color.White.copy(alpha = 0.7f),
+                color = Color.Black.copy(alpha = 0.7f),
                 fontSize = 14.sp
             )
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                SectionStateManager(
+                    state = balanceState,
+                    onRetry = { onRetryBalance() }
+                ) { balance ->
+                    Text(
+                        text = "$${balance?.totalBalance ?: "0.00"}",
+                        color = Color.Black,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                }
                 Text(
-                    text = "$5,240.21",
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                Text(
-                    text = "+2.5% vs Last month",
+                    text = balanceComparison,
                     color = Color(0xFF4CAF50),
                     fontSize = 12.sp
                 )
+            }
+
+            // Warning for exceeded limits
+            val exceededLimits = mutableListOf<String>()
+            if (budget.isMonthlyExceeded) {
+                exceededLimits.add("Monthly budget")
+            }
+            if (budget.isDailyExceeded) {
+                exceededLimits.add("Daily limit")
+            }
+
+            if (exceededLimits.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Warning",
+                        tint = Color(0xFFF44336),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Exceeded: ${exceededLimits.joinToString(", ")}",
+                        color = Color(0xFFF44336),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
 
@@ -397,7 +582,7 @@ fun BudgetAndLimitsPage(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(Color.White.copy(alpha = 0.1f))
+                .background(Color.Black.copy(alpha = 0.1f))
                 .padding(bottom = 24.dp)
         )
 
@@ -414,7 +599,7 @@ fun BudgetAndLimitsPage(
             ) {
                 Text(
                     text = "Budget ${getMonthName(budget.month)}",
-                    color = Color.White,
+                    color = Color.Black,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -427,14 +612,14 @@ fun BudgetAndLimitsPage(
                     if (isUpdating) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
-                            color = Color.White,
+                            color = Color.Black,
                             strokeWidth = 2.dp
                         )
                     } else {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit Monthly Budget",
-                            tint = Color.White.copy(alpha = 0.7f),
+                            tint = Color.Black.copy(alpha = 0.7f),
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -449,12 +634,12 @@ fun BudgetAndLimitsPage(
             ) {
                 Text(
                     text = "Budget",
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = Color.Black.copy(alpha = 0.7f),
                     fontSize = 14.sp
                 )
                 Text(
                     text = String.format("$%.0f", budget.monthlyLimit),
-                    color = Color.White,
+                    color = Color.Black,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -466,12 +651,12 @@ fun BudgetAndLimitsPage(
             ) {
                 Text(
                     text = "Spent",
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = Color.Black.copy(alpha = 0.7f),
                     fontSize = 14.sp
                 )
                 Text(
                     text = String.format("$%.0f", budget.monthlySpent),
-                    color = Color.White,
+                    color = Color.Black,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -482,15 +667,26 @@ fun BudgetAndLimitsPage(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(4.dp)
-                    .background(Color.White.copy(alpha = 0.1f))
+                    .background(Color.Black.copy(alpha = 0.1f))
                     .clip(RoundedCornerShape(2.dp))
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(budget.monthlyProgress.coerceIn(0f, 1f))
                         .height(4.dp)
-                        .background(Color(0xFF4CAF50))
+                        .background(if (budget.isMonthlyExceeded) Color(0xFFF44336) else Color(0xFF4CAF50))
                         .clip(RoundedCornerShape(2.dp))
+                )
+            }
+
+            // Warning text when exceeded
+            if (budget.isMonthlyExceeded) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "⚠️ You've exceeded your monthly budget by $${String.format("%.2f", -budget.monthlyRemaining)}",
+                    color = Color(0xFFF44336),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
@@ -500,7 +696,7 @@ fun BudgetAndLimitsPage(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(Color.White.copy(alpha = 0.1f))
+                .background(Color.Black.copy(alpha = 0.1f))
                 .padding(bottom = 24.dp)
         )
 
@@ -517,7 +713,7 @@ fun BudgetAndLimitsPage(
             ) {
                 Text(
                     text = "Daily Limit",
-                    color = Color.White,
+                    color = Color.Black,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -530,14 +726,14 @@ fun BudgetAndLimitsPage(
                     if (isUpdating) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
-                            color = Color.White,
+                            color = Color.Black,
                             strokeWidth = 2.dp
                         )
                     } else {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit Daily Limit",
-                            tint = Color.White.copy(alpha = 0.7f),
+                            tint = Color.Black.copy(alpha = 0.7f),
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -552,12 +748,12 @@ fun BudgetAndLimitsPage(
             ) {
                 Text(
                     text = "Limit",
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = Color.Black.copy(alpha = 0.7f),
                     fontSize = 14.sp
                 )
                 Text(
                     text = String.format("$%.0f", budget.dailyLimit),
-                    color = Color.White,
+                    color = Color.Black,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -569,12 +765,12 @@ fun BudgetAndLimitsPage(
             ) {
                 Text(
                     text = "Spent",
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = Color.Black.copy(alpha = 0.7f),
                     fontSize = 14.sp
                 )
                 Text(
                     text = String.format("$%.0f", budget.dailySpent),
-                    color = Color.White,
+                    color = Color.Black,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -585,15 +781,26 @@ fun BudgetAndLimitsPage(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(4.dp)
-                    .background(Color.White.copy(alpha = 0.1f))
+                    .background(Color.Black.copy(alpha = 0.1f))
                     .clip(RoundedCornerShape(2.dp))
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(budget.dailyProgress.coerceIn(0f, 1f))
                         .height(4.dp)
-                        .background(Color(0xFF4CAF50))
+                        .background(if (budget.isDailyExceeded) Color(0xFFF44336) else Color(0xFF4CAF50))
                         .clip(RoundedCornerShape(2.dp))
+                )
+            }
+
+            // Warning text when exceeded
+            if (budget.isDailyExceeded) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "⚠️ You've exceeded your daily limit by $${String.format("%.2f", -budget.dailyRemaining)}",
+                    color = Color(0xFFF44336),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
@@ -603,7 +810,7 @@ fun BudgetAndLimitsPage(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(Color.White.copy(alpha = 0.1f))
+                .background(Color.Black.copy(alpha = 0.1f))
                 .padding(bottom = 24.dp)
         )
 
@@ -611,7 +818,7 @@ fun BudgetAndLimitsPage(
         Column {
             Text(
                 text = "Enable notifications?",
-                color = Color.White.copy(alpha = 0.7f),
+                color = Color.Black.copy(alpha = 0.7f),
                 fontSize = 14.sp,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
@@ -642,52 +849,67 @@ fun LimitsPerCategoryPage(
     var selectedCurrentLimit by remember { mutableStateOf("") }
     var newLimit by remember { mutableStateOf("") }
 
-    val selectedCategory = remember(selectedCategoryId, categoryLimitsState) {
-        when (categoryLimitsState) {
-            is ScreenState.Success -> {
-                categoryLimitsState.data.find { it.categoryId == selectedCategoryId }
-            }
-            else -> null
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(vertical = 4.dp) // Reduced vertical padding
+            .padding(vertical = 4.dp)
     ) {
-        // Title and Refresh Button - MORE COMPACT
+        // Title and Refresh Button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 12.dp), // Reduced padding
+                .padding(horizontal = 20.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Category Limits",
-                color = Color.White,
-                fontSize = 16.sp, // Smaller
-                fontWeight = FontWeight.Bold
-            )
+            Column {
+                Text(
+                    text = "Category Limits",
+                    color = Color.Black,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                // Warning for over-budget categories
+                if (overBudgetCategories.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Warning",
+                            tint = Color(0xFFF44336),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${overBudgetCategories.size} categories over budget",
+                            color = Color(0xFFF44336),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
 
             IconButton(
                 onClick = { onRefreshCategoryLimits() },
                 enabled = !isUpdatingCategoryLimit,
-                modifier = Modifier.size(32.dp) // Smaller button
+                modifier = Modifier.size(32.dp)
             ) {
                 if (isUpdatingCategoryLimit) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp), // Smaller
-                        color = Color.White,
+                        modifier = Modifier.size(16.dp),
+                        color = Color.Black,
                         strokeWidth = 2.dp
                     )
                 } else {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Refresh",
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp) // Smaller
+                        tint = Color.Black,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
@@ -698,10 +920,10 @@ fun LimitsPerCategoryPage(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .weight(1f), // Take available space
+                        .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = Color.White)
+                    CircularProgressIndicator(color = Color.Black)
                 }
             }
 
@@ -709,7 +931,7 @@ fun LimitsPerCategoryPage(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .weight(1f), // Take available space
+                        .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -717,7 +939,7 @@ fun LimitsPerCategoryPage(
                     ) {
                         Text(
                             text = "Failed to load",
-                            color = Color.White.copy(alpha = 0.7f),
+                            color = Color.Black.copy(alpha = 0.7f),
                             fontSize = 14.sp,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
@@ -738,7 +960,7 @@ fun LimitsPerCategoryPage(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .weight(1f), // Take available space
+                            .weight(1f),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(
@@ -747,26 +969,26 @@ fun LimitsPerCategoryPage(
                             Icon(
                                 imageVector = Icons.Default.Payments,
                                 contentDescription = "No limits",
-                                tint = Color.White.copy(alpha = 0.5f),
+                                tint = Color.Black.copy(alpha = 0.5f),
                                 modifier = Modifier
-                                    .size(36.dp) // Smaller
+                                    .size(36.dp)
                                     .padding(bottom = 12.dp)
                             )
                             Text(
                                 text = "No Limits Set",
-                                color = Color.White.copy(alpha = 0.7f),
+                                color = Color.Black.copy(alpha = 0.7f),
                                 fontSize = 14.sp,
                                 modifier = Modifier.padding(bottom = 4.dp)
                             )
                             Text(
                                 text = "Set category spending limits",
-                                color = Color.White.copy(alpha = 0.5f),
+                                color = Color.Black.copy(alpha = 0.5f),
                                 fontSize = 12.sp
                             )
                         }
                     }
                 } else {
-                    // Category Table Header - MORE COMPACT
+                    // Category Table Header
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -776,40 +998,40 @@ fun LimitsPerCategoryPage(
                     ) {
                         Text(
                             text = "Category",
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 11.sp, // Smaller
+                            color = Color.Black.copy(alpha = 0.7f),
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier.weight(2f)
                         )
                         Text(
                             text = "Budget",
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 11.sp, // Smaller
+                            color = Color.Black.copy(alpha = 0.7f),
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier.weight(1f)
                         )
                         Text(
                             text = "Remaining",
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 11.sp, // Smaller
+                            color = Color.Black.copy(alpha = 0.7f),
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier.weight(1f)
                         )
                         Text(
                             text = "Actions",
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 11.sp, // Smaller
+                            color = Color.Black.copy(alpha = 0.7f),
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier.weight(1f)
                         )
                     }
 
-                    // Category Rows - MORE COMPACT
+                    // Category Rows
                     LazyColumn(
-                        modifier = Modifier.weight(1f), // Take available space
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(
                             horizontal = 20.dp,
-                            vertical = 2.dp // Reduced
+                            vertical = 2.dp
                         )
                     ) {
                         items(categoryLimits) { limit ->
@@ -825,7 +1047,7 @@ fun LimitsPerCategoryPage(
 
                             val isOverBudget = overBudgetCategories.any { it.categoryId == limit.categoryId }
 
-                            CompactCategoryTableRow( // Use a more compact version
+                            CompactCategoryTableRow(
                                 category = limit,
                                 remaining = remaining,
                                 isOverBudget = isOverBudget,
@@ -844,11 +1066,11 @@ fun LimitsPerCategoryPage(
                                 isDeleting = isDeletingCategoryLimit && selectedCategoryId == limit.categoryId
                             )
 
-                            Spacer(modifier = Modifier.height(6.dp)) // Reduced
+                            Spacer(modifier = Modifier.height(6.dp))
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp)) // Reduced
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
 
@@ -856,7 +1078,7 @@ fun LimitsPerCategoryPage(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .weight(1f), // Take available space
+                        .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -864,13 +1086,13 @@ fun LimitsPerCategoryPage(
                     ) {
                         Text(
                             text = "No Limits Set",
-                            color = Color.White.copy(alpha = 0.7f),
+                            color = Color.Black.copy(alpha = 0.7f),
                             fontSize = 14.sp,
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
                         Text(
                             text = "Set category spending limits",
-                            color = Color.White.copy(alpha = 0.5f),
+                            color = Color.Black.copy(alpha = 0.5f),
                             fontSize = 12.sp
                         )
                     }
@@ -878,22 +1100,22 @@ fun LimitsPerCategoryPage(
             }
         }
 
-        // Over-budget warning - MORE COMPACT
+        // Over-budget warning
         if (overBudgetCategories.isNotEmpty()) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
-                    .padding(bottom = 8.dp), // Reduced
+                    .padding(bottom = 8.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = Color(0xFFF44336).copy(alpha = 0.1f)
                 ),
-                shape = RoundedCornerShape(6.dp) // Smaller
+                shape = RoundedCornerShape(6.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(6.dp), // Reduced
+                        .padding(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
@@ -901,45 +1123,19 @@ fun LimitsPerCategoryPage(
                         contentDescription = "Warning",
                         tint = Color(0xFFF44336),
                         modifier = Modifier
-                            .size(14.dp) // Smaller
-                            .padding(end = 4.dp) // Reduced
+                            .size(14.dp)
+                            .padding(end = 4.dp)
                     )
                     Text(
                         text = "${overBudgetCategories.size} over budget",
                         color = Color(0xFFF44336),
-                        fontSize = 11.sp // Smaller
+                        fontSize = 11.sp
                     )
                 }
             }
         }
 
-        // Details section - REMOVED or make optional
-        // You can comment this out if there's not enough space
-        /*
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 8.dp) // Reduced
-        ) {
-            Text(
-                text = "Details",
-                color = Color.White,
-                fontSize = 13.sp, // Smaller
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 4.dp) // Reduced
-            )
-
-            Text(
-                text = "Track spending with category limits",
-                color = Color.White.copy(alpha = 0.7f),
-                fontSize = 11.sp, // Smaller
-                lineHeight = 14.sp
-            )
-        }
-        */
-
-        // Dialogs remain the same
+        // --- CATEGORY LIMIT EDIT DIALOG ---
         if (showEditDialog) {
             AlertDialog(
                 onDismissRequest = {
@@ -948,15 +1144,15 @@ fun LimitsPerCategoryPage(
                 },
                 title = {
                     Text(
-                        text = "Edit $selectedCategoryName Limit",
-                        color = Color.White
+                        text = "Edit ${selectedCategoryName} Limit",
+                        color = Color.Black
                     )
                 },
                 text = {
                     Column {
                         Text(
-                            text = "Current monthly limit: $selectedCurrentLimit",
-                            color = Color.White.copy(alpha = 0.7f),
+                            text = "Current limit: $$selectedCurrentLimit",
+                            color = Color.Black.copy(alpha = 0.7f),
                             fontSize = 14.sp,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
@@ -965,6 +1161,7 @@ fun LimitsPerCategoryPage(
                             onValueChange = { newLimit = it },
                             label = { Text("New Monthly Limit") },
                             singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -972,7 +1169,7 @@ fun LimitsPerCategoryPage(
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            if (newLimit.isNotBlank() && selectedCategoryId != -1) {
+                            if (newLimit.isNotBlank()) {
                                 onUpdateCategoryLimit(selectedCategoryId, newLimit)
                                 showEditDialog = false
                                 newLimit = ""
@@ -980,10 +1177,10 @@ fun LimitsPerCategoryPage(
                         },
                         enabled = newLimit.isNotBlank() && !isUpdatingCategoryLimit
                     ) {
-                        if (isUpdatingCategoryLimit) {
+                        if (isUpdatingCategoryLimit && selectedCategoryId == selectedCategoryId) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(16.dp),
-                                color = Color.White,
+                                color = Color.Black,
                                 strokeWidth = 2.dp
                             )
                         } else {
@@ -1001,61 +1198,12 @@ fun LimitsPerCategoryPage(
                         Text("Cancel")
                     }
                 },
-                containerColor = Color(0xFF1E1E1E)
-            )
-        }
-
-        // Delete Dialog
-        if (showDeleteDialog) {
-            AlertDialog(
-                onDismissRequest = {
-                    showDeleteDialog = false
-                },
-                title = {
-                    Text(
-                        text = "Delete Limit",
-                        color = Color.White
-                    )
-                },
-                text = {
-                    Text(
-                        text = "Are you sure you want to delete the limit for $selectedCategoryName?",
-                        color = Color.White.copy(alpha = 0.7f)
-                    )
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            onDeleteCategoryLimit(selectedCategoryId)
-                            showDeleteDialog = false
-                        },
-                        enabled = !isDeletingCategoryLimit
-                    ) {
-                        if (isDeletingCategoryLimit) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                color = Color.White,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text("Delete", color = Color(0xFFF44336))
-                        }
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = { showDeleteDialog = false }
-                    ) {
-                        Text("Cancel")
-                    }
-                },
-                containerColor = Color(0xFF1E1E1E)
+                containerColor = Color.White
             )
         }
     }
 }
 
-// NEW: More compact category row
 @Composable
 fun CompactCategoryTableRow(
     category: CategoryLimitOverview,
@@ -1080,46 +1228,71 @@ fun CompactCategoryTableRow(
 
                 Box(
                     modifier = Modifier
-                        .size(28.dp) // Smaller
+                        .size(28.dp)
                         .background(
                             color = backgroundColor,
-                            shape = RoundedCornerShape(6.dp) // Smaller
+                            shape = RoundedCornerShape(6.dp)
                         )
-                        .padding(3.dp), // Reduced
+                        .padding(3.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         painter = painterResource(id = IconMapper.getIconDrawable(iconName)),
                         contentDescription = category.categoryName,
                         tint = iconColor,
-                        modifier = Modifier.size(16.dp) // Smaller
+                        modifier = Modifier.size(16.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp)) // Reduced
+                Spacer(modifier = Modifier.width(8.dp))
             }
 
-            Text(
-                text = category.categoryName,
-                color = Color.White,
-                fontSize = 12.sp, // Smaller
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Column {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = category.categoryName,
+                        color = Color.Black,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    if (isOverBudget) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Over budget",
+                            tint = Color(0xFFF44336),
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
+                }
+
+                if (isOverBudget) {
+                    Text(
+                        text = "⚠️ Over budget",
+                        color = Color(0xFFF44336),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
         }
 
         Text(
             text = "$${category.monthlyLimit}",
-            color = Color.White,
-            fontSize = 12.sp, // Smaller
+            color = Color.Black,
+            fontSize = 12.sp,
             modifier = Modifier.weight(1f)
         )
 
         Text(
-            text = if (remaining >= 0) String.format("$%.0f", remaining) else String.format("-$%.0f", -remaining), // Remove decimals
+            text = if (remaining >= 0) String.format("$%.0f", remaining) else String.format("-$%.0f", -remaining),
             color = if (remaining >= 0) Color(0xFF4CAF50) else Color(0xFFF44336),
-            fontSize = 12.sp, // Smaller
+            fontSize = 12.sp,
             fontWeight = if (isOverBudget) FontWeight.Bold else FontWeight.Normal,
             modifier = Modifier.weight(1f)
         )
@@ -1131,25 +1304,25 @@ fun CompactCategoryTableRow(
             IconButton(
                 onClick = onEditClick,
                 enabled = !isDeleting,
-                modifier = Modifier.size(28.dp) // Smaller
+                modifier = Modifier.size(28.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = "Edit",
-                    tint = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.size(16.dp) // Smaller
+                    tint = Color.Black.copy(alpha = 0.7f),
+                    modifier = Modifier.size(16.dp)
                 )
             }
 
             IconButton(
                 onClick = onDeleteClick,
                 enabled = !isDeleting,
-                modifier = Modifier.size(28.dp) // Smaller
+                modifier = Modifier.size(28.dp)
             ) {
                 if (isDeleting) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp), // Smaller
-                        color = Color.White,
+                        modifier = Modifier.size(16.dp),
+                        color = Color.Black,
                         strokeWidth = 2.dp
                     )
                 } else {
@@ -1157,7 +1330,7 @@ fun CompactCategoryTableRow(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete",
                         tint = Color(0xFFF44336),
-                        modifier = Modifier.size(16.dp) // Smaller
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
@@ -1167,7 +1340,9 @@ fun CompactCategoryTableRow(
 
 @Composable
 fun SwipeableBudgetContainer(
-    budget: com.example.domain.budget.model.Budget,
+    budget: Budget,
+    balanceState: ScreenState<TotalBalance?>,
+    balanceComparison: String,
     isNotificationsEnabled: Boolean,
     onToggleNotifications: () -> Unit,
     categoryLimitsState: ScreenState<List<CategoryLimitOverview>>,
@@ -1177,21 +1352,23 @@ fun SwipeableBudgetContainer(
     isUpdatingCategoryLimit: Boolean,
     isDeletingCategoryLimit: Boolean,
     onRefreshCategoryLimits: () -> Unit,
-    onEditMonthlyLimit: () -> Unit, // Add this
-    onEditDailyLimit: () -> Unit,   // Add this
-    isUpdatingBudget: Boolean = false // Add this
+    onEditMonthlyLimit: () -> Unit,
+    onEditDailyLimit: () -> Unit,
+    isUpdatingBudget: Boolean = false,
+    onRetryBalance: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val pageCount = 2
     val pagerState = rememberPagerState(pageCount = { pageCount })
     val coroutineScope = rememberCoroutineScope()
 
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     ) {
         // Title
         Text(
             text = "Budget and Limits",
-            color = Color.White,
+            color = Color.Black,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 16.dp)
@@ -1203,9 +1380,10 @@ fun SwipeableBudgetContainer(
                 .fillMaxWidth()
                 .heightIn(min = 400.dp, max = 450.dp),
             colors = CardDefaults.cardColors(
-                containerColor = Color(0xFF363A3F)
+                containerColor = Color.White
             ),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             HorizontalPager(
                 state = pagerState,
@@ -1214,11 +1392,14 @@ fun SwipeableBudgetContainer(
                 when (page) {
                     0 -> BudgetAndLimitsPage(
                         budget = budget,
+                        balanceState = balanceState,
+                        balanceComparison = balanceComparison,
                         isNotificationsEnabled = isNotificationsEnabled,
                         onToggleNotifications = onToggleNotifications,
-                        onEditMonthlyLimit = onEditMonthlyLimit, // Pass this
-                        onEditDailyLimit = onEditDailyLimit,     // Pass this
-                        isUpdating = isUpdatingBudget            // Pass this
+                        onEditMonthlyLimit = onEditMonthlyLimit,
+                        onEditDailyLimit = onEditDailyLimit,
+                        isUpdating = isUpdatingBudget,
+                        onRetryBalance = onRetryBalance
                     )
                     1 -> LimitsPerCategoryPage(
                         categoryLimitsState = categoryLimitsState,
@@ -1249,9 +1430,9 @@ fun SwipeableBudgetContainer(
                         .clip(CircleShape)
                         .background(
                             if (page == pagerState.currentPage) {
-                                Color.White
+                                Color.Black
                             } else {
-                                Color.White.copy(alpha = 0.3f)
+                                Color.Black.copy(alpha = 0.3f)
                             }
                         )
                         .clickable {
@@ -1262,24 +1443,5 @@ fun SwipeableBudgetContainer(
                 )
             }
         }
-    }
-}
-
-// Helper function
-fun getMonthName(monthNumber: Int): String {
-    return when (monthNumber) {
-        1 -> "January"
-        2 -> "February"
-        3 -> "March"
-        4 -> "April"
-        5 -> "May"
-        6 -> "June"
-        7 -> "July"
-        8 -> "August"
-        9 -> "September"
-        10 -> "October"
-        11 -> "November"
-        12 -> "December"
-        else -> "Month $monthNumber"
     }
 }

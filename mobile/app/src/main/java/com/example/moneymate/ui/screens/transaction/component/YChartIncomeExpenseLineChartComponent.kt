@@ -61,11 +61,7 @@ fun YChartIncomeExpenseLineChartComponent(
 
     // Show grouping info to user
     val showGroupingInfo = filteredDays.size > chartDays.size
-    val daysCountText = if (showGroupingInfo) {
-        "Showing ${chartDays.size} of ${filteredDays.size} days (grouped for better visibility)"
-    } else {
-        "Showing ${filteredDays.size} days"
-    }
+
 
     Column(
         modifier = modifier
@@ -153,13 +149,6 @@ fun YChartIncomeExpenseLineChartComponent(
             )
         } else if (showGroupingInfo) {
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "📊 $daysCountText",
-                fontSize = 11.sp,
-                color = Color(0xFF666666),
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))

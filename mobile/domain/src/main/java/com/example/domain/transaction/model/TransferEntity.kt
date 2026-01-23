@@ -7,3 +7,11 @@ data class TransferEntity(
     val exchangeRate: Double,
     val convertedAmount: Double
 )
+
+data class TransferPreview(
+    val sourceCurrency: String,
+    val destinationCurrency: String,
+    val amount: Double,
+    val exchangeRate: Double,
+    val convertedAmount: Double
+)

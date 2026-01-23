@@ -18,6 +18,10 @@ import com.example.data.network.tag.TagRepositoryImpl
 import com.example.domain.categoryLimit.CategoryLimitRepository
 import com.example.data.network.categoryLimit.CategoryLimitRepositoryImpl
 import com.example.domain.wallet.WalletRepository
+import com.example.data.network.savingsGoal.SavingsGoalRepositoryImpl
+import com.example.data.network.goal.GoalRepositoryImpl
+import com.example.domain.savingsGoal.SavingsGoalRepository
+import com.example.domain.goal.GoalRepository
 import org.koin.core.module.dsl.factoryOf
 import org.koin.dsl.module
 import org.koin.core.module.dsl.bind
@@ -32,4 +36,6 @@ val repositoryModule = module {
     factoryOf(::BudgetRepositoryImpl) {bind<BudgetRepository>()}
     factoryOf(::TagRepositoryImpl) {bind<TagRepository>()}
     factoryOf(::CategoryLimitRepositoryImpl) {bind<CategoryLimitRepository>()}
+    factoryOf(::SavingsGoalRepositoryImpl) {bind<SavingsGoalRepository>()}
+    factoryOf(::GoalRepositoryImpl) {bind<GoalRepository>()}
 }
